@@ -148,3 +148,13 @@ realm24980,court168,runtime37. Binding258/training476, ONNX489, Godot19/18/336/4
 Native viewport reviewed1440x900/min1100x720; portable same four smokes pass.
 Categorical audit retains failed full R1/R2/R3. Eight20year native holdouts are
 running; first two alive11516/11525, versus v3 extinction. Full evidence pending.
+
+## Final v6 evidence
+All8native20year holdouts200001..200008 complete. Alive end7788..11525;
+all money/goods invariants pass, but seed200003 loses population. No claim of
+balanced population or fullR1/R2/R3. Categorical audit: governance andeconomic
+under baseline; civilian baselineCI too wide. Goal-only TV0.000424, weak conditioning.
+365day nativeA profile:123291 decisions,p95day5.8923ms,peak44.6MiB, excludesrender/save.
+ZIP extracted under Unicode/spaces path: native19/UI18/merchant336/realm411pass.
+GitHub code9e76542: GCC+MSVC core and nativeLinux5/5 +source/portable/Xvfbpass.
+Final report docs/M3-evidence.md; twelve typed court primitives covered by168checks.

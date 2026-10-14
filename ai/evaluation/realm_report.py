@@ -46,6 +46,9 @@ mở sổ, rồi chạy/tiến một ngày. Space chạy/dừng, Esc về địa
 Rời cửa sổ sẽ tạm dừng. Đổi ID xem cá thể và lệnh hợp lệ; đây là góc nhìn sandbox
 inspect, chưa phải UI bảo mật của campaign. “RL · Phòng thử nghiệm” giữ merchant
 v2 trước đó. Offline; người chơi không cần Python/Godot/credentials.
+Windows x64 cần Microsoft VC++ v14 runtime (đã có trên máy kiểm tra); DLL import
+của ORT phụ thuộc MSVCP140/MSVCP140_1/VCRUNTIME140_1.
+[Trang runtime chính thức của Microsoft](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist/).
 
 ## Đã triển khai
 
@@ -73,6 +76,8 @@ checksum/sai bundle bị từ chối mà không thay một phần world.
   chặn nhận điều khoản chưa quan sát trong batch và chặn lệnh UI từ snapshot cũ.
 - Realm64 ngày khớp executable C++ độc lập theo fingerprint, quyết định, tiền,
   vòng đời; save/restore replay và focus/sleep pause đều được smoke kiểm tra.
+  Fixture được sinh bằng executable của từng platform; chưa tuyên bố replay
+  bit-identical giữa Windows và Linux.
 - Torch/Python ORT/native C++ ORT: {parity['checks']} checks, batch1/3/32/64,
   sai số logits tối đa{maxlog:.3g}, memory{maxmem:.3g}; invalid probability0.
 - Windows portable/extracted checks: {verification['portable']}.
@@ -104,6 +109,15 @@ Các họ có objective khác nhau, không so hàng với nhau.
 |---|---:|---:|---:|---:|
 {chr(10).join(outcomes)}
 
+Chẩn đoán chất lượng: checkpoint được chọn bằng argmax, trong khi app dùng
+categorical; protocol đó chưa tối ưu đúng chế độ triển khai. Kết quả argmax và
+sampling dùng hai tập seed khác nhau, nên không coi chênh lệch là phân rã nhân
+quả riêng của sampling. Utility hiện tính dư nợ nhưng chưa có chi phí riêng cho
+vi phạm deadline; tỷ lệ default cao ở bảng trên cho thấy nghĩa vụ chưa được
+học tốt. Đây là lỗi chất lượng thực, không chỉ thiếu phép đo. Goal-only response
+rất yếu được ghi dưới R3. Những điểm này được chẩn đoán, không chỉnh model sau
+khi xem holdout.
+
 Các phép thử này chưa đo đầy đủ chất lượng thương lượng có điều kiện, pháp lý
 phá sản và cân bằng chính trị. Default/insolvency là chỉ số chẩn đoán, chưa có
 thủ tục bankruptcy đầy đủ. **full_R1_pass=False** bất kể kiểm tra hẹp nào đạt.
@@ -123,6 +137,9 @@ có sốc đóng tuyến ngày30. Đây là world tiếp tục, không phải vu
 {longrows}
 
 Còn sống lớn hơn0 không tự chứng minh xã hội tự duy trì hoặc dân số cân bằng.
+Seed200003 chỉ còn7.788/10.000 người ban đầu; đó là trường hợp mất cân bằng
+được giữ nguyên. Các lượt dài có chạy đồng thời, nên không dùng timing của
+chúng thay benchmark riêng365ngày dưới đây.
 Một năm profileA: {profile['decisions']:,} quyết định; p95 ngày
 {profile['full_day_p95_ms']:.2f}ms, peak native process
 {profile['peak_process_bytes']/2**20:.1f}MiB. Bao gồm core+observation+inference+

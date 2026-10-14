@@ -1,0 +1,96 @@
+{
+  "profile": "A native learned co-play",
+  "days": 7308,
+  "population_opening": 10000,
+  "population_end": 11945,
+  "alive_end": 7788,
+  "children_end": 1084,
+  "complex_actors_opening": 128,
+  "households": 2468,
+  "graph_edges": 21804,
+  "accounts": 11989,
+  "facilities": 7,
+  "decisions": 2313179,
+  "total_inference_ms": 182505,
+  "full_day_p50_ms": 60.9119,
+  "full_day_p95_ms": 85.4496,
+  "full_day_max_ms": 181.664,
+  "money_conserved": true,
+  "invariant": true,
+  "route_shock_day": 30,
+  "render_included": false,
+  "save_included": false,
+  "account_balances": [
+    300094,
+    1759,
+    134307,
+    577334,
+    145426,
+    146380,
+    0,
+    0,
+    300
+  ],
+  "food_stock_end": [
+    3590019,
+    175777,
+    219590,
+    210478,
+    238047,
+    308160,
+    11839
+  ],
+  "family_outcomes": [
+    {
+      "role": 0,
+      "persons": 64,
+      "alive": 52,
+      "working": 0,
+      "mean_living_health": 98.1346,
+      "mean_living_nutrition": 97.3077,
+      "cash": 55456
+    },
+    {
+      "role": 1,
+      "persons": 64,
+      "alive": 59,
+      "working": 47,
+      "mean_living_health": 98.9661,
+      "mean_living_nutrition": 95.2542,
+      "cash": 477
+    },
+    {
+      "role": 2,
+      "persons": 11817,
+      "alive": 7677,
+      "working": 1991,
+      "mean_living_health": 86.7446,
+      "mean_living_nutrition": 82.1597,
+      "cash": 244161
+    }
+  ],
+  "seed": 200003,
+  "peak_process_bytes": 51265536,
+  "wall_seconds": 412.74045879999903,
+  "model_hashes": [
+    "ecbb97fed8ef47c9e5df58ab22ff9fd0b4470881a4662191a97620d39801c760",
+    "357d76dbd5b7b556e75eba207899fdd50e99fb36b3a32b3996959874a236446e",
+    "5253db13ae73ee49c27b113927902b7b41a19d654b37dd3b91306e8d8b0b61b9"
+  ],
+  "benchmark_executable_sha256": "0e1974e0385b839e6f31e984e5eac84f9ab6b4e56fff423923203948ec515724",
+  "hardware": "Windows / Intel i7-12700K,12cores20threads,15.78GiB RAM",
+  "onnx_runtime": "1.31.0 CPU,2intra/1inter threads per family",
+  "note": "Includes core+observations+inference+sampling+commit+invariants; excludes render/input/save. Not profileB/C evidence.",
+  "account_balance_names": [
+    "people",
+    "firms",
+    "treasuries",
+    "carriers",
+    "estate",
+    "organizations",
+    "royal_credit",
+    "restricted_matching",
+    "proposal_escrow"
+  ],
+  "timing_context": "Long co-play overlapped evaluation or other co-play jobs; use separate idle365day profile for performance claims."
+}

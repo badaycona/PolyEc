@@ -80,5 +80,17 @@
   "benchmark_executable_sha256": "0e1974e0385b839e6f31e984e5eac84f9ab6b4e56fff423923203948ec515724",
   "hardware": "Windows / Intel i7-12700K,12cores20threads,15.78GiB RAM",
   "onnx_runtime": "1.31.0 CPU,2intra/1inter threads per family",
-  "note": "Includes core+observations+inference+sampling+commit+invariants; excludes render/input/save. Not profileB/C evidence."
+  "note": "Includes core+observations+inference+sampling+commit+invariants; excludes render/input/save. Not profileB/C evidence.",
+  "account_balance_names": [
+    "people",
+    "firms",
+    "treasuries",
+    "carriers",
+    "estate",
+    "organizations",
+    "royal_credit",
+    "restricted_matching",
+    "proposal_escrow"
+  ],
+  "timing_context": "Long co-play overlapped evaluation or other co-play jobs; use separate idle365day profile for performance claims."
 }

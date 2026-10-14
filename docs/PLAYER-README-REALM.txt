@@ -22,3 +22,9 @@ Tải save tạm dừng; sai model bundle/checksum bị từ chối và giữ wo
 Giữ models/ và bin/ cạnh executable. Không cần Python, Godot hoặc mạng.
 
 “RL · Phòng thử nghiệm” giữ bản thương nhân v2 trước đó để đối chiếu.
+
+Yêu cầu Windows: bản ONNX Runtime này dùng Microsoft Visual C++ v14 runtime x64.
+Nếu Windows báo thiếu MSVCP140 / MSVCP140_1 / VCRUNTIME140_1 khi mở app, cài bản
+x64 từ trang Microsoft chính thức rồi mở lại:
+https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist/
+Không cần cài Python, Godot hoặc SDK để chơi; runtime VC++ là dependency hệ thống.

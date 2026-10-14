@@ -30,7 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           godot="$PWD/work/Godot_v4.5.1-stable_linux.x86_64"
-          "$godot" --headless --editor --path godot_project --quit > work/import.log 2>&1
+          "$godot" --headless --path godot_project --import > work/import.log 2>&1
           for smoke in native_smoke ui_smoke rl_smoke; do
             "$godot" --headless --path godot_project --script "res://tests/$smoke.gd" > "work/$smoke.log" 2>&1
             cat "work/$smoke.log"

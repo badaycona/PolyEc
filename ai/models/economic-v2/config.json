@@ -1,0 +1,35 @@
+{
+  "algorithm": "recurrent PPO,16-step BPTT",
+  "gamma": 1.0,
+  "gae_lambda": 0.95,
+  "epochs": 3,
+  "clip": 0.2,
+  "lr": 0.0003,
+  "entropy_coef": 0.01,
+  "seeds": [
+    1,
+    2,
+    3
+  ],
+  "train_seed_domain": ">=2**32",
+  "validation_seeds": [
+    10000,
+    10031
+  ],
+  "test_seeds": [
+    30000,
+    30099
+  ],
+  "schema": "trade-v1",
+  "reward": "reference-wealth-gamma1-terminal-cash-v1",
+  "torch": "2.13.0+cpu",
+  "arguments": {
+    "output": "ai\\models\\economic-v2",
+    "updates": 1200,
+    "envs": 64,
+    "seconds": 600,
+    "resume_dir": "ai\\models\\economic-v1",
+    "test_start": 30000,
+    "domain": 2
+  }
+}

@@ -1,0 +1,19 @@
+name: Shared C++ core
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  core:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure standalone core
+        run: cmake -S . -B build/ci -DPOLYEC_BUILD_APP=OFF -DPOLYEC_BUILD_AI=OFF -DPOLYEC_BUILD_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build/ci --config Release --parallel 2
+      - name: Invariants and replay
+        run: ctest --test-dir build/ci -C Release --output-on-failure

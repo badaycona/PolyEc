@@ -1,0 +1,3 @@
+{"persons": 10000, "edges": 40000, "bytes": 480000, "checksum": 1201372643, "milliseconds": 0.2711, "baseline_rss_bytes": 35082240, "peak_rss_bytes": 35581952, "kind": "synthetic storage/sparse-graph primitive, NOT learned citizens or S1"}
+{"persons": 100000, "edges": 400000, "bytes": 4800000, "checksum": 120013787445, "milliseconds": 2.7008, "baseline_rss_bytes": 34791424, "peak_rss_bytes": 39612416, "kind": "synthetic storage/sparse-graph primitive, NOT learned citizens or S1"}
+{"persons": 1000000, "edges": 4000000, "bytes": 48000000, "checksum": 12000137944751, "milliseconds": 40.9041, "baseline_rss_bytes": 34840576, "peak_rss_bytes": 82862080, "kind": "synthetic storage/sparse-graph primitive, NOT learned citizens or S1"}

@@ -1,0 +1,25 @@
+#include "polyec/realm.hpp"
+#include <iostream>
+#include <stdexcept>
+#include <chrono>
+using namespace polyec;
+int checks=0;
+void check(bool ok,const char* label){++checks;if(!ok)throw std::runtime_error(label);}
+int main(){try{
+    Realm w(37,6,10000);check(w.invariant(),"opening invariant");check(w.count()==10000,"real persons");check(w.relations().size()>19000,"sparse family/social graph");
+    auto before=w.fingerprint();auto r=w.execute({1,1,{Intent::Tax,2,0,20}});check(!r.success&&w.fingerprint()==before,"unauthorized tax is atomic");
+    check(w.execute({1,1,{Intent::Tax,0,0,20}}).success,"charter local tax");before=w.fingerprint();check(!w.execute({1,1,{Intent::Tax,0,0,5}}).success&&w.fingerprint()==before,"duplicate command");
+    uint64_t merchant=65;int64_t wealth=w.person(merchant).cash-w.debt(merchant);check(w.execute({merchant,1,{Intent::Borrow,w.person(merchant).region,0,100,180}}).success,"funded loan");check(w.person(merchant).cash-w.debt(merchant)==wealth-4,"loan not income with interest");
+    check(w.execute({merchant,2,{Intent::Repay,w.person(merchant).region,0,100}}).success,"repay");check(w.invariant(),"loan invariant");
+    check(w.execute({1,2,{Intent::Project,0,0,200,60}}).success,"project funded and materials");w.advance(65);check(w.projects()[0].completed&&w.view().provinces[0].road==1,"project duration and stat");
+    std::string data=w.serialize("test"),error;Realm restored(2,1,128);check(restored.deserialize(data,"test",error),"save load");check(restored.fingerprint()==w.fingerprint(),"save exact state RNG");before=restored.fingerprint();check(!restored.deserialize(data,"wrong",error)&&restored.fingerprint()==before,"wrong bundle atomic");check(!restored.deserialize(data.substr(0,data.size()/2),"test",error)&&restored.fingerprint()==before,"truncated save atomic");
+    w.advance(100);restored.advance(100);check(w.fingerprint()==restored.fingerprint(),"continued replay");
+    for(int seed=0;seed<60;++seed){Realm draft(seed,6,128);auto d=draft.view().draft;check(d.cards[0]!=d.cards[1]&&d.cards[1]!=d.cards[2]&&d.cards[0]!=d.cards[2],"three distinct cards");check(draft.reroll(1),"one reroll");check(!draft.reroll(0),"no second reroll");int card=draft.view().draft.cards[0];check(draft.choose(card),"choose offered");before=draft.fingerprint();check(!draft.choose(card)&&before==draft.fingerprint(),"endowment once");check(draft.invariant(),"augment invariant");}
+    std::mt19937_64 rng(73);
+    Realm employment=Realm::scenario(37,129,30);int home=employment.person(129).region;check(employment.execute({129,1,{Intent::Work,home,0,0,30}}).success,"start employment");employment.advance(30);check(employment.execute({129,2,{Intent::Study,home,0,5,30}}).success,"study after contract ends");check(employment.person(129).job==-1,"study cannot renew an expired wage contract");
+    Realm routes(37,6,256);check(routes.distance(0,1)==1,"open shortest route");auto route_before=routes.fingerprint();check(!routes.route_command(8,0,1,false).success&&routes.fingerprint()==route_before,"economic cannot close public route");check(routes.route_command(1,0,1,false).success,"route jurisdiction");check(routes.distance(0,1)==6,"route disruption forces detour");check(routes.route_command(1,0,6,false).success,"second closure");check(routes.distance(0,1)==-1,"isolated market unreachable");
+    Realm childhood(5,6,256);uint64_t child=0;for(uint64_t id=129;id<=256;++id)if(childhood.person(id).age_days<14*365){child=id;break;}check(child>0,"child with unique ID");check(!childhood.mask(child)[1+childhood.person(child).region],"child labor restricted by age");auto cold=childhood.fingerprint();check(!childhood.execute({child,1,{Intent::Borrow,childhood.person(child).region,0,100,180}}).success&&childhood.fingerprint()==cold,"child loan rejected atomically");
+    for(int seed=1;seed<=8;++seed){Realm sim(seed,6,256);for(int week=0;week<1044;++week){for(auto family:{Family::Governance,Family::Economic,Family::Civilian})for(auto id:sim.due(family)){auto mask=sim.mask(id);std::vector<int> available;for(int i=0;i<32;++i)if(mask[i])available.push_back(i);int a=available[rng()%available.size()];check(sim.execute({id,sim.person(id).decisions+1,sim.candidates(id)[a]}).success,"legal random action committed");}sim.advance(7);check(sim.invariant(),"20year world accounting");}}
+    auto start=std::chrono::steady_clock::now();for(int day=0;day<90;++day){for(auto id:w.due(Family::Civilian)){auto mask=w.mask(id);int a=mask[1+w.person(id).region]?1+w.person(id).region:0;w.execute({id,w.person(id).decisions+1,w.candidates(id)[a]});}w.advance();check(w.invariant(),"profile A accounting");}
+    std::cout<<"REALM TESTS: "<<checks<<" checks passed; profile A10000 persons, "<<w.relations().size()<<" sparse edges;90days "<<std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count()<<"s\n";return 0;
+}catch(const std::exception&e){std::cerr<<"FAIL after "<<checks<<": "<<e.what()<<'\n';return 1;}}

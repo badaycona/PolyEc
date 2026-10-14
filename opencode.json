@@ -1,0 +1,16 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/step-5-preview-free",
+  "default_agent": "build",
+  "agent": {
+    "build": {
+      "mode": "primary",
+      "prompt": "Work sequentially within the current milestone. Do not spawn subagents. Shell is Windows PowerShell: use native PowerShell commands, never Unix head/tail, bash syntax or shell command substitution. Read WORK_STATUS.md before working. Preserve existing work. Report only checks actually executed. Do not commit, push, publish or purchase services."
+    }
+  },
+  "mcp": {
+    "playwright": { "enabled": false },
+    "github": { "enabled": false },
+    "context7": { "enabled": false }
+  }
+}

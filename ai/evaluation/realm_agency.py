@@ -26,6 +26,6 @@ for name,config in variants.items():
 report['mean_total_variation_vs_adult']={name:float(np.abs(prob-all_probs['adult_school']).sum(1).mean()/2) for name,prob in all_probs.items()}
 report['age_and_capacity_masks_pass']=report['variants']['child_school']['work_probability']==0 and report['variants']['child_no_school']['school_probability']==0 and report['variants']['adult_no_jobs']['work_probability']==0
 report['private_sampling_variation_pass']=report['variants']['adult_school']['same_state_distinct_actions_mean']>1
-report['R2_diagnosis']='Age/budget/school/job masks and first-decision distributions tested. Household resource sharing, full child-adult rollout transfer and multi-policy holdout survival still incomplete; full R2 not claimed.'
+report['R2_diagnosis']='Age/budget/school/job masks and first-decision distributions tested. Household funding is implemented; full child-adult learned rollout transfer and multi-policy holdout survival still require validation; full R2 not claimed.'
 report['R3_diagnosis']='INT changes school skill gain; ADM project duration; INTG investigation delay; MIL unrest reduction. ECO/DIP forecast/negotiation expertise and an independent multistep INT strategy task are not complete. Mechanical stat effects do not prove reasoning; full R3 not claimed.'
 (a.models/'agency-stat-report.json').write_text(json.dumps(report,indent=2));print(json.dumps({k:v for k,v in report.items() if k!='variants'},indent=2))

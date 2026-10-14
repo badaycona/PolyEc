@@ -146,13 +146,13 @@ func _ready() -> void:
     var paths=[]
     var hashes=[]
     for family in ["governance","economic","civilian"]:
-        var root=ProjectSettings.globalize_path("res://models/realm-v1/"+family+"/")
+        var root=ProjectSettings.globalize_path("res://models/realm-v3/"+family+"/")
         var f=FileAccess.open(root+"manifest.json",FileAccess.READ)
         if f==null:
             status.text="Chưa có bundle "+family
             return
         var manifest=JSON.parse_string(f.get_as_text())
-        if not manifest is Dictionary or manifest.get("schema","") not in ["realm-v1","realm-v2"]:
+        if not manifest is Dictionary or manifest.get("schema","")!="realm-v3":
             status.text="Sai schema policy "+family
             return
         paths.append(root+family+".onnx")

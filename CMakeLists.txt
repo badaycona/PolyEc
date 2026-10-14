@@ -19,6 +19,13 @@ if(POLYEC_BUILD_AI)
   target_link_libraries(polyec_realm_replay PRIVATE polyec_ai)
   add_executable(polyec_realm_benchmark native/realm_benchmark.cpp)
   target_link_libraries(polyec_realm_benchmark PRIVATE polyec_ai)
+  if(WIN32)
+    foreach(ai_executable polyec_rl_replay polyec_realm_replay polyec_realm_benchmark)
+      add_custom_command(TARGET ${ai_executable} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ORT_ROOT}/lib/onnxruntime.dll" "$<TARGET_FILE_DIR:${ai_executable}>/onnxruntime.dll"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ORT_ROOT}/lib/onnxruntime_providers_shared.dll" "$<TARGET_FILE_DIR:${ai_executable}>/onnxruntime_providers_shared.dll")
+    endforeach()
+  endif()
 endif()
 
 option(POLYEC_BUILD_PYTHON "Build shared-core training binding" OFF)
@@ -44,9 +51,16 @@ if(POLYEC_BUILD_APP)
   if(POLYEC_BUILD_AI)
     target_link_libraries(polyec PRIVATE polyec_ai)
     target_compile_definitions(polyec PRIVATE POLYEC_AI_ENABLED)
-    add_custom_command(TARGET polyec POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ORT_ROOT}/lib/onnxruntime.dll" "$<TARGET_FILE_DIR:polyec>/onnxruntime.dll"
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ORT_ROOT}/lib/onnxruntime_providers_shared.dll" "$<TARGET_FILE_DIR:polyec>/onnxruntime_providers_shared.dll")
+    if(WIN32)
+      add_custom_command(TARGET polyec POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ORT_ROOT}/lib/onnxruntime.dll" "$<TARGET_FILE_DIR:polyec>/onnxruntime.dll"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ORT_ROOT}/lib/onnxruntime_providers_shared.dll" "$<TARGET_FILE_DIR:polyec>/onnxruntime_providers_shared.dll")
+    else()
+      file(GLOB ORT_SHARED_LIBRARIES "${ORT_ROOT}/lib/*.so*")
+      add_custom_command(TARGET polyec POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ORT_SHARED_LIBRARIES} "$<TARGET_FILE_DIR:polyec>")
+      set_target_properties(polyec PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE INSTALL_RPATH "$ORIGIN")
+    endif()
   endif()
   target_compile_features(polyec PRIVATE cxx_std_20)
   target_compile_options(polyec PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
@@ -55,6 +69,9 @@ if(POLYEC_BUILD_APP)
     OUTPUT_NAME "polyec.windows.template_release.x86_64"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/godot_project/bin"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/godot_project/bin")
+  if(UNIX AND NOT APPLE)
+    set_target_properties(polyec PROPERTIES OUTPUT_NAME "polyec.linux.template_release.x86_64")
+  endif()
   # Zig supplies libc++; godot-cpp's generic clang-on-Windows flags assume
   # a GNU libstdc++ install. Keep the upstream checkout untouched.
   if(CMAKE_CXX_COMPILER MATCHES "zig")

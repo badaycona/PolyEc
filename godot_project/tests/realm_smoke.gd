@@ -14,7 +14,7 @@ func run() -> void:
     var paths=[]
     var hashes=[]
     for family in ["governance","economic","civilian"]:
-        var base=ProjectSettings.globalize_path("res://models/realm-v1/"+family+"/")
+        var base=ProjectSettings.globalize_path("res://models/realm-v3/"+family+"/")
         var manifest=JSON.parse_string(FileAccess.get_file_as_string(base+"manifest.json"))
         paths.append(base+family+".onnx")
         hashes.append(manifest.sha256)

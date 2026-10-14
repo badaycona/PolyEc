@@ -4,6 +4,7 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 namespace polyec {
 inline constexpr int realm_actions=32, realm_state=128, realm_features=12;
@@ -16,6 +17,7 @@ struct Person {
     int region=0,age_days=0,health=100,skill=0,job=-1,busy_until=0,destination=-1;
     int goal=0,school_days=0,social=0; bool alive=true;
     int tax_remainder=0;
+    int organization=0;
     Family family=Family::Civilian; Stats stats;
     int64_t cash=100; std::array<int64_t,7> inventory{};
 };
@@ -62,6 +64,7 @@ public:
     int regions() const {return regions_;}
     int count() const {return int(people_.size());}
     int64_t debt(uint64_t actor) const;
+    int64_t available_funds(uint64_t actor)const;
     std::vector<Loan> loans() const {return loans_;}
     std::vector<Project> projects() const {return projects_;}
     std::vector<Edge> relations() const {return edges_;}
@@ -72,10 +75,14 @@ private:
     std::vector<Person> people_;std::vector<Province> provinces_;
     std::vector<Edge> edges_;std::vector<Loan> loans_;std::vector<Project> projects_;
     std::vector<Fact> facts_;std::vector<Knowledge> knowledge_;std::vector<Proposal> proposals_;
+    std::unordered_map<uint64_t,std::unordered_map<uint64_t,int>> knowledge_index_;
     std::array<std::array<bool,7>,7> routes_{};
+    std::array<int64_t,28> organization_funds_{};
     std::array<int64_t,7> opening_{},produced_{},consumed_{};
     int64_t opening_money_=0,carrier_=0,estate_=0,endowment_=0;
     Person& mutable_person(uint64_t id);
+    uint64_t guardian(const Person& person)const;
+    void spend(Person& person,int64_t& destination,int64_t amount);
     bool legal(uint64_t actor,const Candidate& c,std::string& reason) const;
     void daily();void prices();void event(uint64_t actor,int region,int kind,int64_t amount=0,uint64_t target=0,bool secret=false,uint64_t parent=0);
     void transfer(int64_t& from,int64_t& to,int64_t amount);

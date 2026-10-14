@@ -149,7 +149,7 @@ def main():
     p.add_argument('--resume-dir',type=Path);p.add_argument('--domain',type=int,default=4);p.add_argument('--test-start',type=int,default=50000)
     args=p.parse_args();ROLE=args.role;args.output.mkdir(parents=True,exist_ok=True)
     family=['governance','economic','civilian'][ROLE]
-    config={'family':family,'schema':args.schema,'reward':'actor-utility-delta-v1','partners':'labelled dev work/study baseline, not release AI','algorithm':'recurrent PPO gamma1 GAE.95','metric':'terminal utility minus opening utility','normalization_scale':10,'seeds':[1,2,3],'train_seed_min':2**32,'validation':[10000,10031],'test':[args.test_start,args.test_start+99],'budget_seconds_per_seed':args.seconds,'updates':args.updates,'decision_days':7 if ROLE==1 else 30,'gate':'baseline noninferiority margin5 utility; initial improvement CI lower>0; remaining R2/R3 separate'}
+    config={'warm_start':str(args.resume_dir) if args.resume_dir else None,'imitation':False,'family':family,'schema':args.schema,'reward':'actor-utility-delta-v1','partners':'labelled dev work/study baseline, not release AI','algorithm':'recurrent PPO gamma1 GAE.95','metric':'terminal utility minus opening utility','normalization_scale':10,'seeds':[1,2,3],'train_seed_min':2**32,'validation':[10000,10031],'test':[args.test_start,args.test_start+99],'budget_seconds_per_seed':args.seconds,'updates':args.updates,'decision_days':7 if ROLE==1 else 30,'gate':'baseline noninferiority margin5 utility; initial improvement CI lower>0; remaining R2/R3 separate'}
     (args.output/'config.json').write_text(json.dumps(config,indent=2))
     results=[fit(seed,args,args.output) for seed in (1,2,3)]
     winner=max(results,key=lambda r:r['best_validation_profit'])['seed']

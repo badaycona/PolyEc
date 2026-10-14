@@ -1,0 +1,58 @@
+name: Native Linux app
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pinned native dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p work third_party
+          git clone --depth 1 --branch godot-4.5-stable https://github.com/godotengine/godot-cpp third_party/godot-cpp
+          test "$(git -C third_party/godot-cpp rev-parse HEAD)" = e83fd0904c13356ed1d4c3d09f8bb9132bdc6b77
+          curl --fail --location --retry 3 -o work/godot.zip https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip
+          echo '02ec53d1cc7dbb9cc6355393c61b9ab43d1244751a124f10248a4802830788cd  work/godot.zip' | sha256sum -c -
+          unzip -q work/godot.zip -d work
+          curl --fail --location --retry 3 -o work/ort.tgz https://github.com/microsoft/onnxruntime/releases/download/v1.31.0/onnxruntime-linux-x64-1.31.0.tgz
+          echo 'cc5c72baf5ae5c8238a6841f0897227be2d02826b9cf98eaf02fdefaeeb03a57  work/ort.tgz' | sha256sum -c -
+          tar -xf work/ort.tgz -C work
+      - name: Native extension and shared core
+        run: |
+          cmake -S . -B build/linux -G Ninja -DCMAKE_BUILD_TYPE=Release -DPOLYEC_BUILD_AI=ON -DORT_ROOT="$PWD/work/onnxruntime-linux-x64-1.31.0"
+          cmake --build build/linux --parallel 2
+          ctest --test-dir build/linux --output-on-failure
+      - name: Godot integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot="$PWD/work/Godot_v4.5.1-stable_linux.x86_64"
+          "$godot" --headless --editor --path godot_project --quit > work/import.log 2>&1
+          for smoke in native_smoke ui_smoke rl_smoke; do
+            "$godot" --headless --path godot_project --script "res://tests/$smoke.gd" > "work/$smoke.log" 2>&1
+            cat "work/$smoke.log"
+            ! grep -E '^(SCRIPT ERROR:|ERROR:)' "work/$smoke.log"
+            grep -E 'SMOKE: [0-9]+/[0-9]+ checks passed' "work/$smoke.log"
+          done
+          if [[ -d godot_project/models/realm-v3 ]]; then
+            "$godot" --headless --path godot_project --script res://tests/realm_smoke.gd > work/realm_smoke.log 2>&1
+            cat work/realm_smoke.log
+            ! grep -E '^(SCRIPT ERROR:|ERROR:)' work/realm_smoke.log
+            grep -E 'SMOKE: [0-9]+/[0-9]+ checks passed' work/realm_smoke.log
+          fi
+      - name: Portable package
+        run: |
+          bash scripts/package-linux.sh work/Godot_v4.5.1-stable_linux.x86_64 dist/PolyEc-Linux
+          ./dist/PolyEc-Linux/PolyEc --headless --script "$PWD/godot_project/tests/native_smoke.gd"
+          tar -czf dist/PolyEc-Linux.tar.gz -C dist PolyEc-Linux
+      - name: Upload Linux package and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PolyEc-Linux
+          path: |
+            dist/PolyEc-Linux.tar.gz
+            work/*.log

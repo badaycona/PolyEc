@@ -38,6 +38,7 @@ public:
 NativePolicy::NativePolicy(int observations,int actions):observations_(observations),actions_(actions){}
 NativePolicy::~NativePolicy()=default;
 bool NativePolicy::load(const std::string& path) {
+    if(OrtGetApiBase()->GetApi(ORT_API_VERSION)==nullptr){impl_.reset();error_="Incompatible ONNX Runtime DLL; expected API "+std::to_string(ORT_API_VERSION);return false;}
     try { impl_=std::make_unique<Impl>(path,observations_,actions_); error_.clear();return true; }
     catch(const std::exception& e) {impl_.reset();error_=e.what();return false;}
 }

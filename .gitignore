@@ -6,6 +6,7 @@
 /godot_project/bin/*.lib
 /godot_project/bin/*.a
 /godot_project/bin/*.pdb
+/godot_project/bin/*.so*
 *.log
 __pycache__/
 *.pyc

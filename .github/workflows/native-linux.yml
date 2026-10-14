@@ -30,7 +30,9 @@ jobs:
         run: |
           set -euo pipefail
           godot="$PWD/work/Godot_v4.5.1-stable_linux.x86_64"
-          "$godot" --headless --path godot_project --import > work/import.log 2>&1
+          # Godot #111048: allow deferred extension documentation callbacks to
+          # finish before editor shutdown. Keep exit/log checks strict.
+          "$godot" --headless --frame-delay 1000 --path godot_project --import > work/import.log 2>&1
           for smoke in native_smoke ui_smoke rl_smoke; do
             "$godot" --headless --path godot_project --script "res://tests/$smoke.gd" > "work/$smoke.log" 2>&1
             cat "work/$smoke.log"
@@ -38,6 +40,7 @@ jobs:
             grep -E 'SMOKE: [0-9]+/[0-9]+ checks passed' "work/$smoke.log"
           done
           if [[ -d godot_project/models/realm-v3 ]]; then
+            python3 ai/tests/make_realm_fixture.py --models godot_project/models/realm-v3 --native-replay build/linux/polyec_realm_replay --output godot_project/tests/realm_expected.json
             "$godot" --headless --path godot_project --script res://tests/realm_smoke.gd > work/realm_smoke.log 2>&1
             cat work/realm_smoke.log
             ! grep -E '^(SCRIPT ERROR:|ERROR:)' work/realm_smoke.log

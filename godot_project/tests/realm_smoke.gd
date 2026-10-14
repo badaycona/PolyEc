@@ -31,10 +31,19 @@ func run() -> void:
     check(not session.realm_draft(v.cards[0],false),"apply once")
     var money=session.realm_snapshot(1).money
     session.set_active(true)
-    for day in range(35):
+    var fixture_path="res://tests/realm_expected.json"
+    for arg in OS.get_cmdline_user_args():
+        if arg.begins_with("--fixture-file="): fixture_path=arg.trim_prefix("--fixture-file=")
+    var fixture=JSON.parse_string(FileAccess.get_file_as_string(fixture_path))
+    check(fixture is Array and fixture.size()==64,"native64-day fixture loaded")
+    for day in range(64):
         check(session.realm_step(1),"learned day "+str(day))
         v=session.realm_snapshot(1)
         check(v.invariant and v.money==money,"funded population decisions")
+        check(v.fingerprint==fixture[day].fingerprint,"native world fingerprint day "+str(day))
+        check(v.decisions==fixture[day].decisions,"native committed decisions day "+str(day))
+        check(v.alive==fixture[day].alive,"native lifetime transition day "+str(day))
+        check(v.money==fixture[day].money,"native ledger day "+str(day))
     check(v.inferences>10000,"actual per-person inference, not empty records")
     var path=ProjectSettings.globalize_path("user://realm-smoke.polyec")
     check(session.realm_save(path,false),"save world and policy memory")

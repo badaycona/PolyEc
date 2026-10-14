@@ -42,7 +42,7 @@ thread limits and per-seed budget. stderr is retained separately and process
 exit codes plus model/parity checks decide success, not warning silence.
 
 The exact six compiler/model input files at training freeze are preserved under
-ai/models/realm-v6/source/ and checked by SOURCE-LOCK.json. After fitting began,
+artifacts/models/realm-v6/source/ and checked by SOURCE-LOCK.json. After fitting began,
 a read-only offers(observer) accessor was added for UI consent details. It does
 not change transitions, observations, masks, reward or serialization. Native
 runtime additionally intersects inference-time/current candidate masks and terms;

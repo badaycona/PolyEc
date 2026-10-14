@@ -1,112 +1,70 @@
-# PolyEc — native prototype + economic RL
+# PolyEc
 
-Windows prototype of Đại Bàn Cờ Vương Quyền. The C++20 core owns world state;
-Godot receives detached PlayerView snapshots and sends commands.
-Windows/Linux remain product targets; only Windows was validated this iteration.
+PolyEc đang được xây thành game desktop mô phỏng cai trị một quốc gia. Người chơi đọc báo cáo, thương lượng hoặc cấp nguồn lực cho dự án, rồi theo dõi tác động. Các NPC tự chọn hành động bằng policy RL đã huấn luyện; lõi mô phỏng và giao diện chạy native trên Windows/Linux.
 
-## Run
+## Bản hiện có
 
-Unzip the complete portable folder and open PolyEc.exe. Keep the runtime, PCK
-and bin folder together. Players need no installed Godot, Python, Node,
-credentials or network connection. See docs/PLAYER-README.txt for the one-minute
-presentation and controls.
+Repo hiện ở **M3: sandbox mô phỏng và tích hợp ba họ policy RL**. Mở godot_project bằng bản portable trong gói phát hành, rồi chọn **Quốc gia · Sandbox**. Đây là bản để kiểm tra cơ chế; chưa phải campaign hoàn chỉnh một đời vua.
 
-## Implemented
+M3 đã có sáu lãnh địa, đất triều đình, 10.000 người, mô phỏng kinh tế/chính trị cơ bản, draft augment triều đình và suy luận ONNX CPU. Các kiểm tra build, runtime và UI đã chạy trên Windows/Linux. Chất lượng policy còn thiếu: R1/R2/R3 chưa đạt đầy đủ. Xem [trạng thái hiện tại](WORK_STATUS.md) và [báo cáo M3](docs/M3-evidence.md) trước khi diễn giải kết quả.
 
-- Two territories: Thanh Điền and Hắc Sơn, ID-based selection and native inspector.
-- Geographic prototype map: river, mountain ridges, forest, roads and settlements.
-- Cursor-anchored zoom, pan, route visibility and Home reset.
-- Real steady_clock adapter, 1x/2x/4x speed, pause/resume, no sleep catch-up.
-- Focus loss pauses; returning focus and closing F1 help keep the world paused.
-- Vietnamese F1 guide and presentation layout at 1440x900, min window 1100x720.
+## Bắt đầu đọc repo
 
-This presentation prototype now includes a separate economic RL lab: one learned
-merchant, six markets and seven goods. It is not a complete campaign, M1/M2/M3,
-or learned governance/civilian simulation. See docs/PLAYER-README-RL.txt.
+1. [WORK_STATUS.md](WORK_STATUS.md) — repo đang ở đâu, gate nào còn mở, bước tiếp theo.
+2. [docs/implementation-plan.md](docs/implementation-plan.md) — thiết kế đích và roadmap M0–M7.
+3. [docs/README.md](docs/README.md) — mục lục kiến trúc, hướng dẫn, thí nghiệm và báo cáo.
+4. [AGENTS.md](AGENTS.md) — các quy tắc phải giữ khi sửa code.
 
-## Pinned and tested toolchain
+## Folder tree
 
-- Godot 4.5.1 Windows official runtime.
-- godot-cpp godot-4.5-stable, commit e83fd0904c13356ed1d4c3d09f8bb9132bdc6b77.
-- CMake 4.4.4, Ninja 1.13.2, Zig 0.16.0 / Clang 21.1.0.
-- Core Release: 70/70 explicit checks, CTest 1/1.
-- Native Godot smoke: 19/19; UI integration smoke: 18/18.
-- Packaged executable also passed native and UI integration.
-- MSVC and Linux builds were not tested.
-
-Python is required only when building godot-cpp bindings. Build with CMake, Ninja
-and a configured C++20 compiler:
-
-~~~powershell
-git clone --depth 1 --branch godot-4.5-stable https://github.com/godotengine/godot-cpp third_party/godot-cpp
-.\scripts\build-windows.ps1
-.\scripts\test-native.ps1 -Godot C:\Tools\Godot\Godot_v4.5.1-stable_win64_console.exe
-.\scripts\package-windows.ps1 -Godot C:\Tools\Godot\Godot_v4.5.1-stable_win64_console.exe
+~~~text
+PolyEc/
+├── .github/workflows/       CI build và kiểm tra
+├── ai/
+│   ├── evaluation/          Báo cáo và evaluator cho policy
+│   ├── tests/               Binding, training, replay và ONNX parity
+│   └── training/            Mô hình PPO, export và runner huấn luyện
+├── artifacts/
+│   ├── models/              Checkpoint, config, evaluation và khóa nguồn theo phiên bản
+│   └── visuals/             Ảnh chart/preview được sinh từ các đợt kiểm tra
+├── bindings/python/         Cầu nối Python ↔ C++ core
+├── core/
+│   ├── include/polyec/      API và kiểu dữ liệu mô phỏng
+│   ├── src/                 Luật thế giới, kinh tế và triều đình
+│   └── tests/               Test core và replay
+├── docs/                    Plan, kiến trúc, hướng dẫn, báo cáo, mục lục
+├── gdext/                   Adapter C++ cho Godot
+├── godot_project/
+│   ├── fonts/               Font đóng gói trong game
+│   ├── models/              ONNX và manifest runtime được app nạp
+│   ├── tests/               Godot smoke tests và fixture
+│   └── *.gd, *.tscn         Màn hình, map và panel
+├── licenses/                Giấy phép third-party và asset
+├── native/
+│   ├── include/polyec/      API runtime AI native
+│   └── *.cpp                ONNX runtime, replay, benchmark, contract tests
+├── scripts/                 Build, test, train, package
+├── third_party/godot-cpp/   Dependency Godot C++ đã pin
+├── CMakeLists.txt           Build core, AI, binding và app
+├── AGENTS.md                Quy tắc làm việc trong repo
+├── README.md                Trang bắt đầu
+└── WORK_STATUS.md           Trạng thái thực tế
 ~~~
 
-build-windows.ps1 accepts -CMake, -ToolchainFile, -BuildDir and -Jobs.
-test-native.ps1 accepts -CTest. Paths to the portable tools actually used are
-in WORK_STATUS.md. Third-party notices are under licenses/.
+Thư mục build, .godot, binary sinh ra và gói phát hành không được liệt kê; chúng là output/cache. artifacts/ giữ checkpoint, manifest, evaluation và chart theo đợt; godot_project/models chỉ giữ bản ONNX/manifest mà game nạp lúc chạy. Các phiên bản model cũ được giữ để truy nguyên cả kết quả thất bại.
 
-## OpenCode
+## Cấu trúc code
 
-~~~powershell
-.\start-opencode.ps1
-~~~
+- core sở hữu world state, luật, invariant và transaction. Thay đổi trạng thái gameplay phải đi qua Action/validator.
+- bindings/python cho training/evaluation dùng đúng C++ core.
+- native chạy policy ONNX, sampling cá nhân và kiểm tra điều kiện runtime.
+- gdext chuyển dữ liệu read-only sang Godot và nhận command từ UI.
+- godot_project chứa màn hình, map, panel, model runtime assets và bài kiểm tra giao diện.
 
-This selects the project's opencode/step-5-preview-free model and uses
---pure --agent build to skip global plugins. Project instructions use PowerShell
-and sequential work. Generated code still requires review and executed checks.
-Global settings and credentials have not been changed.
+## Build và chạy
 
+Xem [hướng dẫn người chơi](docs/PLAYER-README-REALM.txt) để mở gói Windows. Cần toolchain C++/Godot để build từ source; xem [WORK_STATUS.md](WORK_STATUS.md) để biết toolchain đã dùng và [docs/README.md](docs/README.md) để tìm script theo mục đích.
 
-## Economic RL lab (2026-10-14)
+## License
 
-Open **RL · Phòng thử nghiệm**, then run a 64-decision episode or step once.
-The GRU64 actor was trained with recurrent PPO through the same C++ TradeWorld
-used by the native executable. ONNX Runtime CPU performs inference, with strict
-model hash/shape checks and no heuristic fallback.
-
-Three independent training seeds; validation selects checkpoints before test.
-On 100 new held-out worlds (30000–30099), mean profit is 2564.04 coins versus
-1839.35 for the greedy reference. Paired difference +724.69, 95% bootstrap CI
-[533.94, 928.94]. The economic-only gate passes; full R1 remains false.
-V1 failed to beat the baseline and is preserved in ai/models/economic-v1.
-V2 artifacts, histories, source hashes and checkpoints: ai/models/economic-v2.
-
-Checks: core70 + trade36546; Godot native19, UI18, RL336; ONNX parity98.
-Batch1/3/32/64 PyTorch/Python ORT/native C++ ORT agree; complete 64-step native
-replays agree. Windows portable build passes the RL smoke without Python.
-
-Build AI with scripts/build-windows.ps1 -OrtRoot <ORT-SDK>; test with
-scripts/test-native.ps1 -IncludeRL; package with scripts/package-windows.ps1
--IncludeRL. Training: scripts/build-training.ps1 and scripts/train-cpu.ps1,
-ai/requirements.txt. See docs/rl-experiment-v1.md and docs/rl-schema-v1.md for
-reward, split, action mask, scoring and baseline contracts.
-
-Fixed firm/household contracts are environment laws, not learned citizens.
-The one-million-record spike tests storage/updates only, not population agency.
-Windows validated; Linux/MSVC and full milestone gates remain outstanding.
-
-## Integrated realm / M3 evidence
-
-Open **Quốc gia · Sandbox** for the six provinces and crown, 10,000 independent
-people, and three recurrent PPO policy families. Jobs, funded payroll/relief,
-households, sparse organization funds, education, transport, credit, charter
-rights and delayed public/secret evidence use the shared C++ core. UI and AI
-commands use the same validator. Saves retain world, sampling and GRU memory.
-Twelve draft augments now have typed court actions and ledger/capacity tests.
-Appointments preserve the existing person's ID/assets and reset family memory.
-
-**M3 remains an evidence/diagnosis prototype, not a certified campaign release.**
-The v3 learned population became extinct in all eight20year co-play runs.
-Accounting passed, so it was insufficient as a quality gate. V6 corrects funded
-income, food/health incentives, bounded construction, fiscal incentives,
-authority and recurrent training/evaluation boundaries. Its final measured
-results and outstanding strategic gates belong in [M3 evidence](docs/M3-evidence.md).
-The frozen training protocol is [realm-v6](docs/realm-rl-experiment-v6.md).
-
-Standalone core CI covers GCC/Linux and MSVC/Windows; native Linux CI additionally
-builds the extension, runs source and portable smokes and captures a software
-render. Consult the linked workflow results for the exact validated revision.
-These supersede the historical platform limitations above.
+Third-party notices và license font nằm trong licenses/.

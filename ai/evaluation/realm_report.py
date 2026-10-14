@@ -125,7 +125,7 @@ thủ tục bankruptcy đầy đủ. **full_R1_pass=False** bất kể kiểm tr
 ## Tám world co-play dài hạn, giữ nguyên các kết quả xấu
 
 V3 kết thúc0 người sống ở cả8 lần20năm, dù hạch toán đúng. Đã giữ số liệu
-ai/models/realm-v3/long-sandboxes. V6 sửa thu nhập có nguồn, pro-rata payroll,
+artifacts/models/realm-v3/long-sandboxes. V6 sửa thu nhập có nguồn, pro-rata payroll,
 food/health feedback, mức hữu hạn của xây dựng/học, fiscal reward và quyền thuế;
 không diễn giải thay luật thành công trạng học của model.
 

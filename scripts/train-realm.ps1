@@ -1,8 +1,8 @@
 param(
     [string]$Python='python',
     [Parameter(Mandatory=$true)][string]$BindingDir,
-    [string]$OutputDir='ai/models/realm-v6-rerun',
-    [string]$ResumeDir='ai/models/realm-v3'
+    [string]$OutputDir='artifacts/models/realm-v6-rerun',
+    [string]$ResumeDir='artifacts/models/realm-v3'
 )
 $ErrorActionPreference='Stop'
 $repo=Split-Path -Parent $PSScriptRoot

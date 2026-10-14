@@ -1,7 +1,7 @@
 param(
     [string]$Python='python',
     [string]$BindingDir='build/training',
-    [string]$OutputDir='ai/models/economic-v1',
+    [string]$OutputDir='artifacts/models/economic-v3',
     [string]$ResumeDir='',
     [int]$Updates=240,
     [int]$Seconds=600,
@@ -15,6 +15,8 @@ $previousOMP=$env:OMP_NUM_THREADS
 $previousMKL=$env:MKL_NUM_THREADS
 Push-Location $projectRoot
 try {
+    $output=[IO.Path]::GetFullPath($OutputDir)
+    if ((Test-Path -LiteralPath $output) -and (Get-ChildItem -LiteralPath $output -Force | Select-Object -First 1)) {throw 'Choose an empty OutputDir; recorded experiments are preserved.'}
     $env:PYTHONPATH=[IO.Path]::GetFullPath($BindingDir)
     $env:OMP_NUM_THREADS='2'
     $env:MKL_NUM_THREADS='2'

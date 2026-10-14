@@ -9,7 +9,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'training'))
 from realm_model import Policy
 torch.set_num_threads(2)
 p=argparse.ArgumentParser();p.add_argument('--models',type=Path,required=True);a=p.parse_args()
-report={'schema':'realm-v3','checks':0,'families':{},'provider':'CPUExecutionProvider','absolute_tolerance':1e-5,'relative_tolerance':1e-3}
+report={'schema':'realm-v6','checks':0,'families':{},'provider':'CPUExecutionProvider','absolute_tolerance':1e-5,'relative_tolerance':1e-3}
 def check(ok,msg):
     report['checks']+=1
     if not ok:raise AssertionError(msg)

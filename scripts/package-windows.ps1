@@ -37,12 +37,13 @@ try {
             Copy-Item -LiteralPath (Join-Path 'godot_project/models' $modelFile) -Destination (Join-Path $output 'models')
         }
         if ($IncludeRealm) {
-            Copy-Item -LiteralPath 'godot_project/models/realm-v1' -Destination (Join-Path $output 'models') -Recurse
+            Copy-Item -LiteralPath 'godot_project/models/realm-v6' -Destination (Join-Path $output 'models') -Recurse
         }
     }
     Copy-Item -Path 'licenses/*' -Destination (Join-Path $output 'licenses')
     $playerReadme=if ($IncludeRealm) {'docs/PLAYER-README-REALM.txt'} elseif ($IncludeRL) {'docs/PLAYER-README-RL.txt'} else {'docs/PLAYER-README.txt'}
     Copy-Item -LiteralPath $playerReadme -Destination (Join-Path $output 'READ-ME.txt')
+    if ($IncludeRealm -and (Test-Path docs/M3-evidence.md)) {Copy-Item docs/M3-evidence.md (Join-Path $output "BUILD-REPORT.md")}
     Write-Host "Portable app ready: $output/PolyEc.exe"
 }
 finally { Pop-Location }

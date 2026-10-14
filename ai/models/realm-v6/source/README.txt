@@ -1,0 +1,1 @@
+These are the six frozen training input files. SOURCE-LOCK.json records original Windows bytes; Git normalizes line endings. SOURCE-LOCK-LF.json validates canonical LF checkouts. The later production-only offers accessor and native commit guards are described in docs/realm-rl-experiment-v6.md. No training law was changed after freeze.

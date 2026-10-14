@@ -19,8 +19,15 @@ if(POLYEC_BUILD_AI)
   target_link_libraries(polyec_realm_replay PRIVATE polyec_ai)
   add_executable(polyec_realm_benchmark native/realm_benchmark.cpp)
   target_link_libraries(polyec_realm_benchmark PRIVATE polyec_ai)
+  add_executable(polyec_realm_contracts native/realm_contracts.cpp)
+  target_link_libraries(polyec_realm_contracts PRIVATE polyec_ai)
+  add_test(NAME runtime_contracts COMMAND polyec_realm_contracts
+    "${CMAKE_SOURCE_DIR}/godot_project/models/realm-v6/governance/governance.onnx"
+    "${CMAKE_SOURCE_DIR}/godot_project/models/realm-v6/economic/economic.onnx"
+    "${CMAKE_SOURCE_DIR}/godot_project/models/realm-v6/civilian/civilian.onnx"
+    contract-test-v6 "${CMAKE_BINARY_DIR}/runtime-contracts.polyec")
   if(WIN32)
-    foreach(ai_executable polyec_rl_replay polyec_realm_replay polyec_realm_benchmark)
+    foreach(ai_executable polyec_rl_replay polyec_realm_replay polyec_realm_benchmark polyec_realm_contracts)
       add_custom_command(TARGET ${ai_executable} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ORT_ROOT}/lib/onnxruntime.dll" "$<TARGET_FILE_DIR:${ai_executable}>/onnxruntime.dll"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ORT_ROOT}/lib/onnxruntime_providers_shared.dll" "$<TARGET_FILE_DIR:${ai_executable}>/onnxruntime_providers_shared.dll")

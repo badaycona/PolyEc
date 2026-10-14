@@ -1,0 +1,27 @@
+{
+  "seed": 1,
+  "training": [
+    {
+      "seed": 1,
+      "best_validation_profit": 2.7624173164367676,
+      "seconds": 243.91737210000065,
+      "decisions": 280576,
+      "peak_rss_bytes": 439959552
+    },
+    {
+      "seed": 2,
+      "best_validation_profit": 2.7530176639556885,
+      "seconds": 243.40732819999903,
+      "decisions": 270336,
+      "peak_rss_bytes": 439959552
+    },
+    {
+      "seed": 3,
+      "best_validation_profit": 2.747565507888794,
+      "seconds": 243.1797235999984,
+      "decisions": 274432,
+      "peak_rss_bytes": 439959552
+    }
+  ],
+  "selection": "validation only"
+}

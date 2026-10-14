@@ -133,3 +133,18 @@ implemented below. These do not close the full cross-platform M0b gate.
 - V2 fresh training underway after funded tax/aid fixes; new untouched test set.
 - Several augment effects, deep political conflict and stat strategy validation
   remain incomplete. Do not mark complete M1/M2/M3 release gates from this log.
+
+## Long-run quality failure found before delivery
+V3 eight20-year co-play runs preserved under ai/models/realm-v3/long-sandboxes.
+Accounting passed, but all runs ended with zero living people. This is NOT a
+successful self-sustaining economy or completed M3. Investigating missing funded
+role incomes, unfair cash-constrained payroll and fiscal reward scale. A new
+environment/version and untouched test split are required before a new claim.
+
+## V6 implementation and checks
+Twelve typed court primitives and funded family/role mechanics implemented.
+All9PPO fits completed:2,625,536 decisions. Local CTest5/5; core70,trade36546,
+realm24980,court168,runtime37. Binding258/training476, ONNX489, Godot19/18/336/411.
+Native viewport reviewed1440x900/min1100x720; portable same four smokes pass.
+Categorical audit retains failed full R1/R2/R3. Eight20year native holdouts are
+running; first two alive11516/11525, versus v3 extinction. Full evidence pending.

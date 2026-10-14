@@ -20,4 +20,4 @@ state=w.serialize('binding-check');fingerprint=w.fingerprint();assert not w.dese
 t=time.perf_counter()
 for _ in range(64):batch.step(np.zeros(32,dtype='int64'))
 elapsed=time.perf_counter()-t
-print(json.dumps({'checks':checks,'cpp_python_replay_days':64,'invalid_batch_atomic':True,'bundle_mismatch_atomic':True,'decisions':2048,'seconds':elapsed,'decisions_per_second':2048/elapsed,'schema':'realm-v3','scope':'training binding world/partner steps, no neural inference'}))
+print(json.dumps({'checks':checks,'cpp_python_replay_days':64,'invalid_batch_atomic':True,'bundle_mismatch_atomic':True,'decisions':2048,'seconds':elapsed,'decisions_per_second':2048/elapsed,'schema':core.REALM_SCHEMA,'scope':'training binding world/partner steps, no neural inference'}))

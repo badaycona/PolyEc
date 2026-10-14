@@ -1,0 +1,40 @@
+{
+  "warm_start": "D:\\Code\\PolyEc\\ai\\models\\realm-v3\\governance",
+  "imitation": false,
+  "family": "governance",
+  "schema": "realm-v5",
+  "reward": "actor-utility-delta-v5",
+  "partners": "labelled dev work/study baseline, not release AI",
+  "algorithm": "recurrent PPO gamma1 GAE.95",
+  "lr": 0.0003,
+  "optimizer": "Adam eps1e-5 reset on warm start",
+  "clip": 0.2,
+  "epochs": 3,
+  "entropy_coef": 0.01,
+  "rollout_steps": 64,
+  "bptt_steps": 16,
+  "envs": 32,
+  "torch": "2.13.0+cpu",
+  "metric": "terminal utility minus opening utility",
+  "horizon_decisions": 128,
+  "world_workers": 4,
+  "normalization_scale": 10,
+  "seeds": [
+    1,
+    2,
+    3
+  ],
+  "train_seed_min": 4294967296,
+  "validation": [
+    12000,
+    12031
+  ],
+  "test": [
+    130000,
+    130099
+  ],
+  "budget_seconds_per_seed": 180,
+  "updates": 240,
+  "decision_days": 30,
+  "gate": "baseline noninferiority margin5 utility; initial improvement CI lower>0; remaining R2/R3 separate"
+}

@@ -14,9 +14,14 @@ func run() -> void:
     app.realm_panel.refresh()
     await process_frame
     await RenderingServer.frame_post_draw
-    var path="C:/Users/Admin/Documents/Codex/2026-10-14/d-code-polyec-ch-y-opencode/work/realm-preview.png"
+    var path="user://realm-preview.png"
     for arg in OS.get_cmdline_user_args():
         if arg.begins_with("--capture-file="): path=arg.trim_prefix("--capture-file=")
-    root.get_texture().get_image().save_png(path)
+    var image=root.get_texture().get_image()
+    var error=image.save_png(path)
+    if error!=OK:
+        push_error("Capture save failed: "+str(error))
+        quit(1)
+        return
     print("REALM CAPTURE: ",path)
     quit(0)

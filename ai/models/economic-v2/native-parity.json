@@ -17,7 +17,7 @@
   "max_abs_memory_error": 4.470348358154297e-07,
   "masked_invalid_probability": 0,
   "native_rollout_steps_matched": 64,
-  "native_batch32_latency_ms_p50": 0.14400000054592965,
-  "native_batch32_latency_ms_p95": 0.1475500007472874,
+  "native_batch32_latency_ms_p50": 0.14984999961598078,
+  "native_batch32_latency_ms_p95": 0.15804500062586158,
   "model_sha256": "3e41ce286bbfd0ea9aa6a147f51e66873317ccb8fb5c60ab77a05eeb9c88c7ae"
 }

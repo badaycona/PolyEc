@@ -1,0 +1,1 @@
+{"checks": 258, "cpp_python_replay_days": 64, "invalid_batch_atomic": true, "bundle_mismatch_atomic": true, "decisions": 2048, "seconds": 0.502654199999597, "decisions_per_second": 4074.3716057712077, "schema": "realm-v3", "scope": "training binding world/partner steps, no neural inference"}

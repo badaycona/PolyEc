@@ -9,6 +9,7 @@ add_library(polyec_core STATIC
   src/sim.cpp
   src/trade.cpp
   src/realm.cpp
+  src/realm_court.cpp
 )
 
 target_include_directories(polyec_core PUBLIC
@@ -34,3 +35,7 @@ target_link_libraries(polyec_realm_tests PRIVATE polyec_core)
 add_test(NAME realm_tests COMMAND polyec_realm_tests)
 add_executable(polyec_realm_transition_replay tests/realm_transition_replay.cpp)
 target_link_libraries(polyec_realm_transition_replay PRIVATE polyec_core)
+
+add_executable(polyec_court_tests tests/test_realm_court.cpp)
+target_link_libraries(polyec_court_tests PRIVATE polyec_core)
+add_test(NAME court_tests COMMAND polyec_court_tests)

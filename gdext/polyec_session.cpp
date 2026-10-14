@@ -38,10 +38,11 @@ protected:
         ClassDB::bind_method(D_METHOD("rl_load", "path", "sha256", "seed"), &PolyEcSession::rl_load);
         ClassDB::bind_method(D_METHOD("rl_step"), &PolyEcSession::rl_step);
         ClassDB::bind_method(D_METHOD("rl_snapshot"), &PolyEcSession::rl_snapshot);
+        ClassDB::bind_method(D_METHOD("realm_schema"), &PolyEcSession::realm_schema);
         ClassDB::bind_method(D_METHOD("realm_load", "paths", "hashes", "seed", "population"), &PolyEcSession::realm_load);
         ClassDB::bind_method(D_METHOD("realm_step", "days"), &PolyEcSession::realm_step);
         ClassDB::bind_method(D_METHOD("realm_snapshot", "actor"), &PolyEcSession::realm_snapshot,DEFVAL(int64_t(1)));
-        ClassDB::bind_method(D_METHOD("realm_command", "actor", "action"), &PolyEcSession::realm_command);
+        ClassDB::bind_method(D_METHOD("realm_command", "actor", "action", "expected"), &PolyEcSession::realm_command,DEFVAL(String()));
         ClassDB::bind_method(D_METHOD("realm_draft", "card", "reroll"), &PolyEcSession::realm_draft);
         ClassDB::bind_method(D_METHOD("realm_save", "path", "restore"), &PolyEcSession::realm_save);
         ClassDB::bind_method(D_METHOD("realm_route", "actor", "from", "to", "open"), &PolyEcSession::realm_route);
@@ -56,6 +57,7 @@ public:
 #endif
     }
 #ifdef POLYEC_AI_ENABLED
+    String realm_schema()const{return polyec::realm_schema;}
     bool realm_load(const Array&paths,const Array&hashes,int64_t seed,int64_t population){
         controller.set_paused(true);anchor=Clock::now();
         if(paths.size()!=3||hashes.size()!=3||population<128||population>100000){realm.stop("Invalid model bundle/profile");return false;}
@@ -64,7 +66,7 @@ public:
         return realm.load_models(names,bundle,uint64_t(seed),int(population));
     }
     bool realm_step(int64_t days){if(!active||days<1||days>30)return false;return realm.advance(int(days));}
-    bool realm_command(int64_t actor,int64_t action){if(!active)return false;return realm.command(uint64_t(actor),int(action));}
+    bool realm_command(int64_t actor,int64_t action,const String&expected=String()){if(!active)return false;return realm.command(uint64_t(actor),int(action),expected.utf8().get_data());}
     bool realm_route(int64_t actor,int64_t from,int64_t to,bool open){return active&&realm.route(uint64_t(actor),int(from),int(to),open);}
     bool realm_draft(int64_t card,bool reroll){return reroll?realm.reroll(int(card)):realm.choose(int(card));}
     bool realm_save(const String&path,bool restore){return restore?realm.restore(path.utf8().get_data()):realm.save(path.utf8().get_data());}
@@ -74,10 +76,10 @@ public:
         d["day"]=v.day;d["persons"]=int64_t(v.persons);d["alive"]=int64_t(v.alive);d["children"]=int64_t(v.children);d["decisions"]=int64_t(v.decisions);d["money"]=v.money;d["invariant"]=w->invariant();d["fingerprint"]=String::num_uint64(w->fingerprint());d["inferences"]=int64_t(realm.inference_count());d["inference_ms"]=realm.inference_ms();
         Array cards;for(int c:v.draft.cards)cards.push_back(c);d["cards"]=cards;d["chosen"]=v.draft.chosen;d["tier"]=v.draft.tier;d["rerolled"]=v.draft.rerolled;
         Array regions;for(auto&p:v.provinces){Dictionary r;r["treasury"]=p.treasury;r["firm"]=p.firm;r["unrest"]=p.unrest;r["road"]=p.road;r["jobs"]=p.jobs;r["workers"]=p.employed;r["school"]=p.school;r["students"]=p.school_used;r["tax"]=p.tax;Array prices,stock;for(int g=0;g<7;++g){prices.push_back(p.price[g]);stock.push_back(p.stock[g]);}r["prices"]=prices;r["stock"]=stock;regions.push_back(r);}d["regions"]=regions;
-        auto&p=w->person(actor);Dictionary person;person["id"]=actor;person["age"]=p.age_days/365;person["role"]=int(p.family);person["cash"]=p.cash;person["region"]=p.region;person["health"]=p.health;person["skill"]=p.skill;person["goal"]=p.goal;person["alive"]=p.alive;person["debt"]=w->debt(actor);person["decisions"]=int64_t(p.decisions);person["household"]=int64_t(p.household);Array stats;for(int x:p.stats.values)stats.push_back(x);person["stats"]=stats;d["person"]=person;
+        auto&p=w->person(actor);Dictionary person;person["id"]=actor;person["age"]=p.age_days/365;person["role"]=int(p.family);person["cash"]=p.cash;person["region"]=p.region;person["health"]=p.health;person["nutrition"]=p.nutrition;person["authority"]=p.taxing_authority;person["office"]=p.office;person["candidate"]=p.candidate;person["job_kind"]=p.job_kind;person["skill"]=p.skill;person["goal"]=p.goal;person["alive"]=p.alive;person["debt"]=w->debt(actor);person["decisions"]=int64_t(p.decisions);person["household"]=int64_t(p.household);Array stats;for(int x:p.stats.values)stats.push_back(x);person["stats"]=stats;d["person"]=person;
         Array actions;auto cs=w->candidates(actor);auto ms=w->mask(actor);for(int a=0;a<polyec::realm_actions;++a)if(a==0||cs[a].kind!=polyec::Intent::Hold){Dictionary c;c["index"]=a;c["legal"]=ms[a]>.5f;c["name"]=String::utf8(polyec::Realm::action_name(cs[a]).c_str());c["target"]=cs[a].target;c["good"]=cs[a].good;c["amount"]=cs[a].amount;c["term"]=cs[a].term;actions.push_back(c);}d["actions"]=actions;
         Array facts;int start=std::max(0,int(v.facts.size())-40);for(int i=start;i<int(v.facts.size());++i){auto&f=v.facts[i];Dictionary x;x["id"]=int64_t(f.id);x["parent"]=int64_t(f.parent);x["actor"]=int64_t(f.actor);x["target"]=int64_t(f.target);x["day"]=f.day;x["region"]=f.region;x["kind"]=f.kind;x["amount"]=f.amount;facts.push_back(x);}d["facts"]=facts;
-        d["loans"]=int(w->loans().size());d["projects"]=int(w->projects().size());d["edges"]=int(w->relations().size());return d;
+        Array offers;for(auto&o:w->offers(actor)){Dictionary offer;offer["id"]=int64_t(o.id);offer["from"]=int64_t(o.from);offer["to"]=int64_t(o.to);offer["kind"]=o.kind;offer["amount"]=o.amount;offer["due"]=o.due;offers.push_back(offer);}d["offers"]=offers;auto funds=w->royal_funds();d["credit_pool"]=funds[0];d["restricted_fund"]=funds[1];d["royal_reference"]=w->royal_reference();d["schema"]=String(polyec::realm_schema);d["loans"]=int(w->loans().size());d["projects"]=int(w->projects().size());d["edges"]=int(w->relations().size());return d;
     }
     bool rl_load(const String& path,const String& sha256,int64_t seed) {
         controller.set_paused(true);

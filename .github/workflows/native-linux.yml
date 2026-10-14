@@ -39,17 +39,36 @@ jobs:
             ! grep -E '^(SCRIPT ERROR:|ERROR:)' "work/$smoke.log"
             grep -E 'SMOKE: [0-9]+/[0-9]+ checks passed' "work/$smoke.log"
           done
-          if [[ -d godot_project/models/realm-v3 ]]; then
-            python3 ai/tests/make_realm_fixture.py --models godot_project/models/realm-v3 --native-replay build/linux/polyec_realm_replay --output godot_project/tests/realm_expected.json
+          if [[ -d godot_project/models/realm-v6 ]]; then
+            python3 ai/tests/make_realm_fixture.py --models godot_project/models/realm-v6 --native-replay build/linux/polyec_realm_replay --output godot_project/tests/realm_expected.json
             "$godot" --headless --path godot_project --script res://tests/realm_smoke.gd > work/realm_smoke.log 2>&1
             cat work/realm_smoke.log
             ! grep -E '^(SCRIPT ERROR:|ERROR:)' work/realm_smoke.log
             grep -E 'SMOKE: [0-9]+/[0-9]+ checks passed' work/realm_smoke.log
           fi
       - name: Portable package
+        shell: bash
         run: |
+          set -euo pipefail
           bash scripts/package-linux.sh work/Godot_v4.5.1-stable_linux.x86_64 dist/PolyEc-Linux
-          ./dist/PolyEc-Linux/PolyEc --headless --script "$PWD/godot_project/tests/native_smoke.gd"
+          ./dist/PolyEc-Linux/PolyEc --headless --script "$PWD/godot_project/tests/native_smoke.gd" > work/package-native.log 2>&1
+          cat work/package-native.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' work/package-native.log
+          grep -E 'SMOKE: [0-9]+/[0-9]+ checks passed' work/package-native.log
+          ./dist/PolyEc-Linux/PolyEc --headless --script "$PWD/godot_project/tests/rl_smoke.gd" -- --fixture-file="$PWD/godot_project/tests/rl_expected.json" > work/package-rl.log 2>&1
+          cat work/package-rl.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' work/package-rl.log
+          grep -E 'SMOKE: [0-9]+/[0-9]+ checks passed' work/package-rl.log
+          if [[ -d godot_project/models/realm-v6 ]]; then
+            ./dist/PolyEc-Linux/PolyEc --headless --script "$PWD/godot_project/tests/realm_smoke.gd" -- --fixture-file="$PWD/godot_project/tests/realm_expected.json" > work/package-realm.log 2>&1
+            cat work/package-realm.log
+            ! grep -E 'SCRIPT ERROR:|ERROR:' work/package-realm.log
+            grep -E 'SMOKE: [0-9]+/[0-9]+ checks passed' work/package-realm.log
+            LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a ./dist/PolyEc-Linux/PolyEc --script "$PWD/godot_project/tests/realm_capture.gd" -- --capture-file="$PWD/work/Linux-preview.png" > work/render.log 2>&1
+            cat work/render.log
+            ! grep -E 'SCRIPT ERROR:|ERROR:' work/render.log
+            test -s work/Linux-preview.png
+          fi
           tar -czf dist/PolyEc-Linux.tar.gz -C dist PolyEc-Linux
       - name: Upload Linux package and logs
         if: always()
@@ -59,3 +78,4 @@ jobs:
           path: |
             dist/PolyEc-Linux.tar.gz
             work/*.log
+            work/*.png

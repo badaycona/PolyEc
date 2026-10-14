@@ -88,21 +88,25 @@ Fixed firm/household contracts are environment laws, not learned citizens.
 The one-million-record spike tests storage/updates only, not population agency.
 Windows validated; Linux/MSVC and full milestone gates remain outstanding.
 
-## Integrated realm / M3 experiments
+## Integrated realm / M3 evidence
 
-The **Quốc gia · Sandbox** panel runs an integrated six-province/crown world
-with 10,000 people and 128 complex actors, funded jobs, education, travel, loans,
-projects, charters and filtered facts. Three ONNX policy families share weights
-and keep private recurrent memory and deterministic sampling counters. Save
-persists world, RNG and policy memory; mismatched/corrupt loads are atomic.
+Open **Quốc gia · Sandbox** for the six provinces and crown, 10,000 independent
+people, and three recurrent PPO policy families. Jobs, funded payroll/relief,
+households, sparse organization funds, education, transport, credit, charter
+rights and delayed public/secret evidence use the shared C++ core. UI and AI
+commands use the same validator. Saves retain world, sampling and GRU memory.
+Twelve draft augments now have typed court actions and ledger/capacity tests.
+Appointments preserve the existing person's ID/assets and reset family memory.
 
-This is experimental progress toward M1–M3, not a completed release gate. The
-first governance run did not improve over initial weights. A regression also
-identified expired wage contracts being renewed by starting school; this was
-fixed and new training/evaluation is required. History stays in ai/models.
-Remaining gaps include complete political negotiation, household resource
-sharing, full augment semantics and multistep INT reasoning evidence.
+**M3 remains an evidence/diagnosis prototype, not a certified campaign release.**
+The v3 learned population became extinct in all eight20year co-play runs.
+Accounting passed, so it was insufficient as a quality gate. V6 corrects funded
+income, food/health incentives, bounded construction, fiscal incentives,
+authority and recurrent training/evaluation boundaries. Its final measured
+results and outstanding strategic gates belong in [M3 evidence](docs/M3-evidence.md).
+The frozen training protocol is [realm-v6](docs/realm-rl-experiment-v6.md).
 
-Core CI covers Linux/GCC and Windows/MSVC. Local native app validation remains
-Windows only. Packaging and test scripts accept -IncludeRealm. See WORK_STATUS.md
-and docs/realm-rl-experiment-v1.md, v2 for precise evidence and limits.
+Standalone core CI covers GCC/Linux and MSVC/Windows; native Linux CI additionally
+builds the extension, runs source and portable smokes and captures a software
+render. Consult the linked workflow results for the exact validated revision.
+These supersede the historical platform limitations above.

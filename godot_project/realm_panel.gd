@@ -2,13 +2,14 @@ extends Control
 
 const NAMES=["Thanh Điền","Hắc Sơn","Bạch Khâu","Thiết Lĩnh","Lâm Giang","Vân Hải","Đất triều đình"]
 const CARDS=["Sổ Bộ Chuẩn Mực","Lò Đào Tạo Hoàng Gia","Người Đứng Giữa","Kho Thóc Tiền Triều","Liên Minh Công Thương","Đoàn Công Trình Hoàng Gia","Môn Sinh Khắp Chốn","Mạng Lưới Thư Trạm","Ngân Quỹ Kiến Quốc","Hiến Ước Liên Lãnh","Học Viện Bách Nghệ","Hội Đồng Khai Quốc"]
-const ACTION_NAMES=["Chờ","Mua","Bán","Vận tải","Vay","Trả nợ","Dự án","Tuyển dụng","Thuế","Cứu trợ","Điều tra","Đề nghị","Chấp thuận","Từ chối","Làm việc","Học","Nghỉ","Giao lưu","Tham gia hội","Di cư","Giúp gia đình","Bổ nhiệm","Huy động"]
+const ACTION_NAMES=["Chờ","Mua","Bán","Vận tải","Vay","Trả nợ","Dự án","Tuyển dụng","Thuế","Cứu trợ","Điều tra","Đề nghị","Chấp thuận","Từ chối","Làm việc","Học","Nghỉ","Giao lưu","Tham gia hội","Di cư","Giúp gia đình","Bổ nhiệm","Huy động","Từ chức"]
 const GOODS=["lương thực","xơ sợi","vải","sắt","nhiên liệu","công cụ","ngựa"]
 var session: RefCounted
 var running=false
 var actor=1
 var status: Label
 var summary: Label
+var funds_label: Label
 var region_rows: Array=[]
 var id_input: SpinBox
 var profile: RichTextLabel
@@ -75,6 +76,7 @@ func _ready() -> void:
     var back=button(self,"←  Về địa đồ",func(): running=false;hide();session.command("pause"))
     back.position=Vector2(1220,30)
     back.size.x=185
+    funds_label=label_at(self,"",11,Vector2(32,121),Color("91a7a4"))
     summary=label_at(self,"",15,Vector2(32,142))
     var regions=panel(Vector2(24,184),Vector2(880,265))
     var table=GridContainer.new()
@@ -104,7 +106,7 @@ func _ready() -> void:
     id_input.size=Vector2(170,38)
     id_input.value_changed.connect(func(value): actor=int(value);refresh())
     inspector.add_child(id_input)
-    label_at(inspector,"ID 1–64: cai trị · 65–128: kinh tế",11,Vector2(208,53))
+    label_at(inspector,"ID khởi đầu 1–64 cai trị · 65–128 kinh tế",11,Vector2(208,53))
     profile=RichTextLabel.new()
     profile.position=Vector2(20,96)
     profile.size=Vector2(450,160)
@@ -143,16 +145,19 @@ func _ready() -> void:
     timer.timeout.connect(func(): if running: step_day())
     add_child(timer)
     timer.start()
+    if not session.has_method("realm_schema") or session.realm_schema()!="realm-v6":
+        status.text="Native core không khớp realm-v6; cần build đúng bundle"
+        return
     var paths=[]
     var hashes=[]
     for family in ["governance","economic","civilian"]:
-        var root=ProjectSettings.globalize_path("res://models/realm-v3/"+family+"/")
+        var root=ProjectSettings.globalize_path("res://models/realm-v6/"+family+"/")
         var f=FileAccess.open(root+"manifest.json",FileAccess.READ)
         if f==null:
             status.text="Chưa có bundle "+family
             return
         var manifest=JSON.parse_string(f.get_as_text())
-        if not manifest is Dictionary or manifest.get("schema","")!="realm-v3":
+        if not manifest is Dictionary or manifest.get("schema","")!="realm-v6":
             status.text="Sai schema policy "+family
             return
         paths.append(root+family+".onnx")
@@ -175,19 +180,34 @@ func refresh() -> void:
         var region=v.regions[r]
         var cells=[NAMES[r],"%d đ" % region.treasury,str(region.stock[0]),"%d / %d" % [region.workers,region.jobs],"%d / %d" % [region.students,region.school],str(region.road)]
         for col in range(6): region_rows[r][col].text=cells[col]
+    funds_label.visible=v.chosen>=0
+    if v.chosen>=0:
+        funds_label.text="%s · Quỹ tín dụng %d đ · Quỹ hạ tầng %d đ" % [CARDS[v.chosen],v.credit_pool,v.restricted_fund]
     var p=v.person
     id_input.set_value_no_signal(actor)
-    profile.text="Cá thể #%d · %d tuổi · %s\n%s · %s\nTiền %d đ · Nợ %d đ · Sức khỏe %d · Kỹ năng %d\nINT/ADM/ECO/DIP/INTG/MIL: %s\nGia đình #%d · Quyết định %d · Goal %d" % [p.id,p.age,["Cai trị","Kinh tế","Cư dân"][p.role],NAMES[p.region],"Còn sống" if p.alive else "Đã mất",p.cash,p.debt,p.health,p.skill,str(p.stats),p.household,p.decisions,p.goal]
+    var role_text=["Cai trị","Kinh tế","Cư dân"][p.role]
+    if p.role==0: role_text="Lãnh chủ · quyền thuế" if p.authority else "Cố vấn"
+    if p.candidate: role_text+=" · Ứng tuyển"
+    profile.text="Cá thể #%d · %d tuổi · %s\n%s · %s\nTiền %d · Nợ %d · Sức khỏe %d\nDinh dưỡng %d · Kỹ năng %d\nINT/ADM/ECO/DIP/INTG/MIL: %s\nGia đình #%d · Quyết định %d · Goal %d" % [p.id,p.age,role_text,NAMES[p.region],"Còn sống" if p.alive else "Đã mất",p.cash,p.debt,p.health,p.nutrition,p.skill,str(p.stats),p.household,p.decisions,p.goal]
     for child in commands.get_children(): commands.remove_child(child);child.queue_free()
     for a in v.actions:
         var text="%s → %s · %d đv · %d ngày" % [a.name,str(a.target),a.amount,a.term]
-        if a.index>=1 and a.index<=14 and p.role==1: text="%s %s · %d đơn vị" % [a.name,GOODS[a.good],a.amount]
+        if a.name in ["Mua","Bán"]: text="%s %s · %d đơn vị" % [a.name,GOODS[a.good],a.amount]
+        elif a.name=="Dự án": text="%s · %d đ · %d ngày cơ sở" % [["Xây đường","Xây trường","Đào tạo nghề","Đào tạo giáo viên"][a.good],a.amount,a.term]
+        elif a.name=="Làm việc": text="Làm việc tại %s · %d ngày" % [NAMES[a.target],a.term]
+        elif a.name=="Bổ nhiệm": text="Bổ nhiệm ứng viên tiếp theo · 20 đ/tháng"
+        elif a.name in ["Chấp thuận","Từ chối"]:
+            text="%s hồ sơ #%d" % [a.name,a.target]
+            for offer in v.offers:
+                if offer.id==a.target:
+                    text+=" · đóng %d đ + vật tư" % offer.amount if offer.kind==2 else " · nhận %d đ" % offer.amount
+                    break
         var action_index=int(a.index)
-        var b=button(commands,text,func(): running=false;var ok=session.realm_command(actor,action_index);feedback.text="Đã thực hiện lệnh" if ok else str(session.realm_snapshot(actor).get("error","Lệnh bị từ chối"));refresh())
+        var b=button(commands,text,func(): running=false;var ok=session.realm_command(actor,action_index,str(v.fingerprint));feedback.text="Đã thực hiện lệnh" if ok else str(session.realm_snapshot(actor).get("error","Lệnh bị từ chối"));refresh())
         b.disabled=not a.legal
     facts.clear()
     for f in v.facts:
-        var name_value=ACTION_NAMES[f.kind] if f.kind<ACTION_NAMES.size() else {100:"Qua đời",101:"Trưởng thành",102:"Thiếu lương thực",103:"Nợ đến hạn",104:"Đề nghị hết hạn",105:"Sinh ra",106:"Augment mở sổ"}.get(int(f.kind),"Sự việc")
+        var name_value=ACTION_NAMES[f.kind] if f.kind<ACTION_NAMES.size() else {100:"Qua đời",101:"Trưởng thành",102:"Thiếu lương thực",103:"Nợ đến hạn",104:"Đề nghị hết hạn",105:"Sinh ra",106:"Augment mở sổ",107:"Đóng/mở tuyến",108:"Báo cáo kho",109:"Kết thúc điều tra",110:"Hết ngân sách lương"}.get(int(f.kind),"Sự việc")
         facts.append_text("Ngày %d · #%d  %s · %s · %d\n" % [f.day,f.actor,name_value,NAMES[f.region],f.amount])
     draft_box.visible=v.chosen<0
     summary.visible=v.chosen>=0

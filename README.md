@@ -6,7 +6,7 @@ PolyEc đang được xây thành game desktop mô phỏng cai trị một quố
 
 Repo hiện ở **M3: sandbox mô phỏng và tích hợp ba họ policy RL**. Mở godot_project bằng bản portable trong gói phát hành, rồi chọn **Quốc gia · Sandbox**. Đây là bản để kiểm tra cơ chế; chưa phải campaign hoàn chỉnh một đời vua.
 
-M3 đã có sáu lãnh địa, đất triều đình, 10.000 người, mô phỏng kinh tế/chính trị cơ bản, draft augment triều đình và suy luận ONNX CPU. Các kiểm tra build, runtime và UI đã chạy trên Windows/Linux. Chất lượng policy còn thiếu: R1/R2/R3 chưa đạt đầy đủ. Xem [trạng thái hiện tại](WORK_STATUS.md) và [báo cáo M3](docs/M3-evidence.md) trước khi diễn giải kết quả.
+M3 đã có sáu lãnh địa, đất triều đình, 10.000 người, mô phỏng kinh tế/chính trị cơ bản, draft augment triều đình và suy luận ONNX CPU. Các model hiện tại là pilot; quality gates sẽ được chạy lại sau khi luật và feature world hoàn tất ở M6. Xem [trạng thái hiện tại](WORK_STATUS.md) và [báo cáo M3](docs/M3-evidence.md) để phân biệt kết quả pilot với model production.
 
 ## Bắt đầu đọc repo
 

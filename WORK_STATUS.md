@@ -20,7 +20,7 @@ Training records nằm ở artifacts/models; ảnh evidence nằm ở artifacts/
 
 ## Việc tiếp theo
 
-Theo plan, mốc sản phẩm tiếp theo là **M4 vertical slice native**: người chơi theo dõi một vấn đề phát sinh, ra quyết định qua dự án/thương lượng, và thấy kết quả trên bản đồ cùng sổ sách. Để tuyên bố NPC RL đạt chất lượng, cần đóng các gate R1–R3 bằng thí nghiệm holdout mới. Tiếp đó M5 mới mở rộng lên 24 chư hầu/3 khu triều đình, 16 nhóm hàng và profile B 100.000 người.
+Theo plan cập nhật, bước tiếp theo là **M4 vertical slice native**: người chơi xử lý trọn một vấn đề phát sinh và thấy hệ quả trên bản đồ/sổ sách. Sau đó M5–M6 hoàn thiện luật và world đích rồi đóng băng action/observation/reward. Các model realm-v1–v6 là pilot để chẩn đoán pipeline; đợt production training và quality gates R1–R5 được đặt sau feature freeze ở M7. Trước đó chỉ giữ smoke training nhỏ cho tích hợp.
 
 ## Các lệnh thường dùng
 

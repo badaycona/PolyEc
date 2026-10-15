@@ -13,6 +13,8 @@ README.md ở repo root là điểm bắt đầu. WORK_STATUS.md ghi trạng th�
 ## Thiết kế và kiến trúc
 
 - [Implementation plan](implementation-plan.md): mục tiêu sản phẩm, roadmap M0–M7 và gates.
+- [Ranh giới độ phức tạp simulation](simulation-complexity-scope.md): điểm tiếp tục thảo luận về độ sâu cá nhân, kinh tế, quan hệ và thiết chế; phân biệt với số vùng/dân, chưa phải toàn bộ scope đã duyệt.
+- [Nghiên cứu nền xã hội cuối Trung cổ](late-medieval-world-design-discussion.md): khoảng trống code, nghề/giai cấp, hôn nhân/thừa kế, kiến trúc quy mô lớn và nguồn tham khảo.
 - [Realm domain](realm-domain.md): domain model.
 - [OpenCode handoff](opencode-handoff.md): workflow lịch sử để giao việc coding agent.
 
@@ -35,6 +37,8 @@ README.md ở repo root là điểm bắt đầu. WORK_STATUS.md ghi trạng th�
 ~~~text
 docs/
 ├── implementation-plan.md   Thiết kế đích và roadmap
+├── simulation-complexity-scope.md  Ranh giới độ sâu và điểm tiếp tục thảo luận
+├── late-medieval-world-design-discussion.md  Nghiên cứu xã hội và quy mô
 ├── M3-evidence.md           Báo cáo kết quả/gate M3
 ├── realm-domain.md          Domain model
 ├── realm-rl-experiment-v1…v6.md

@@ -20,6 +20,8 @@ Training records nằm ở artifacts/models; ảnh evidence nằm ở artifacts/
 
 ## Việc tiếp theo
 
+Trao đổi ngày 2026-10-15: người dùng yêu cầu **làm rõ độ phức tạp simulation trước khi thực hiện tiếp**, chọn hướng xã hội cuối Trung cổ với quý tộc, thành thị, phường hội và tín dụng. Đọc [ranh giới độ sâu và điểm tiếp tục](docs/simulation-complexity-scope.md) cùng [nghiên cứu nền xã hội](docs/late-medieval-world-design-discussion.md) trước khi mở rộng gameplay. Các tài liệu này là đề xuất thảo luận, chưa phải toàn bộ spec đã duyệt; không coi đề xuất sáu vùng/10.000 người trong trao đổi là quyết định giảm scope sản phẩm. Chưa triển khai luật mới hoặc có benchmark mới từ trao đổi này.
+
 Theo plan cập nhật, bước tiếp theo là **M4 vertical slice native**: người chơi xử lý trọn một vấn đề phát sinh và thấy hệ quả trên bản đồ/sổ sách. Sau đó M5–M6 hoàn thiện luật và world đích rồi đóng băng action/observation/reward. Các model realm-v1–v6 là pilot để chẩn đoán pipeline; đợt production training và quality gates R1–R5 được đặt sau feature freeze ở M7. Trước đó chỉ giữ smoke training nhỏ cho tích hợp.
 
 ## Các lệnh thường dùng

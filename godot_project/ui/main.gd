@@ -1,8 +1,9 @@
 extends Control
 
-const MapCanvas = preload("res://map_canvas.gd")
-const RLLab = preload("res://rl_lab.gd")
-const RealmPanel = preload("res://realm_panel.gd")
+const MapCanvas = preload("res://ui/prototype/map_canvas.gd")
+const RLLab = preload("res://ui/labs/rl_lab.gd")
+const RealmPanel = preload("res://ui/realm/realm_panel.gd")
+const CampaignPanel = preload("res://ui/campaign/campaign_panel.gd")
 const INK = Color("0b191f")
 const PANEL = Color("14262b")
 const GOLD = Color("d1b575")
@@ -33,6 +34,8 @@ var help_open: bool = false
 var app_active: bool = true
 var rl_lab: Control
 var realm_panel: Control
+var campaign_panel: Control
+var campaign_hidden: Dictionary = {}
 
 func _ready() -> void:
     var app_theme = Theme.new()
@@ -110,6 +113,9 @@ func _build_ui() -> void:
     name_label.position=Vector2(30,39)
     var subtitle=_label(top,"Đọc địa thế. Chọn miền đất. Bắt đầu quan sát.",12,MUTED)
     subtitle.position=Vector2(32,78)
+    var campaign_button=_button(top,"M4 · Đường đèo & nguồn sống","Xử lý thiếu hụt, quyền đèo và nợ trên bản đồ native",_open_campaign)
+    campaign_button.position=Vector2(655,0)
+    campaign_button.size=Vector2(265,32)
     if session.has_method("rl_available") and session.rl_available():
         var rl_button=_button(top,"RL · Phòng thử nghiệm","Xem learned policy PPO trong sandbox sáu thị trường",_open_rl)
         rl_button.position=Vector2(655,75)
@@ -284,6 +290,16 @@ func _close_help() -> void:
 
 func _input(event: InputEvent) -> void:
     if not event is InputEventKey or not event.pressed or event.echo: return
+    if campaign_panel!=null and campaign_panel.visible:
+        var focused=get_viewport().gui_get_focus_owner()
+        if (focused is LineEdit or focused is TextEdit) and event.keycode not in [KEY_ESCAPE,KEY_F1]: return
+        if event.keycode==KEY_ESCAPE: campaign_panel.close_panel()
+        elif event.keycode==KEY_SPACE: campaign_panel.toggle_run()
+        elif event.keycode==KEY_F1: campaign_panel.show_guide()
+        elif event.keycode==KEY_HOME: campaign_panel.map.reset_view()
+        else: return
+        get_viewport().set_input_as_handled()
+        return
     if realm_panel!=null and realm_panel.visible:
         if event.keycode==KEY_ESCAPE: realm_panel.running=false;realm_panel.hide();session.command("pause")
         elif event.keycode==KEY_SPACE: realm_panel.toggle_run()
@@ -320,6 +336,7 @@ func _notification(what: int) -> void:
 
 func _process(_delta: float) -> void:
     if session==null: return
+    if campaign_panel!=null and campaign_panel.visible: return
     session.tick()
     _refresh()
 
@@ -363,6 +380,29 @@ func _open_realm() -> void:
         add_child(realm_panel)
     else:
         realm_panel.show()
+    _refresh()
+
+func _open_campaign() -> void:
+    session.command("pause")
+    if campaign_panel==null:
+        campaign_panel=CampaignPanel.new()
+        campaign_panel.session=session
+        campaign_panel.closed.connect(_close_campaign)
+        add_child(campaign_panel)
+    else:
+        campaign_panel.show()
+        campaign_panel.refresh()
+    # Stop rendering the older map and rebuilding its button styles underneath
+    # the full-screen M4 view. Keep each prior visibility state for navigation.
+    for child in get_children():
+        if child is CanvasItem and child!=campaign_panel:
+            campaign_hidden[child]=child.visible
+            child.hide()
+
+func _close_campaign() -> void:
+    for child in campaign_hidden:
+        if is_instance_valid(child): child.visible=campaign_hidden[child]
+    campaign_hidden.clear()
     _refresh()
 
 func _refresh_inspector(id: int,view: Dictionary) -> void:

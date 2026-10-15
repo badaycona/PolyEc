@@ -2,6 +2,7 @@ param(
     [Parameter(Mandatory=$true)][string]$Godot,
     [string]$CTest = 'ctest',
     [string]$BuildDir = 'build/native',
+    [string]$Config = 'Release',
     [switch]$IncludeRL,
     [switch]$IncludeRealm
 )
@@ -9,9 +10,9 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Push-Location $projectRoot
 try {
-    & $CTest --test-dir $BuildDir --output-on-failure -V
+    & $CTest --test-dir $BuildDir -C $Config --output-on-failure -V
     if ($LASTEXITCODE -ne 0) { throw 'Core regressions failed' }
-    $smokes=@('native_smoke','ui_smoke')
+    $smokes=@('native_smoke','ui_smoke','campaign_smoke')
     if ($IncludeRL) { $smokes += 'rl_smoke' }
     if ($IncludeRealm) { $smokes += 'realm_smoke' }
     $logDir=Join-Path ([IO.Path]::GetFullPath($BuildDir)) 'test-logs'

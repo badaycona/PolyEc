@@ -202,6 +202,10 @@ void Realm::payroll(int region,bool public_employer,const std::vector<std::pair<
     for(size_t i=0;i<claims.size();++i){auto&p=mutable_person(claims[i].first);transfer(account,p.cash,paid[i]);int64_t assessed=paid[i]*v.tax+p.tax_remainder;int64_t tax=assessed/100;p.tax_remainder=int(assessed%100);transfer(p.cash,v.treasury,tax);v.tax_receipts+=tax;}
 }
 void Realm::sales_tax(Province&v,int64_t gross){int64_t assessed=gross*v.tax+v.sales_tax_remainder;int64_t amount=assessed/100;v.sales_tax_remainder=int(assessed%100);transfer(v.firm,v.treasury,amount);v.tax_receipts+=amount;}
+int64_t Realm::harvest_quantity(int region,int good,int residents,int weather,int productivity)const{
+    if(weather<0)weather=reference_scenario_?100:75+int(process_noise(seed_^uint64_t(day_/90)*7411)%51)+int(process_noise(seed_^uint64_t(day_/90)*19937^uint64_t(region/2+1)*431)%11)-5;
+    return (int64_t(residents)*15+30)*(good==region%7?2:1)*weather*productivity/10000;
+}
 void Realm::daily(){
     ++day_;
     for(auto&v:provinces_) {v.employed=0;v.school_used=0;v.teachers=0;v.teacher_skill_sum=0;}
@@ -232,7 +236,7 @@ void Realm::daily(){
     }}
     if(day_%90==0){for(int r=0;r<=regions_;++r){auto&v=provinces_[r];int residents=0;for(auto&p:people_)if(p.alive&&p.region==r)++residents;
         // Correlated regional season; labor and geography affect harvest.
-        int weather=75+int(process_noise(seed_^uint64_t(day_/90)*7411)%51)+int(process_noise(seed_^uint64_t(day_/90)*19937^uint64_t(r/2+1)*431)%11)-5;if(reference_scenario_)weather=100;for(int g:{0,1,3,4,6}){int n=(residents*15+30)*(g==r%7?2:1)*weather/100;v.stock[g]+=n;produced_[g]+=n;}}
+        for(int g:{0,1,3,4,6}){auto n=harvest_quantity(r,g,residents);v.stock[g]+=n;produced_[g]+=n;}}
     }
     finish_projects();
     for(auto&i:investigations_)if(!i.completed&&i.due<=day_){i.completed=true;for(auto&f:facts_)if(f.region==i.region&&f.secret&&f.day<=i.due){knowledge_.push_back({i.owner,f.id,day_});knowledge_index_[i.owner][f.id]=day_;}event(i.owner,i.region,109,0,i.id,false,i.cause);}
@@ -248,13 +252,13 @@ void Realm::refresh_demography(){for(auto&v:provinces_){v.residents=0;v.health_s
 void Realm::advance(int days){if(days<0||days>36500)throw std::invalid_argument("days bounds");for(int i=0;i<days;++i)daily();}
 std::array<int64_t,9> Realm::balances()const{std::array<int64_t,9>b{};for(auto&p:people_)b[0]+=p.cash;for(auto&p:provinces_){b[1]+=p.firm;b[2]+=p.treasury;}b[3]=carrier_;b[4]=estate_;for(auto f:organization_funds_)b[5]+=f;b[6]=credit_pool_;b[7]=restricted_fund_;for(auto&o:proposals_)b[8]+=o.escrow;return b;}
 int64_t Realm::total_money()const{int64_t n=carrier_+estate_+credit_pool_+restricted_fund_;for(auto&o:proposals_)n+=o.escrow;for(auto&p:people_)n+=p.cash;for(auto&p:provinces_)n+=p.firm+p.treasury;for(auto funds:organization_funds_)n+=funds;return n;}
-bool Realm::invariant()const{
+bool Realm::invariant(const std::array<int64_t,7>& bonded_goods)const{
     if(total_money()!=opening_money_+endowment_||provinces_.size()!=size_t(regions_+1))return false;for(auto funds:organization_funds_)if(funds<0)return false;
-    std::array<int64_t,7> stock{};for(size_t i=0;i<people_.size();++i){auto&p=people_[i];if(p.id!=i+1||p.nutrition<0||p.nutrition>100||p.job_kind<0||p.job_kind>1||p.organization<0||p.organization>28||p.tax_remainder<0||p.tax_remainder>=100||p.cash<0||p.region<0||p.region>regions_||p.health>100)return false;for(int g=0;g<7;++g){if(p.inventory[g]<0)return false;stock[g]+=p.inventory[g];}}
+    auto stock=bonded_goods;for(auto n:stock)if(n<0)return false;for(size_t i=0;i<people_.size();++i){auto&p=people_[i];if(p.id!=i+1||p.nutrition<0||p.nutrition>100||p.job_kind<0||p.job_kind>1||p.organization<0||p.organization>28||p.tax_remainder<0||p.tax_remainder>=100||p.cash<0||p.region<0||p.region>regions_||p.health>100)return false;for(int g=0;g<7;++g){if(p.inventory[g]<0)return false;stock[g]+=p.inventory[g];}}
     for(auto&p:provinces_){if(p.firm<0||p.treasury<0||p.sales_tax_remainder<0||p.sales_tax_remainder>=100)return false;for(int g=0;g<7;++g){if(p.stock[g]<0)return false;stock[g]+=p.stock[g];}}
     for(auto&o:proposals_){if(o.escrow<0)return false;if(o.kind==2&&!o.resolved)for(bool pledged:o.pledged)if(pledged){stock[3]+=4;stock[5]+=2;}}if(credit_pool_<0||restricted_fund_<0)return false;
     for(int g=0;g<7;++g)if(stock[g]+consumed_[g]!=opening_[g]+produced_[g])return false;
-    for(auto&l:loans_)if(l.paid<0||l.paid>l.principal+l.interest||l.debtor==0||l.debtor>people_.size())return false;
+    for(auto&l:loans_)if(l.principal<=0||l.principal>1000000||l.interest<0||l.paid<0||l.paid>l.principal+l.interest||l.debtor==0||l.debtor>people_.size()||l.creditor<0||l.creditor>regions_||l.due<0)return false;
     for(auto&e:edges_)if(!e.from||!e.to||e.from>people_.size()||e.to>people_.size())return false;
     return true;
 }
@@ -302,7 +306,7 @@ std::string Realm::serialize(const std::string&bundle)const{
     s<<knowledge_.size()<<' ';for(auto&k:knowledge_)s<<k.observer<<' '<<k.fact<<' '<<k.arrives<<' ';
     s<<proposals_.size()<<' ';for(auto&o:proposals_)s<<o.id<<' '<<o.from<<' '<<o.to<<' '<<o.amount<<' '<<o.due<<' '<<o.resolved<<' ';write_court(s);return s.str();
 }
-bool Realm::deserialize(const std::string&data,const std::string&bundle,std::string&error){try{
+bool Realm::deserialize(const std::string&data,const std::string&bundle,std::string&error,const std::array<int64_t,7>& bonded_goods){try{
     if(data.size()>256*1024*1024)throw std::runtime_error("Save size limit");Realm w(1,1,128);std::istringstream s(data);std::string magic,b;s>>magic>>std::quoted(b);if(magic!="POLYEC_REALM_6"||b!=bundle)throw std::runtime_error("Save schema/model bundle mismatch");
     s>>w.day_>>w.regions_>>w.seed_>>w.next_id_>>w.next_fact_>>w.opening_money_>>w.carrier_>>w.estate_>>w.endowment_;if(!s||(w.regions_!=1&&w.regions_!=2&&w.regions_!=6))throw std::runtime_error("Save geography");
     s>>w.draft_.tier>>w.draft_.seen>>w.draft_.chosen>>w.draft_.rerolled;for(auto&v:w.draft_.cards)s>>v;for(auto*a:{&w.opening_,&w.produced_,&w.consumed_})for(auto&v:*a)s>>v;for(auto&r:w.routes_)for(auto&open:r)s>>open;for(auto&funds:w.organization_funds_)s>>funds;s>>w.rng_;
@@ -316,7 +320,7 @@ bool Realm::deserialize(const std::string&data,const std::string&bundle,std::str
     w.knowledge_.resize(size(1000000));for(auto&k:w.knowledge_){s>>k.observer>>k.fact>>k.arrives;auto&known=w.knowledge_index_[k.observer];auto previous=known.find(k.fact);if(previous==known.end()||previous->second>k.arrives)known[k.fact]=k.arrives;}
     w.proposals_.resize(size(1000000));for(auto&o:w.proposals_)s>>o.id>>o.from>>o.to>>o.amount>>o.due>>o.resolved;
     if(!w.read_court(s))throw std::runtime_error("Save court fields");
-    if(w.provinces_.size()!=size_t(w.regions_+1))throw std::runtime_error("Save province count");w.refresh_demography();s>>std::ws;if(!s.eof()||s.fail()&&!s.eof()||w.people_.size()<128||w.day_<0||w.day_>365000||!w.invariant())throw std::runtime_error("Corrupt save/invariant");*this=std::move(w);error.clear();return true;
+    if(w.provinces_.size()!=size_t(w.regions_+1))throw std::runtime_error("Save province count");w.refresh_demography();s>>std::ws;if(!s.eof()||s.fail()&&!s.eof()||w.people_.size()<128||w.day_<0||w.day_>365000||!w.invariant(bonded_goods))throw std::runtime_error("Corrupt save/invariant");*this=std::move(w);error.clear();return true;
 }catch(const std::exception&e){error=e.what();return false;}}
 bool Realm::save(const std::string&path,const std::string&bundle,std::string&error)const{try{auto dest=std::filesystem::u8path(path),temp=dest;temp+=".tmp";auto data=serialize(bundle);{std::ofstream out(temp,std::ios::binary|std::ios::trunc);out<<hash_text(data)<<'\n'<<data;out.flush();if(!out)throw std::runtime_error("Save write failed");}auto backup=dest;backup+=".bak";if(std::filesystem::exists(dest))std::filesystem::copy_file(dest,backup,std::filesystem::copy_options::overwrite_existing);std::filesystem::rename(temp,dest);error.clear();return true;}catch(const std::exception&e){error=e.what();return false;}}
 bool Realm::load(const std::string&path,const std::string&bundle,std::string&error){try{std::ifstream in(std::filesystem::u8path(path),std::ios::binary);uint64_t checksum;in>>checksum;in.get();std::string data((std::istreambuf_iterator<char>(in)),{});if(!in||hash_text(data)!=checksum)throw std::runtime_error("Save checksum/read failed");return deserialize(data,bundle,error);}catch(const std::exception&e){error=e.what();return false;}}

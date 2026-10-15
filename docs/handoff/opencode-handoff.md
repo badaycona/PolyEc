@@ -2,7 +2,24 @@
 
 ## Điểm tiếp tục hiện tại — 2026-10-15
 
-**Các mục M0a bên dưới là hướng dẫn lịch sử. Repo hiện có sandbox M3; không chạy lại M0 theo các prompt cũ.** Đọc `WORK_STATUS.md`, `docs/simulation-complexity-scope.md` và `docs/late-medieval-world-design-discussion.md` trước khi giao việc mới. Người dùng yêu cầu làm rõ độ sâu simulation trước khi triển khai thêm; đã chọn bối cảnh cuối Trung cổ. Các đề xuất còn lại chưa tự trở thành spec đã duyệt.
+### Sau review: đã triển khai M4 theo yêu cầu tiếp theo
+
+Người dùng đã yêu cầu tiếp tục thực hiện đến M4. Lát cắt native đã có và được kiểm chứng Windows; xem `docs/reports/M4-evidence.md`, `docs/guides/PLAYER-README-M4.txt` và WORK_STATUS.md mới nhất. M4 dùng controller kiểm thử có nhãn, không chứng nhận RL production. Linux cần đọc kết quả CI của commit mới. Phần yêu cầu chỉ review bên dưới ghi ngữ cảnh trước khi người dùng giao triển khai M4, không phải lệnh dừng triển khai hiện tại. Chưa tự mở M5 hoặc duyệt các luật xã hội đầy đủ.
+
+### OpenCode Windows local: lỗi 403 và cách chạy đã kiểm chứng
+
+Máy local có `C:\Users\Hi\.bun\bin\opencode.exe`, phiên bản `1.18.30`. Ngày 2026-10-15, cả CLI `run` và TUI trả `403 FreeTierError: OpenCode's free tier can only be used from within OpenCode` khi phiên được đặt `OPENCODE_PERMISSION` với `bash: deny`. Đổi sang `bash: ask` (cùng executable, model `opencode/step-5-preview-free` và credential) đã nhận được câu trả lời model; phiên review sau đó đọc được năm tài liệu qua công cụ `read`. Không cần cài lại hoặc đổi credential. Báo cáo upstream khớp triệu chứng: https://github.com/anomalyco/opencode/issues/50627.
+
+Đối với review, dùng quyền yêu cầu xác nhận thay vì loại bỏ công cụ shell khỏi yêu cầu model:
+
+```powershell
+$env:OPENCODE_PERMISSION='{"edit":"ask","bash":"ask","task":"deny","webfetch":"ask","websearch":"ask"}'
+.\start-opencode.ps1 --prompt "Đọc AGENTS.md, WORK_STATUS.md, docs/design/simulation-complexity-scope.md và docs/design/late-medieval-world-design-discussion.md bằng read tool. Chỉ review thiết kế. Không sửa file, dùng shell, tạo subagent, commit, push, triển khai hoặc training. Không tự giảm số vùng/dân. Trả lời tiếng Việt."
+```
+
+Biến trên chỉ áp dụng cho shell hiện tại; không ghi credential hoặc thay cấu hình toàn máy. Khi cần, lưu và phục hồi giá trị `OPENCODE_PERMISSION` trước đó sau phiên review. Quyền `ask` vẫn yêu cầu xét duyệt trước thao tác; không dùng `--auto`. Việc đọc/đánh giá tài liệu không chứng nhận gameplay, model quality hoặc hiệu năng.
+
+**Các mục M0a bên dưới là hướng dẫn lịch sử. Repo hiện có M3 và lát cắt M4; không chạy lại M0 theo các prompt cũ.** Đọc `WORK_STATUS.md`, `docs/design/simulation-complexity-scope.md` và `docs/design/late-medieval-world-design-discussion.md` trước khi giao việc mới. Người dùng yêu cầu làm rõ độ sâu simulation trước khi triển khai thêm; đã chọn bối cảnh cuối Trung cổ. Các đề xuất còn lại chưa tự trở thành spec đã duyệt.
 
 Docs về nền xã hội và ranh giới simulation đã push ở commit `4cb7969`. Cloud Linux đã cài và khởi động OpenCode 1.19.0; lần gọi model `opencode/step-5-preview-free` của cấu hình repo bị chặn với `Forbidden: Domain forbidden`. Chưa có câu trả lời model hoặc kết quả triển khai từ lần thử đó. Không suy ra OpenCode trên Windows local có cùng lỗi.
 
@@ -11,10 +28,10 @@ Chat cloud chỉ chạy lệnh trong `/workspace/PolyEc`, không điều khiển
 Tại checkout trên Windows, sau khi cập nhật Git mà giữ các thay đổi local, có thể mở OpenCode bằng script sẵn có:
 
 ```powershell
-.\start-opencode.ps1 --prompt "Đọc AGENTS.md, WORK_STATUS.md, docs/simulation-complexity-scope.md và docs/late-medieval-world-design-discussion.md. Chỉ review thiết kế: nêu ba quyết định còn mở và đề xuất một tác vụ thiết kế tiếp theo kèm tiêu chí nghiệm thu. Không sửa file, chạy triển khai, tạo subagent, commit, push hoặc training. Không bắt đầu lại M0 và không tự giảm số vùng/dân. Trả lời tiếng Việt."
+.\start-opencode.ps1 --prompt "Đọc AGENTS.md, WORK_STATUS.md, docs/design/simulation-complexity-scope.md và docs/design/late-medieval-world-design-discussion.md. Chỉ review thiết kế: nêu ba quyết định còn mở và đề xuất một tác vụ thiết kế tiếp theo kèm tiêu chí nghiệm thu. Không sửa file, chạy triển khai, tạo subagent, commit, push hoặc training. Không bắt đầu lại M0 và không tự giảm số vùng/dân. Trả lời tiếng Việt."
 ```
 
-Lệnh trên là hướng dẫn dựa trên CLI đã kiểm tra và script của repo; **chưa chạy trên máy Windows local trong tác vụ này**. Cần kiểm tra executable/provider thực tế ở máy đó, không sao chép credential vào repo hoặc chat.
+Lệnh trên giữ prompt bàn giao ban đầu. Windows local đã chạy script và thử provider ngày 2026-10-15; xem mục lỗi 403 và cấu hình quyền đã kiểm chứng ở đầu tài liệu. Không sao chép credential vào repo hoặc chat.
 
 ---
 
@@ -26,7 +43,7 @@ Ngày: 14/10/2026. Công cụ coding agent đã chọn: **OpenCode**.
 
 1. Cài OpenCode trên máy phát triển Windows/Linux theo [tài liệu chính thức](https://opencode.ai/docs/). Có thể dùng WSL cho phần CLI trên Windows; vẫn cần kiểm tra bản app Windows native ở mốc đóng gói.
 2. Cấu hình provider/model bằng cơ chế kết nối của OpenCode. Không ghi API key vào prompt, repository hoặc tài liệu.
-3. Mở checkout PolyEc. Chép bản kế hoạch v3 vào `docs/implementation-plan.md` và tài liệu này vào `docs/opencode-handoff.md`; việc chép thực hiện khi bắt đầu bước code, không tự ghi đè file đã có.
+3. Mở checkout PolyEc. Chép bản kế hoạch v3 vào `docs/design/implementation-plan.md` và tài liệu này vào `docs/handoff/opencode-handoff.md`; việc chép thực hiện khi bắt đầu bước code, không tự ghi đè file đã có.
 4. Tạo/ghép quy tắc mục 3 vào `AGENTS.md` của dự án, giữ các quy tắc hiện có nếu có. Không cần tạo Git worktree: cloud task hiện có đã cô lập; chỉ tạo nếu người dùng yêu cầu.
 5. Chạy OpenCode tại root repository. Đầu tiên yêu cầu lập phương án cho **M0a** bằng prompt ở mục 5, sau đó giao triển khai theo prompt mục 6.
 6. Hoàn tất nghiệm thu một mốc trước khi mở rộng. Nếu phải đổi hợp đồng hoặc phạm vi, cập nhật spec và nêu rõ tác động.
@@ -108,11 +125,11 @@ Kinh tế 16 hàng, 24 vùng, RL training, map art đầy đủ, save campaign d
 
 ## 5. Prompt giao OpenCode lập phương án M0a
 
-> Đọc AGENTS.md, docs/implementation-plan.md và docs/opencode-handoff.md. Dùng kế hoạch v3 native/OOP/RL, không dùng hướng web cũ. Chỉ chuẩn bị phương án M0a trước khi sửa code: kiểm tra repository và toolchain, đề xuất file/class/interface, Godot/GDExtension version tương thích, CMake build và headless test. Nêu dependency cần cài, điều kiện chưa xác minh và cách nghiệm thu. Không mở rộng sang kinh tế/RL training/triệu người. Không bỏ M0b khỏi roadmap.
+> Đọc AGENTS.md, docs/design/implementation-plan.md và docs/handoff/opencode-handoff.md. Dùng kế hoạch v3 native/OOP/RL, không dùng hướng web cũ. Chỉ chuẩn bị phương án M0a trước khi sửa code: kiểm tra repository và toolchain, đề xuất file/class/interface, Godot/GDExtension version tương thích, CMake build và headless test. Nêu dependency cần cài, điều kiện chưa xác minh và cách nghiệm thu. Không mở rộng sang kinh tế/RL training/triệu người. Không bỏ M0b khỏi roadmap.
 
 ## 6. Prompt giao OpenCode triển khai M0a
 
-> Triển khai M0a theo docs/opencode-handoff.md và phương án vừa chốt. Tạo app Godot native với lõi C++20 OOP độc lập Godot, hai vùng Thanh Điền/Hắc Sơn chọn được, panel lấy dữ liệu từ core, đồng hồ ngày, pause/resume và pause khi mất focus. Tạo CMake/headless tests, chạy build/test phù hợp và thử native app khi có khả năng. Sửa lỗi setup/build trong phạm vi M0a, không thay sản phẩm thành web. Không làm RL hoặc kinh tế đầy đủ. Cuối tác vụ báo file thay đổi, command đã chạy, test count/result, hệ điều hành đã kiểm chứng và blocker còn lại. Không tự commit/push/publish.
+> Triển khai M0a theo docs/handoff/opencode-handoff.md và phương án vừa chốt. Tạo app Godot native với lõi C++20 OOP độc lập Godot, hai vùng Thanh Điền/Hắc Sơn chọn được, panel lấy dữ liệu từ core, đồng hồ ngày, pause/resume và pause khi mất focus. Tạo CMake/headless tests, chạy build/test phù hợp và thử native app khi có khả năng. Sửa lỗi setup/build trong phạm vi M0a, không thay sản phẩm thành web. Không làm RL hoặc kinh tế đầy đủ. Cuối tác vụ báo file thay đổi, command đã chạy, test count/result, hệ điều hành đã kiểm chứng và blocker còn lại. Không tự commit/push/publish.
 
 ## 7. Cách giữ quota và tránh agent làm lại
 

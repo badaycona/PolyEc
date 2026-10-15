@@ -1,9 +1,11 @@
 #include "polyec/sim.hpp"
+#include "polyec/campaign.hpp"
 #include <godot_cpp/godot.hpp>
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
 #include <godot_cpp/variant/array.hpp>
+#include <godot_cpp/variant/packed_vector2_array.hpp>
 #include <chrono>
 #include <memory>
 #ifdef POLYEC_AI_ENABLED
@@ -21,6 +23,8 @@ class PolyEcSession : public RefCounted {
     polyec::SimulationController controller{world};
     Clock::time_point anchor = Clock::now();
     bool active = true;
+    std::unique_ptr<polyec::Campaign> campaign;
+    std::string campaign_error;
 #ifdef POLYEC_AI_ENABLED
     polyec::EconomicLab lab;
     polyec::RealmRuntime realm;
@@ -34,6 +38,13 @@ protected:
         ClassDB::bind_method(D_METHOD("set_active", "value"), &PolyEcSession::set_active);
         ClassDB::bind_method(D_METHOD("set_speed", "value"), &PolyEcSession::set_speed);
         ClassDB::bind_method(D_METHOD("rl_available"), &PolyEcSession::rl_available);
+        ClassDB::bind_method(D_METHOD("m4_start", "seed", "population"), &PolyEcSession::m4_start, DEFVAL(int64_t(37)), DEFVAL(int64_t(10000)));
+        ClassDB::bind_method(D_METHOD("m4_snapshot"), &PolyEcSession::m4_snapshot);
+        ClassDB::bind_method(D_METHOD("m4_fingerprint"), &PolyEcSession::m4_fingerprint);
+        ClassDB::bind_method(D_METHOD("m4_preview", "from", "to", "quantity"), &PolyEcSession::m4_preview);
+        ClassDB::bind_method(D_METHOD("m4_step", "days"), &PolyEcSession::m4_step);
+        ClassDB::bind_method(D_METHOD("m4_command", "action", "target", "quantity", "sequence", "revision"), &PolyEcSession::m4_command);
+        ClassDB::bind_method(D_METHOD("m4_save", "path", "restore"), &PolyEcSession::m4_save);
 #ifdef POLYEC_AI_ENABLED
         ClassDB::bind_method(D_METHOD("rl_load", "path", "sha256", "seed"), &PolyEcSession::rl_load);
         ClassDB::bind_method(D_METHOD("rl_step"), &PolyEcSession::rl_step);
@@ -49,6 +60,28 @@ protected:
 #endif
     }
 public:
+    bool m4_start(int64_t seed=37,int64_t population=10000){try{campaign=std::make_unique<polyec::Campaign>(uint64_t(seed),int(population));campaign_error.clear();return true;}catch(const std::exception&e){campaign_error=e.what();return false;}}
+    bool m4_step(int64_t days){if(!active||!campaign||days<1||days>30){campaign_error=!active?"Cửa sổ không hoạt động":(!campaign?"Chưa mở sổ M4":"Khoảng ngày phải trong 1–30");return false;}try{campaign->advance(int(days));campaign_error.clear();return true;}catch(const std::exception&e){campaign_error=e.what();return false;}}
+    bool m4_command(int64_t action,int64_t target,int64_t quantity,int64_t sequence,int64_t revision){
+        if(!active||!campaign){campaign_error="Cửa sổ không hoạt động";return false;}
+        if(action<0||action>6||target<0||target>6||sequence<1||revision<0||uint64_t(revision)!=campaign->revision()){campaign_error="Lệnh hoặc hồ sơ đã cũ; hãy xem lại";return false;}
+        auto r=campaign->execute({1,uint64_t(sequence),polyec::CampaignAction(action),int(target),quantity});campaign_error=r.success?"":r.reason;return r.success;
+    }
+    bool m4_save(const String&path,bool restore){if(!campaign){campaign_error="Chưa mở sổ M4";return false;}return restore?campaign->load(path.utf8().get_data(),campaign_error):campaign->save(path.utf8().get_data(),campaign_error);}
+    String m4_fingerprint()const{return campaign?String::num_uint64(campaign->fingerprint()):String();}
+    Dictionary m4_preview(int64_t from,int64_t to,int64_t quantity)const{
+        Dictionary d;if(!campaign||from<0||from>6||to<0||to>6)return d;auto p=campaign->preview(int(from),int(to),quantity);d["reachable"]=p.reachable;d["days"]=p.days;d["fee"]=p.fee;Array path;for(auto r:p.regions)path.push_back(r);d["path"]=path;return d;
+    }
+    Dictionary m4_snapshot()const{
+        Dictionary d;d["loaded"]=bool(campaign);d["error"]=String::utf8(campaign_error.c_str());if(!campaign)return d;auto v=campaign->view();
+        d["day"]=v.realm.day;d["population"]=int64_t(v.realm.persons);d["alive"]=int64_t(v.realm.alive);d["money"]=v.realm.money;d["crown"]=v.crown;d["invariant"]=v.invariant;d["revision"]=int64_t(v.revision);d["sequence"]=int64_t(v.player_sequence);d["workshop_cash"]=v.workshop_cash;d["workshop_workers"]=v.workshop_workers;d["cloth"]=v.cloth;d["inspecting_until"]=v.inspecting_until;
+        Array regions;for(int i=0;i<int(v.regions.size());++i){auto&g=v.regions[i];auto&p=v.realm.provinces[i];Dictionary r;r["id"]=i;r["name"]=String::utf8(g.name.c_str());r["terrain"]=String::utf8(g.terrain.c_str());r["center"]=Vector2(g.center.x,g.center.y);PackedVector2Array boundary;for(auto point:g.boundary)boundary.push_back(Vector2(point.x,point.y));r["polygon"]=boundary;r["food"]=p.stock[0];r["cover"]=int(p.stock[0]*7/std::max(1,p.residents));r["residents"]=p.residents;r["treasury"]=p.treasury;r["price"]=p.price[0];r["unrest"]=p.unrest;r["road"]=p.road;r["harvest"]=g.harvest;regions.push_back(r);}d["regions"]=regions;
+        Array routes;for(auto&r:v.routes){Dictionary x;x["from"]=r.from;x["to"]=r.to;x["days"]=r.days;x["capacity"]=r.capacity;x["terrain"]=String::utf8(r.terrain.c_str());x["open"]=r.open;x["claimed"]=r.claimed;x["works_due"]=r.works_due;routes.push_back(x);}d["routes"]=routes;
+        Array cargo;for(auto&c:v.cargo){Dictionary x;x["id"]=int64_t(c.id);x["cause"]=int64_t(c.cause);x["from"]=c.from;x["to"]=c.to;x["quantity"]=c.quantity;x["cost"]=c.cost;x["depart"]=c.depart;x["arrives"]=c.arrives;x["delivered"]=c.delivered;Array path,starts,ends,arrivals;for(int r:c.path)path.push_back(r);for(int t:c.leg_starts)starts.push_back(t);for(int t:c.leg_ends)ends.push_back(t);for(int t:c.leg_arrivals)arrivals.push_back(t);x["path"]=path;x["starts"]=starts;x["ends"]=ends;x["arrivals"]=arrivals;cargo.push_back(x);}d["cargo"]=cargo;
+        Array cases;for(auto&k:v.cases){Dictionary x;x["id"]=int64_t(k.id);x["cause"]=int64_t(k.cause);x["region"]=k.region;x["title"]=String::utf8(k.title.c_str());x["opened"]=k.opened;x["closed"]=k.closed;x["evidence"]=k.evidence;cases.push_back(x);}d["cases"]=cases;
+        Array journal;for(auto&f:v.journal){Dictionary x;x["id"]=int64_t(f.id);x["parent"]=int64_t(f.parent);x["day"]=f.day;x["region"]=f.region;x["kind"]=f.kind;x["amount"]=f.amount;journal.push_back(x);}d["journal"]=journal;
+        int64_t debt=0;bool overdue=false;for(auto&l:v.loans)if(l.debtor==3){debt+=l.principal+l.interest-l.paid;overdue|=l.paid<l.principal+l.interest&&l.due<=v.realm.day;}d["debt"]=debt;d["overdue"]=overdue;return d;
+    }
     bool rl_available() const {
 #ifdef POLYEC_AI_ENABLED
         return true;

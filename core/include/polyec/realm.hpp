@@ -30,6 +30,7 @@ struct Person {
 };
 struct Province { int64_t treasury=10000,firm=30000;std::array<int64_t,7> stock{};std::array<int,7> price{};int tax=10,school=8,school_used=0,jobs=32,employed=0,road=0,unrest=0,teachers=0;bool charter=true;int residents=0;int64_t health_sum=0;int sales_tax_remainder=0;int64_t tax_receipts=0,food_capacity=0;int teacher_skill_sum=0; };
 struct Edge { uint64_t from=0,to=0;int kind=0; };
+// creditor is the provincial firm-account index, not a Person ID.
 struct Loan { uint64_t id=0,debtor=0;int creditor=0,due=0;int64_t principal=0,interest=0,paid=0;bool defaulted=false,royal_pool=false;uint64_t cause=0; };
 struct Project {uint64_t id=0,owner=0;int region=0,due=0,kind=0;int64_t budget=0;bool completed=false,engineer=false,stalled=false;uint64_t cause=0;};
 struct Fact {uint64_t id=0,parent=0,actor=0,target=0;int day=0,region=0,kind=0;int64_t amount=0;bool secret=false;};
@@ -43,6 +44,7 @@ struct Draft {int tier=0;std::array<int,3> cards{};int seen=0,chosen=-1;bool rer
 struct RealmView {int day=0,regions=0;uint64_t persons=0,alive=0,children=0,decisions=0;int64_t money=0;std::vector<Province> provinces;std::vector<Fact> facts;Draft draft;};
 // Owns all mutable campaign state. Snapshots and observations are copies.
 class Realm {
+    friend class Campaign;
 public:
     Realm(uint64_t seed=1,int regions=6,int people=10000,bool advisor_fixture=false);
     // Explicit initial-condition fixtures for paired eval. Never mutates a live world.
@@ -55,7 +57,8 @@ public:
     RealmResult execute(const RealmCommand& command);
     void advance(int days=1);
     RealmView view(uint64_t observer=1) const;
-    bool invariant() const;
+    // A containing domain may own bonded goods (e.g. M4 manifests in transit).
+    bool invariant(const std::array<int64_t,7>& bonded_goods={}) const;
     uint64_t fingerprint() const;
     int64_t total_money() const;
     std::array<int64_t,9> balances()const;
@@ -72,7 +75,7 @@ public:
     bool save(const std::string& path,const std::string& bundle,std::string& error) const;
     bool load(const std::string& path,const std::string& bundle,std::string& error);
     std::string serialize(const std::string& bundle) const;
-    bool deserialize(const std::string& data,const std::string& bundle,std::string& error);
+    bool deserialize(const std::string& data,const std::string& bundle,std::string& error,const std::array<int64_t,7>& bonded_goods={});
     int day() const {return day_;}
     int regions() const {return regions_;}
     int count() const {return int(people_.size());}
@@ -102,6 +105,7 @@ private:
     void payroll(int region,bool public_employer,const std::vector<std::pair<uint64_t,int64_t>>& claims);
     void refresh_demography();
     void sales_tax(Province& province,int64_t gross);
+    int64_t harvest_quantity(int region,int good,int residents,int weather=-1,int productivity=100)const;
     void initialize_court_reference();
     void apply_augment(int card);
     int report_delay(bool inventory=false)const;

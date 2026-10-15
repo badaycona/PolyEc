@@ -1,7 +1,7 @@
 # Đại Bàn Cờ Vương Quyền — Implementation Plan
 
 **Phiên bản:** 3.0 · 14/10/2026  
-**Vai trò tài liệu:** Đặc tả sản phẩm và roadmap M0–M7. Đây là mục tiêu thiết kế, không phải bảng trạng thái triển khai. Trạng thái mã hiện tại nằm trong [WORK_STATUS.md](../WORK_STATUS.md); bằng chứng và các gate M3 nằm trong [M3-evidence.md](M3-evidence.md).
+**Vai trò tài liệu:** Đặc tả sản phẩm và roadmap M0–M7. Đây là mục tiêu thiết kế, không phải bảng trạng thái triển khai. Trạng thái mã hiện tại nằm trong [WORK_STATUS.md](../../WORK_STATUS.md); bằng chứng và các gate M3 nằm trong [M3-evidence.md](../reports/M3-evidence.md).
 **Thể loại:** Mô phỏng cai trị, chính trị–kinh tế; thời gian thực có tạm dừng.  
 **Sản phẩm đích:** App game desktop native cho Windows/Linux, RAM 16 GB, suy luận RL bằng CPU.  
 **Phạm vi bản hoàn chỉnh đầu tiên:** Một quốc gia, 24 lãnh địa chư hầu, đất triều đình, một đời vua; quy mô đa thực thể có cổng kiểm chứng.
@@ -548,7 +548,7 @@ Giới hạn journal thường lệ và tổng hợp lịch sử theo tháng/nă
 
 ## 11. Lộ trình xây dựng và các gate
 
-**Công cụ coding agent người dùng đã chọn: OpenCode.** Xem [bộ giao việc OpenCode](opencode-handoff.md) để thiết lập quy tắc, spec và prompt M0a. OpenCode là công cụ phát triển, không là dependency của app; provider/model và quota chưa được cấu hình trong bước plan. M0 được chia M0a (native core/map/clock) và M0b (Python/ONNX/scale spike), vẫn phải đạt cả hai trước khi đóng M0.
+**Công cụ coding agent người dùng đã chọn: OpenCode.** Xem [bộ giao việc OpenCode](../handoff/opencode-handoff.md) để thiết lập quy tắc, spec và prompt M0a. OpenCode là công cụ phát triển, không là dependency của app; provider/model và quota chưa được cấu hình trong bước plan. M0 được chia M0a (native core/map/clock) và M0b (Python/ONNX/scale spike), vẫn phải đạt cả hai trước khi đóng M0.
 
 Mỗi giai đoạn tạo phần chạy được và đo được. Bản thử với baseline phải ghi rõ AI chưa đạt RL; không gắn nhãn game hoàn chỉnh. Số người lớn không thay cho việc họ có tương tác thật. Các mốc dưới đây chưa có thời hạn cam kết; training và đồ họa phải được đo trước khi ước lượng lịch.
 

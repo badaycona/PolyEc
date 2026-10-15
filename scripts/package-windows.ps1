@@ -3,7 +3,9 @@ param(
     [string]$BuildDir = 'build/native',
     [string]$OutputDir = 'dist/PolyEc-M0a-Windows',
     [switch]$IncludeRL,
-    [switch]$IncludeRealm
+    [switch]$IncludeRealm,
+    [switch]$IncludeM4,
+    [string]$Config = 'Release'
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -16,6 +18,7 @@ try {
         if (-not (Test-Path -LiteralPath $godotRuntime)) { throw 'Godot GUI runtime is missing beside console wrapper' }
     }
     $launcher = Join-Path $BuildDir 'PolyEc.exe'
+    if (-not (Test-Path -LiteralPath $launcher)) { $launcher = Join-Path (Join-Path $BuildDir $Config) 'PolyEc.exe' }
     $library = 'godot_project/bin/polyec.windows.template_release.x86_64.dll'
     foreach ($required in @($Godot,$launcher,$library)) {
         if (-not (Test-Path -LiteralPath $required)) { throw "Missing build artifact: $required" }
@@ -41,9 +44,10 @@ try {
         }
     }
     Copy-Item -Path 'licenses/*' -Destination (Join-Path $output 'licenses')
-    $playerReadme=if ($IncludeRealm) {'docs/PLAYER-README-REALM.txt'} elseif ($IncludeRL) {'docs/PLAYER-README-RL.txt'} else {'docs/PLAYER-README.txt'}
+    $playerReadme=if ($IncludeM4) {'docs/guides/PLAYER-README-M4.txt'} elseif ($IncludeRealm) {'docs/guides/PLAYER-README-REALM.txt'} elseif ($IncludeRL) {'docs/guides/PLAYER-README-RL.txt'} else {'docs/guides/PLAYER-README.txt'}
     Copy-Item -LiteralPath $playerReadme -Destination (Join-Path $output 'READ-ME.txt')
-    if ($IncludeRealm -and (Test-Path docs/M3-evidence.md)) {Copy-Item docs/M3-evidence.md (Join-Path $output "BUILD-REPORT.md")}
+    if ($IncludeM4 -and (Test-Path docs/reports/M4-evidence.md)) {Copy-Item docs/reports/M4-evidence.md (Join-Path $output "BUILD-REPORT.md")}
+    elseif ($IncludeRealm -and (Test-Path docs/reports/M3-evidence.md)) {Copy-Item docs/reports/M3-evidence.md (Join-Path $output "BUILD-REPORT.md")}
     Write-Host "Portable app ready: $output/PolyEc.exe"
 }
 finally { Pop-Location }

@@ -1,0 +1,102 @@
+Start testing: Oct 15 09:28 SE Asia Standard Time
+----------------------------------------------------------
+1/5 Testing: core_tests
+1/5 Test: core_tests
+Command: "C:/prc/PolyEc/build/windows/core/Release/polyec_tests.exe"
+Directory: C:/prc/PolyEc/build/windows/core
+"core_tests" start time: Oct 15 09:28 SE Asia Standard Time
+Output:
+----------------------------------------------------------
+70/70 checks passed
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"core_tests" end time: Oct 15 09:28 SE Asia Standard Time
+"core_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/5 Testing: trade_tests
+2/5 Test: trade_tests
+Command: "C:/prc/PolyEc/build/windows/core/Release/polyec_trade_tests.exe"
+Directory: C:/prc/PolyEc/build/windows/core
+"trade_tests" start time: Oct 15 09:28 SE Asia Standard Time
+Output:
+----------------------------------------------------------
+36546/36546 trade checks passed
+<end of output>
+Test time =   0.05 sec
+----------------------------------------------------------
+Test Passed.
+"trade_tests" end time: Oct 15 09:28 SE Asia Standard Time
+"trade_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/5 Testing: realm_tests
+3/5 Test: realm_tests
+Command: "C:/prc/PolyEc/build/windows/core/Release/polyec_realm_tests.exe"
+Directory: C:/prc/PolyEc/build/windows/core
+"realm_tests" start time: Oct 15 09:28 SE Asia Standard Time
+Output:
+----------------------------------------------------------
+REALM TESTS: 25203 checks passed; profile A10000 persons, 19743 sparse edges;90days 0.35458s
+<end of output>
+Test time =   2.99 sec
+----------------------------------------------------------
+Test Passed.
+"realm_tests" end time: Oct 15 09:28 SE Asia Standard Time
+"realm_tests" time elapsed: 00:00:02
+----------------------------------------------------------
+
+4/5 Testing: court_tests
+4/5 Test: court_tests
+Command: "C:/prc/PolyEc/build/windows/core/Release/polyec_court_tests.exe"
+Directory: C:/prc/PolyEc/build/windows/core
+"court_tests" start time: Oct 15 09:28 SE Asia Standard Time
+Output:
+----------------------------------------------------------
+COURT TESTS: 168 checks passed
+<end of output>
+Test time =   0.33 sec
+----------------------------------------------------------
+Test Passed.
+"court_tests" end time: Oct 15 09:28 SE Asia Standard Time
+"court_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/5 Testing: campaign_tests
+5/5 Test: campaign_tests
+Command: "C:/prc/PolyEc/build/windows/core/Release/polyec_campaign_tests.exe"
+Directory: C:/prc/PolyEc/build/windows/core
+"campaign_tests" start time: Oct 15 09:28 SE Asia Standard Time
+Output:
+----------------------------------------------------------
+M4 workload 10k/102 days: 77.2552 ms
+CAMPAIGN: 202/202 checks passed
+<end of output>
+Test time =   1.09 sec
+----------------------------------------------------------
+Test Passed.
+"campaign_tests" end time: Oct 15 09:28 SE Asia Standard Time
+"campaign_tests" time elapsed: 00:00:01
+----------------------------------------------------------
+
+End testing: Oct 15 09:28 SE Asia Standard Time
+Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org
+
+NATIVE SMOKE: 19/19 checks passed
+Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org
+
+UI SMOKE: 18/18 checks passed
+Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org
+
+CAMPAIGN SMOKE: 39/39 checks passed
+Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org
+
+NATIVE SMOKE: 19/19 checks passed
+Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org
+
+UI SMOKE: 18/18 checks passed
+Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org
+
+CAMPAIGN SMOKE: 39/39 checks passed

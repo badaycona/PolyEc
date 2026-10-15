@@ -8,7 +8,7 @@ Người dùng muốn làm rõ **độ sâu của mô phỏng** trước khi ti�
 
 Lần trả lời trước đã nghiêng sang giới hạn số vùng, số dân và tính năng bản đầu. Người dùng làm rõ rằng câu hỏi là **mỗi hệ thống cần mô phỏng chi tiết tới mức nào**, không phải yêu cầu giảm số lãnh địa hoặc dân số. Các con số sáu vùng/10.000 người được đề xuất trong trao đổi không trở thành quyết định giảm phạm vi sản phẩm. Implementation plan vẫn giữ đích và các profile cần kiểm chứng của nó.
 
-Đọc cùng [nghiên cứu nền xã hội cuối Trung cổ](late-medieval-world-design-discussion.md), [implementation plan](implementation-plan.md) và [trạng thái mã](../WORK_STATUS.md). Tài liệu này đặt ranh giới độ sâu; tài liệu nghiên cứu giữ nguồn lịch sử, quan sát code và phương án kiến trúc.
+Đọc cùng [nghiên cứu nền xã hội cuối Trung cổ](late-medieval-world-design-discussion.md), [implementation plan](implementation-plan.md) và [trạng thái mã](../../WORK_STATUS.md). Tài liệu này đặt ranh giới độ sâu; tài liệu nghiên cứu giữ nguồn lịch sử, quan sát code và phương án kiến trúc.
 
 ## 2. Điểm dừng được đề xuất
 

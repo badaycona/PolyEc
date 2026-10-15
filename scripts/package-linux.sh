@@ -12,8 +12,8 @@ if [[ -d "$root/godot_project/models/realm-v6" ]]; then
   cp -R "$root/godot_project/models/realm-v6" "$output/models/"
 fi
 cp "$root"/licenses/* "$output/licenses/"
-if [[ -f "$root/docs/M3-evidence.md" ]]; then
-  cp "$root/docs/M3-evidence.md" "$output/BUILD-REPORT.md"
+if [[ -f "$root/docs/reports/M3-evidence.md" ]]; then
+  cp "$root/docs/reports/M3-evidence.md" "$output/BUILD-REPORT.md"
 fi
 cat > "$output/PolyEc" <<'LAUNCHER'
 #!/usr/bin/env sh

@@ -3,6 +3,10 @@ project(PolyEc VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+if(MSVC AND NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
+  # Match godot-cpp's default before creating core targets as well.
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
 enable_testing()
 add_subdirectory(core)
 
@@ -75,7 +79,9 @@ if(POLYEC_BUILD_APP)
     PREFIX ""
     OUTPUT_NAME "polyec.windows.template_release.x86_64"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/godot_project/bin"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/godot_project/bin")
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/godot_project/bin"
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_SOURCE_DIR}/godot_project/bin"
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_CURRENT_SOURCE_DIR}/godot_project/bin")
   if(UNIX AND NOT APPLE)
     set_target_properties(polyec PROPERTIES OUTPUT_NAME "polyec.linux.template_release.x86_64")
   endif()

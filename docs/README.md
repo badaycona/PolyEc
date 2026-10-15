@@ -1,51 +1,40 @@
 # Tài liệu PolyEc
 
-README.md ở repo root là điểm bắt đầu. WORK_STATUS.md ghi trạng thái code hiện tại; implementation plan mô tả sản phẩm đích.
+[WORK_STATUS.md](../WORK_STATUS.md) ghi trạng thái mã và gate còn mở. [Implementation plan](design/implementation-plan.md) mô tả đích sản phẩm. M4 hiện được kiểm chứng Windows với controller kiểm thử có nhãn; chưa chứng nhận RL production hoặc Linux của thay đổi M4.
 
-## Trạng thái và sản phẩm
+## Đọc theo mục đích
 
-- [Trạng thái làm việc](../WORK_STATUS.md): milestone, gate còn mở và bước tiếp theo.
-- [Báo cáo M3](M3-evidence.md): kết quả kiểm tra, holdout RL, sandbox dài hạn và giới hạn.
-- [Hướng dẫn sandbox Quốc gia](PLAYER-README-REALM.txt): cách chạy và điều khiển bản demo.
-- [Hướng dẫn RL lab](PLAYER-README-RL.txt): merchant RL lab.
-- [Hướng dẫn prototype map](PLAYER-README.txt): bản prototype cũ.
-
-## Thiết kế và kiến trúc
-
-- [Implementation plan](implementation-plan.md): mục tiêu sản phẩm, roadmap M0–M7 và gates.
-- [Ranh giới độ phức tạp simulation](simulation-complexity-scope.md): điểm tiếp tục thảo luận về độ sâu cá nhân, kinh tế, quan hệ và thiết chế; phân biệt với số vùng/dân, chưa phải toàn bộ scope đã duyệt.
-- [Nghiên cứu nền xã hội cuối Trung cổ](late-medieval-world-design-discussion.md): khoảng trống code, nghề/giai cấp, hôn nhân/thừa kế, kiến trúc quy mô lớn và nguồn tham khảo.
-- [Realm domain](realm-domain.md): domain model.
-- [OpenCode handoff](opencode-handoff.md): workflow lịch sử để giao việc coding agent.
-
-## RL và thí nghiệm
-
-- [Realm v6 protocol](realm-rl-experiment-v6.md): protocol training/evaluation của M3.
-- realm-rl-experiment-v1.md đến realm-rl-experiment-v5.md: các lần thử trước; hồ sơ số liệu nằm trong artifacts/models/realm-vN/.
-- [Đánh giá runtime v3](realm-runtime-evaluation-v3.md): đánh giá runtime phiên bản cũ.
-- [Economic v1 experiment](rl-experiment-v1.md) và [schema](rl-schema-v1.md): merchant RL lab.
-
-## Artifact và runtime assets
-
-- artifacts/models/economic-v1..v2 và realm-v1..v6 giữ checkpoint, config, evaluation, source lock và kết quả. Hồ sơ cũ giữ nguyên để truy nguyên cả thử nghiệm thất bại.
-- artifacts/visuals/ giữ chart training, chart evidence và ảnh preview.
-- godot_project/models/ giữ bản ONNX và manifest mà game nạp qua res://models. Đây là runtime assets được đóng gói cùng app.
-- Khi chạy thí nghiệm mới, tạo thư mục run mới dưới artifacts/models; không ghi đè hồ sơ đã khóa.
+| Mục đích | Tài liệu |
+|---|---|
+| Chơi thử M4 | [Hướng dẫn M4](guides/PLAYER-README-M4.txt) |
+| Hiểu kiến trúc và toán học | [Bài thuyết minh kỹ thuật](developer/polyec-technical-paper.md) |
+| Build/test/package và kết quả M4 | [Báo cáo M4](reports/M4-evidence.md) |
+| Chất lượng policy pilot | [Báo cáo M3](reports/M3-evidence.md) |
+| Tiếp tục thiết kế xã hội | [Ranh giới độ sâu](design/simulation-complexity-scope.md), [nghiên cứu cuối Trung cổ](design/late-medieval-world-design-discussion.md) |
+| Tìm trách nhiệm domain | [Realm domain](design/realm-domain.md) |
+| Tiếp tục với OpenCode | [Handoff](handoff/opencode-handoff.md), [review thiết kế](handoff/opencode-simulation-review-2026-10-15.md) |
 
 ## Folder tree
 
 ~~~text
 docs/
-├── implementation-plan.md   Thiết kế đích và roadmap
-├── simulation-complexity-scope.md  Ranh giới độ sâu và điểm tiếp tục thảo luận
-├── late-medieval-world-design-discussion.md  Nghiên cứu xã hội và quy mô
-├── M3-evidence.md           Báo cáo kết quả/gate M3
-├── realm-domain.md          Domain model
-├── realm-rl-experiment-v1…v6.md
-├── realm-runtime-evaluation-v3.md
-├── rl-experiment-v1.md      Merchant RL
-├── rl-schema-v1.md
-├── PLAYER-README*.txt       Hướng dẫn người chơi
-├── README.md                Mục lục tài liệu và artifact
-└── opencode-handoff.md      Quy trình OpenCode lịch sử
+├── README.md
+├── design/                 Đích sản phẩm, domain và đề xuất độ sâu
+├── developer/              Bài thuyết minh và quy ước cấu trúc source
+├── experiments/            Protocol, schema và thí nghiệm RL
+├── guides/                 PLAYER-README theo bản build
+├── handoff/                OpenCode và hồ sơ review
+└── reports/                M3/M4 evidence và giới hạn kiểm chứng
 ~~~
+
+## Hướng dẫn và thí nghiệm
+
+- [Sandbox quốc gia M3](guides/PLAYER-README-REALM.txt), [RL lab](guides/PLAYER-README-RL.txt), [prototype map](guides/PLAYER-README.txt).
+- [Realm v6 protocol](experiments/realm-rl-experiment-v6.md) là thí nghiệm pilot M3; các protocol v1–v5 được giữ để truy nguyên.
+- [Runtime evaluation v3](experiments/realm-runtime-evaluation-v3.md), [economic v1](experiments/rl-experiment-v1.md), [economic schema](experiments/rl-schema-v1.md).
+
+## Source, bằng chứng và output
+
+[Quy ước thư mục](developer/repository-layout.md) chỉ nơi đặt source/test/tài liệu mới. Checkpoint, config, source lock và evaluation nằm ở `artifacts/models/`; ảnh/profile nằm ở `artifacts/visuals/`, gồm [profile M4](../artifacts/visuals/m4/Windows-profile.json). Bundle ONNX app nạp nằm ở `godot_project/models/`.
+
+Giữ nguyên manifest/checkpoint/source lock đã khóa: đường dẫn source trong record cũ thuộc revision thí nghiệm tương ứng. `build/`, `dist/`, `third_party/` và `.godot/` là output/dependency local được Git ignore.

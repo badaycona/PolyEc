@@ -1,0 +1,24 @@
+{
+  "controller": "M4 labelled test controller; no ONNX inference",
+  "cpu": "12th Gen Intel(R) Core(TM) i5-12450H",
+  "day_with_snapshot_p95_ms": 4.91,
+  "frame_p50_ms": 16.73,
+  "frame_p95_ms": 28.504,
+  "frame_p99_ms": 38.056,
+  "frames": 270,
+  "gpu": "Intel(R) UHD Graphics",
+  "input_to_inspector_next_frame_p95_ms": 47.446,
+  "invariant": true,
+  "os": "Windows",
+  "population": 10000,
+  "restore_ms": 199.581,
+  "restore_success": true,
+  "save_bytes": 1471158,
+  "save_ms": 202.368,
+  "viewport": [
+    1440,
+    900
+  ],
+  "workload": "30 days, 1000 food in transit, blocked road project, 6 weaving workers, monthly payroll, picking, save/restore",
+  "observed_peak_working_set_bytes": 737193984
+}

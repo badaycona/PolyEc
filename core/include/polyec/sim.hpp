@@ -73,7 +73,7 @@ public:
     // Seconds of accumulated sub-day time still pending (diagnostic / test aid).
     double pending_seconds() const { return m_accum; }
 
-    // 1x == 1 game day per real second (M0a tuning; see docs/opencode-handoff.md).
+    // 1x == 1 game day per real second (M0a tuning; see docs/handoff/opencode-handoff.md).
     static constexpr double kSecondsPerGameDay = 1.0;
     // Reject-and-pause threshold for elapsed time: anything above this is not a
     // frame delta but a gap (window unfocused, machine slept, debugger stopped,

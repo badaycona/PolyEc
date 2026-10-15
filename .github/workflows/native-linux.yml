@@ -33,7 +33,7 @@ jobs:
           # Godot #111048: allow deferred extension documentation callbacks to
           # finish before editor shutdown. Keep exit/log checks strict.
           "$godot" --headless --frame-delay 1000 --path godot_project --import > work/import.log 2>&1
-          for smoke in native_smoke ui_smoke rl_smoke; do
+          for smoke in native_smoke ui_smoke campaign_smoke rl_smoke; do
             "$godot" --headless --path godot_project --script "res://tests/$smoke.gd" > "work/$smoke.log" 2>&1
             cat "work/$smoke.log"
             ! grep -E '^(SCRIPT ERROR:|ERROR:)' "work/$smoke.log"

@@ -1,5 +1,47 @@
 # PolyEc — Bộ giao việc cho OpenCode
 
+## Tiếp tục hiện tại — M5 lát cắt hộ gia đình (2026-10-15)
+
+Spec đã duyệt: [M5 draft](../design/M5-draft.md) (APPROVED 2026-10-15). Ưu tiên Windows trước; app/package Linux hoãn, core/Python portable vẫn phải kiểm thử (Kaggle). Phân vai: OpenCode viết code chính; Codex chia tác vụ, ra chỉ dẫn, review diff/bằng chứng và phối hợp nghiệm thu — không tự thay OpenCode viết code trong tác vụ đã giao.
+
+Đã xong và đã chạy Windows (toolchain: Zig 0.13 + Clang 18, C++20, CMake 3.31.6):
+
+- `core/src/realm.cpp`, `core/include/polyec/realm.hpp`: thay quét `household..household+3` bằng membership index thưa dẫn xuất (`households_`), có `household_of`, `household_members`, `same_household`, `guardian`, `household_authority`; index dựng lại khi load, không thêm tiền/world thứ hai.
+- `Intent::Support` nhắm tới authority thật (founder còn sống đủ tuổi → thành viên lớn tuổi nhất, không thì adult sống cao tuổi nhất); reject `c.target<=0` trước khi tra person.
+- Save `realm-v6`/`POLYEC_REALM_6` giữ nguyên; reject save có household label rỗng hoặc ngoài dải người.
+- `core/tests/test_realm.cpp`: fixture bằng scalar surgery trên save text thật (không friend/private), test membership không liền nhau, giám hộ chết/thiếu, authority cùng hộ, từ chối target trong hộ khác/self/0, roundtrip và corrupt load.
+- Lệnh đã chạy: `& build/tooling/cmake/data/bin/cmake.exe --build build/m5-core --parallel 4`; `& build/tooling/cmake/data/bin/ctest.exe --test-dir build/m5-core --output-on-failure` → CTest 5/5, `realm_tests` 25.298 check. Chi tiết: [M5 progress](../reports/M5-progress.md).
+
+Việc kế tiếp: M5.1 — hộ động/thừa kế/hôn nhân qua cùng command/transaction pipeline; không đổi schema save nếu giữ được semantics thật ở index dẫn xuất.
+
+Các mục lịch sử phía dưới giữ nguyên để truy nguyên; chúng là hồ sơ M0/M3/M4, không phải việc cần làm lúc này.
+
+## Quy trình hiện hành — người dùng yêu cầu ngày 2026-10-15
+
+Áp dụng cho công việc triển khai tiếp theo, ưu tiên hơn các prompt/workflow lịch sử bên dưới. Người dùng đã duyệt draft M5; OpenCode là người triển khai chính, Codex điều hành và nghiệm thu. Ưu tiên Windows; giữ core/Python portable để chuẩn bị Kaggle, hoãn app/package Linux. Không khởi động lại hoặc hủy tiến trình đang chạy chỉ để áp dụng ghi chú này; tại điểm bàn giao an toàn gần nhất, review diff đang có và bổ sung plan cho phần còn lại, không viết lại code đã kiểm chứng.
+
+### 1. Khảo sát và lập plan, chưa sửa code
+
+Giao một tác vụ nhỏ có mục tiêu và ranh giới file. OpenCode chỉ đọc source/test liên quan; dùng thông tin toolchain đã kiểm chứng thay vì tìm lại trên toàn máy. Implementation plan thường khoảng một trang, phải có:
+
+- Hành vi trước/sau, file/class/hàm cần đổi và trách nhiệm từng phần.
+- State thuộc ai, dữ liệu gốc/index dẫn xuất, invariant và tính nguyên tử của command.
+- Luồng thành công/reject; ID rỗng hoặc sai, thiếu tài nguyên, actor chết, thiếu người có quyền, stale/duplicate command, xung đột tài nguyên và lifecycle liên quan.
+- Tác động tới save/load, binding, action/observation/reward/model; nêu rõ phần không tương thích nếu có.
+- Test cần thêm/sửa, regression và lệnh nghiệm thu; điều chưa xác minh và ranh giới chưa làm.
+
+Mẫu giao bước plan: “Chỉ khảo sát và lập implementation plan cho [tác vụ], trong [file/module]. Chưa sửa source hoặc chạy training. Đọc AGENTS.md và contract liên quan; trình ownership, invariant, luồng lỗi/trường hợp biên, tương thích và test. Dừng để Codex review trước khi triển khai.”
+
+### 2. Codex review rồi giao triển khai
+
+Codex kiểm tra plan có tuân spec và bỏ sót hệ quả/edge case không; chỉnh plan nếu cần. Không yêu cầu người dùng duyệt lại các quyết định kỹ thuật thông thường. Chỉ hỏi khi thay gameplay, phạm vi hoặc ngân sách đã duyệt. Ghi lại plan được review trong tài liệu tác vụ hoặc hồ sơ bàn giao đủ để phiên sau tiếp tục.
+
+Mẫu giao bước code: “Triển khai đúng plan [đường dẫn/mục hoặc bản đã review]. Giữ thay đổi có sẵn; không mở rộng sang module ngoài phạm vi. Chạy các test/gate đã định, báo command và kết quả thực tế. Nếu cần đổi contract/kiến trúc đáng kể, trình plan sửa trước khi tiếp tục. Không commit/push/publish hoặc train dài.”
+
+### 3. Nghiệm thu trước tác vụ kế tiếp
+
+OpenCode sửa theo từng lát cắt có thể kiểm tra, chạy test liên quan và regression. Codex review diff và bằng chứng, trả lỗi cụ thể về OpenCode để sửa; chỉ ghi pass sau khi thực chạy. Cập nhật WORK_STATUS với kết quả, giới hạn và bước tiếp theo. Có plan vẫn phải test; không dùng plan hay lời báo hoàn tất của agent thay cho kết quả.
+
 ## Điểm tiếp tục hiện tại — 2026-10-15
 
 ### Sau review: đã triển khai M4 theo yêu cầu tiếp theo

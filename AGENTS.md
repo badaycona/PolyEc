@@ -16,3 +16,11 @@ Sản phẩm là app game native; không chuyển thành React/Vite/web game ho�
 - Không ghi credential vào code/log; không tự mua tài nguyên GPU hoặc dịch vụ cloud. Huấn luyện dài là tác vụ riêng có ngân sách đo được.
 - Không tự commit/push/publish nếu tác vụ chưa yêu cầu. Giữ các thay đổi người dùng đã có.
 - Chỉ báo check pass khi đã thực sự chạy và có kết quả; phân biệt app đã build, model đã train và profile đã benchmark.
+- **Phân vai thực thi:** OpenCode là bên làm code chính. Codex chia tác vụ có ranh giới file/gate, ra chỉ dẫn, review plan/diff và bằng chứng, cùng phối hợp nghiệm thu. Codex không tự ý thay OpenCode viết code mới trong tác vụ đã giao; nếu phải sửa thì phải nêu rõ và review lại. Codex có thể tìm lỗi, chặn test sai và chỉ ra operator-precedence/logic bug, nhưng phần sửa gameplay chính thuộc OpenCode.
+
+## Quy trình triển khai với OpenCode — cập nhật 2026-10-15
+
+- OpenCode thực hiện phần triển khai chính; Codex điều hành, review phương án/diff và kiểm chứng kết quả. Giao từng tác vụ nhỏ có ranh giới file và gate, không giao toàn milestone trong một prompt triển khai.
+- Trước mỗi tác vụ sửa code, OpenCode khảo sát có giới hạn và trình implementation plan ngắn, chưa sửa code: file/class/hàm cần đổi; ownership và invariant; luồng thành công, reject và trường hợp biên; tác động save/binding/action/observation/reward/model; test và lệnh nghiệm thu. Không rà toàn repo/toolchain khi thông tin liên quan đã có.
+- Codex review plan trước khi giao triển khai. Các quyết định kỹ thuật trong spec đã duyệt được tự xử lý; chỉ hỏi người dùng khi phải đổi gameplay, phạm vi hoặc ngân sách. Nếu cần đổi kiến trúc/contract đáng kể trong lúc làm, cập nhật và review lại plan trước khi tiếp tục.
+- OpenCode triển khai theo lát cắt, chạy test liên quan và regression; Codex review diff và bằng chứng trước tác vụ kế tiếp. Plan không thay test. Chi tiết và mẫu giao việc: docs/handoff/opencode-handoff.md, mục quy trình hiện hành.

@@ -1,5 +1,10 @@
 name: Native Linux app
-on: [push, pull_request]
+# Linux native app/package verification is DEFERRED for the current M5 slice per user
+# resource preference: automatic app builds per push are costly. All steps and checks are
+# preserved; run this workflow manually (workflow_dispatch) when Linux verification is
+# explicitly wanted. Lightweight core matrix CI in core-ci.yml is unchanged.
+on:
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:

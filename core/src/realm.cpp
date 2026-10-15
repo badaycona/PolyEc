@@ -32,6 +32,7 @@ Realm::Realm(uint64_t seed,int regions,int people,bool advisor_fixture):regions_
         people_.push_back(p);
         if(i>=2*leaders){uint64_t base=2*leaders+1+uint64_t((i-2*leaders)/4)*4;people_.back().household=base;people_.back().region=int((i-2*leaders)/4)%(regions+1);edges_.push_back({p.id,base,0});if(i>2*leaders)edges_.push_back({p.id,p.id-1,1});}
     }
+    reindex_households();
     std::array<int,4> pool{};int roll=int(rng_()%100);draft_.tier=roll<50?0:(roll<85?1:2);
     for(int i=0;i<4;++i)pool[i]=4*draft_.tier+i;std::shuffle(pool.begin(),pool.end(),rng_);
     for(int i=0;i<3;++i){draft_.cards[i]=pool[i];draft_.seen|=1<<pool[i];}
@@ -48,9 +49,51 @@ Realm Realm::scenario(uint64_t seed,uint64_t actor,int age,int stat,int goal,int
 }
 Person& Realm::mutable_person(uint64_t id){return const_cast<Person&>(std::as_const(*this).person(id));}
 void Realm::transfer(int64_t&from,int64_t&to,int64_t amount){if(amount<0||from<amount)throw std::logic_error("unfunded transfer");from-=amount;to+=amount;}
-uint64_t Realm::guardian(const Person&p)const{if(p.age_days>=18*365)return 0;uint64_t id=0;int oldest=0;for(uint64_t candidate=p.household;candidate<p.household+4&&candidate<=people_.size();++candidate){auto&adult=person(candidate);if(adult.id!=p.id&&adult.alive&&adult.household==p.household&&adult.age_days>=18*365&&adult.age_days>oldest){id=candidate;oldest=adult.age_days;}}return id;}
-int64_t Realm::available_funds(uint64_t id)const{auto&p=person(id);auto parent=guardian(p);return p.cash+(parent?person(parent).cash:0);}
-void Realm::spend(Person&p,int64_t&to,int64_t amount){auto own=std::min(p.cash,amount);transfer(p.cash,to,own);if(amount>own){auto parent=guardian(p);if(!parent)throw std::logic_error("Missing funded guardian");transfer(mutable_person(parent).cash,to,amount-own);}}
+void Realm::index_household(uint64_t household,uint64_t person){
+    if(!household||!person)throw std::logic_error("household membership label");
+    auto&members=households_[household];
+    if(members.empty()||members.back()<person)members.push_back(person);
+    else if(std::find(members.begin(),members.end(),person)==members.end())members.insert(std::lower_bound(members.begin(),members.end(),person),person);
+}
+void Realm::reindex_households(){households_.clear();households_.reserve(people_.size());for(auto&p:people_)index_household(p.household,p.id);}
+bool Realm::households_consistent()const{
+    size_t total=0;
+    for(const auto&[label,members]:households_){
+        if(!label||label>people_.size()||members.empty())return false;
+        total+=members.size();
+        for(uint64_t id:members)if(!id||id>people_.size()||people_[id-1].household!=label)return false;
+    }
+    return total==people_.size();
+}
+uint64_t Realm::guardian_of(const Person& child)const{
+    if(child.age_days>=18*365)return 0;
+    auto household=households_.find(child.household);
+    if(household==households_.end())return 0;
+    uint64_t id=0;int oldest=0;
+    for(uint64_t member:household->second){
+        const auto&adult=people_[member-1];
+        if(adult.id==child.id||adult.household!=child.household||!adult.alive)continue;
+        if(adult.age_days>=18*365&&adult.age_days>oldest){id=member;oldest=adult.age_days;}
+    }
+    return id;
+}
+uint64_t Realm::guardian(uint64_t id)const{return guardian_of(person(id));}
+uint64_t Realm::household_authority(uint64_t household)const{
+    if(!household||household>people_.size())return 0;
+    auto record=households_.find(household);
+    if(record==households_.end())return 0;
+    const auto&head=people_[household-1];
+    if(head.alive&&head.household==household&&head.age_days>=18*365)return household;
+    uint64_t id=0;int oldest=0;
+    for(uint64_t member:record->second){const auto&adult=people_[member-1];if(adult.alive&&adult.age_days>=18*365&&adult.age_days>oldest){id=member;oldest=adult.age_days;}}
+    return id;
+}
+uint64_t Realm::household_of(uint64_t id)const{return person(id).household;}
+std::vector<uint64_t> Realm::household_members(uint64_t household)const{auto record=households_.find(household);return record==households_.end()?std::vector<uint64_t>{}:record->second;}
+bool Realm::same_household(uint64_t a,uint64_t b)const{if(!a||!b||a>people_.size()||b>people_.size())return false;return people_[a-1].household==people_[b-1].household;}
+size_t Realm::household_records()const{return households_.size();}
+int64_t Realm::available_funds(uint64_t id)const{auto&p=person(id);auto parent=guardian_of(p);return p.cash+(parent?person(parent).cash:0);}
+void Realm::spend(Person&p,int64_t&to,int64_t amount){auto own=std::min(p.cash,amount);transfer(p.cash,to,own);if(amount>own){auto parent=guardian_of(p);if(!parent)throw std::logic_error("Missing funded guardian");transfer(mutable_person(parent).cash,to,amount-own);}}
 int64_t Realm::debt(uint64_t id)const{int64_t result=0;for(auto&l:loans_)if(l.debtor==id)result+=l.principal+l.interest-l.paid;return result;}
 void Realm::event(uint64_t actor,int region,int kind,int64_t amount,uint64_t target,bool secret,uint64_t parent){
     Fact f{next_fact_++,parent,actor,target,day_,region,kind,amount,secret};facts_.push_back(f);
@@ -93,7 +136,7 @@ std::array<Candidate,realm_actions> Realm::candidates(uint64_t id)const{
         c[15]={Intent::Study,p.region,0,5,30};c[16]={Intent::Rest,p.region,0,2,7};
         c[17]={Intent::Social,p.region,0,1,7};c[18]={Intent::Join,p.region,0,2,30};
         for(int group=1;group<4;++group)c[20+group]={Intent::Join,p.region,group,2,30};
-        c[19]={Intent::Support,int(p.household),0,5};c[20]={Intent::Buy,p.region,0,1};
+        auto authority=household_authority(p.household);if(authority)c[19]={Intent::Support,int(authority),0,5};c[20]={Intent::Buy,p.region,0,1};
     }
     for(auto&proposal:proposals_)if(!proposal.resolved&&proposal.to==id&&proposal.due>=day_&&proposal.ready<=day_){c[28]={Intent::Accept,int(proposal.id)};c[29]={Intent::Reject,int(proposal.id)};break;}
     return c;
@@ -104,7 +147,7 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
     if(!p.alive){reason="Actor deceased";return false;}if(p.busy_until>day_){reason="Action duration not finished";return false;}
     if(c.amount<0||c.amount>1000000||c.target<0){reason="Invalid terms";return false;}
     if(c.kind==Intent::Accept||c.kind==Intent::Reject){if(legal_proposal_response(id,c))return true;reason="Proposal unavailable";return false;}
-    if(c.kind==Intent::Support){if(p.family!=Family::Civilian||p.age_days<6*365||c.target!=int(p.household)||uint64_t(c.target)==id||c.target>int(people_.size())||!person(c.target).alive||p.cash<c.amount){reason="Household transfer unavailable";return false;}return true;}
+    if(c.kind==Intent::Support){if(p.family!=Family::Civilian||p.age_days<6*365||c.target<=0||c.target!=int(household_authority(p.household))||uint64_t(c.target)==id||c.target>int(people_.size())||!person(c.target).alive||p.cash<c.amount){reason="Household transfer unavailable";return false;}return true;}
     if(c.kind==Intent::Offer){
         if(c.good==2){if(!p.sovereign||!pact_||regions_<3)return false;for(auto&o:proposals_)if(o.kind==2&&!o.resolved)return false;return true;}
         if(p.family==Family::Civilian||c.target<=0||uint64_t(c.target)==id||uint64_t(c.target)>people_.size()||c.amount<=0)return false;
@@ -245,7 +288,7 @@ void Realm::daily(){
     for(auto&o:proposals_)if(!o.resolved&&o.due<day_){refund_proposal(o);event(o.from,person(o.from).region,104,o.amount,o.to);}
     // Births conserve estate money and preserve independent IDs/relationships.
     if(!reference_scenario_&&day_%365==0&&people_.size()<1000000){size_t n=people_.size();for(size_t i=0;i<n;++i){auto&parent=people_[i];if(!parent.alive||parent.health<60||parent.nutrition<60||parent.age_days<20*365||parent.age_days>45*365||parent.cash<50||rng_()%100>=6)continue;
-        Person child;child.id=people_.size()+1;child.region=parent.region;child.household=parent.household;child.age_days=0;child.cash=0;child.goal=int(rng_()%3);transfer(parent.cash,child.cash,20);people_.push_back(child);edges_.push_back({child.id,uint64_t(i+1),0});event(child.id,child.region,105,0,uint64_t(i+1));}}
+        Person child;child.id=people_.size()+1;child.region=parent.region;child.household=parent.household;child.age_days=0;child.cash=0;child.goal=int(rng_()%3);transfer(parent.cash,child.cash,20);people_.push_back(child);index_household(child.household,child.id);edges_.push_back({child.id,uint64_t(i+1),0});event(child.id,child.region,105,0,uint64_t(i+1));}}
     refresh_demography();prices();
 }
 void Realm::refresh_demography(){for(auto&v:provinces_){v.residents=0;v.health_sum=0;}for(auto&p:people_){auto&v=provinces_[p.region];++v.residents;v.health_sum+=p.alive?p.health:0;}}
@@ -254,12 +297,13 @@ std::array<int64_t,9> Realm::balances()const{std::array<int64_t,9>b{};for(auto&p
 int64_t Realm::total_money()const{int64_t n=carrier_+estate_+credit_pool_+restricted_fund_;for(auto&o:proposals_)n+=o.escrow;for(auto&p:people_)n+=p.cash;for(auto&p:provinces_)n+=p.firm+p.treasury;for(auto funds:organization_funds_)n+=funds;return n;}
 bool Realm::invariant(const std::array<int64_t,7>& bonded_goods)const{
     if(total_money()!=opening_money_+endowment_||provinces_.size()!=size_t(regions_+1))return false;for(auto funds:organization_funds_)if(funds<0)return false;
-    auto stock=bonded_goods;for(auto n:stock)if(n<0)return false;for(size_t i=0;i<people_.size();++i){auto&p=people_[i];if(p.id!=i+1||p.nutrition<0||p.nutrition>100||p.job_kind<0||p.job_kind>1||p.organization<0||p.organization>28||p.tax_remainder<0||p.tax_remainder>=100||p.cash<0||p.region<0||p.region>regions_||p.health>100)return false;for(int g=0;g<7;++g){if(p.inventory[g]<0)return false;stock[g]+=p.inventory[g];}}
+    auto stock=bonded_goods;for(auto n:stock)if(n<0)return false;for(size_t i=0;i<people_.size();++i){auto&p=people_[i];if(p.id!=i+1||p.nutrition<0||p.nutrition>100||p.job_kind<0||p.job_kind>1||p.organization<0||p.organization>28||p.tax_remainder<0||p.tax_remainder>=100||p.cash<0||p.region<0||p.region>regions_||p.health>100||p.household==0||p.household>people_.size())return false;for(int g=0;g<7;++g){if(p.inventory[g]<0)return false;stock[g]+=p.inventory[g];}}
     for(auto&p:provinces_){if(p.firm<0||p.treasury<0||p.sales_tax_remainder<0||p.sales_tax_remainder>=100)return false;for(int g=0;g<7;++g){if(p.stock[g]<0)return false;stock[g]+=p.stock[g];}}
     for(auto&o:proposals_){if(o.escrow<0)return false;if(o.kind==2&&!o.resolved)for(bool pledged:o.pledged)if(pledged){stock[3]+=4;stock[5]+=2;}}if(credit_pool_<0||restricted_fund_<0)return false;
     for(int g=0;g<7;++g)if(stock[g]+consumed_[g]!=opening_[g]+produced_[g])return false;
     for(auto&l:loans_)if(l.principal<=0||l.principal>1000000||l.interest<0||l.paid<0||l.paid>l.principal+l.interest||l.debtor==0||l.debtor>people_.size()||l.creditor<0||l.creditor>regions_||l.due<0)return false;
     for(auto&e:edges_)if(!e.from||!e.to||e.from>people_.size()||e.to>people_.size())return false;
+    if(!households_consistent())return false;
     return true;
 }
 RealmView Realm::view(uint64_t observer)const{RealmView v;v.day=day_;v.regions=regions_;v.persons=people_.size();v.money=total_money();v.provinces=provinces_;v.draft=draft_;for(auto&p:people_){v.alive+=p.alive;v.children+=p.alive&&p.age_days<18*365;v.decisions+=p.decisions;}for(auto&f:facts_)if(knows(observer,f))v.facts.push_back(f);return v;}
@@ -311,7 +355,8 @@ bool Realm::deserialize(const std::string&data,const std::string&bundle,std::str
     s>>w.day_>>w.regions_>>w.seed_>>w.next_id_>>w.next_fact_>>w.opening_money_>>w.carrier_>>w.estate_>>w.endowment_;if(!s||(w.regions_!=1&&w.regions_!=2&&w.regions_!=6))throw std::runtime_error("Save geography");
     s>>w.draft_.tier>>w.draft_.seen>>w.draft_.chosen>>w.draft_.rerolled;for(auto&v:w.draft_.cards)s>>v;for(auto*a:{&w.opening_,&w.produced_,&w.consumed_})for(auto&v:*a)s>>v;for(auto&r:w.routes_)for(auto&open:r)s>>open;for(auto&funds:w.organization_funds_)s>>funds;s>>w.rng_;
     auto size=[&](size_t max){size_t n=0;s>>n;if(!s||n>max)throw std::runtime_error("Save count limit");return n;};
-    w.people_.resize(size(1000000));for(auto&p:w.people_){int family=-1;s>>p.id>>p.household>>p.decisions>>p.sampling>>p.region>>p.age_days>>p.health>>p.skill>>p.job>>p.busy_until>>p.destination>>p.goal>>p.school_days>>p.social>>p.alive>>family>>p.cash>>p.tax_remainder>>p.organization>>p.job_kind>>p.taxing_authority>>p.sovereign>>p.nutrition;if(p.region<0||p.region>w.regions_)throw std::runtime_error("Save person geography");if(family<0||family>2)throw std::runtime_error("Save role");p.family=Family(family);for(auto&v:p.stats.values)s>>v;for(auto&v:p.inventory)s>>v;}
+    w.people_.resize(size(1000000));for(auto&p:w.people_){int family=-1;s>>p.id>>p.household>>p.decisions>>p.sampling>>p.region>>p.age_days>>p.health>>p.skill>>p.job>>p.busy_until>>p.destination>>p.goal>>p.school_days>>p.social>>p.alive>>family>>p.cash>>p.tax_remainder>>p.organization>>p.job_kind>>p.taxing_authority>>p.sovereign>>p.nutrition;if(p.region<0||p.region>w.regions_)throw std::runtime_error("Save person geography");if(family<0||family>2)throw std::runtime_error("Save role");if(p.household==0||p.household>w.people_.size())throw std::runtime_error("Save person household");p.family=Family(family);for(auto&v:p.stats.values)s>>v;for(auto&v:p.inventory)s>>v;}
+    w.reindex_households();
     w.provinces_.resize(size(7));for(auto&p:w.provinces_){s>>p.treasury>>p.firm>>p.tax>>p.school>>p.school_used>>p.jobs>>p.employed>>p.road>>p.unrest>>p.teachers>>p.charter>>p.sales_tax_remainder;for(auto&v:p.stock)s>>v;for(auto&v:p.price)s>>v;}
     w.edges_.resize(size(8000000));for(auto&e:w.edges_)s>>e.from>>e.to>>e.kind;
     w.loans_.resize(size(1000000));for(auto&l:w.loans_)s>>l.id>>l.debtor>>l.creditor>>l.due>>l.principal>>l.interest>>l.paid>>l.defaulted;

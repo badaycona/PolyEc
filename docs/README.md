@@ -11,6 +11,9 @@
 | Build/test/package và kết quả M4 | [Báo cáo M4](reports/M4-evidence.md) |
 | Chất lượng policy pilot | [Báo cáo M3](reports/M3-evidence.md) |
 | Tiếp tục thiết kế xã hội | [Ranh giới độ sâu](design/simulation-complexity-scope.md), [nghiên cứu cuối Trung cổ](design/late-medieval-world-design-discussion.md) |
+| Duyệt phạm vi trước khi code M5 | [Draft M5: luật, giao dịch, quốc gia và gates](design/M5-draft.md) |
+| Tiến độ M5 và lệnh đã chạy | [Báo cáo M5-progress](reports/M5-progress.md) |
+| Chuẩn bị dữ liệu RL và GPU | [RL data & Kaggle preparation](experiments/rl-data-kaggle-preparation.md) |
 | Tìm trách nhiệm domain | [Realm domain](design/realm-domain.md) |
 | Tiếp tục với OpenCode | [Handoff](handoff/opencode-handoff.md), [review thiết kế](handoff/opencode-simulation-review-2026-10-15.md) |
 
@@ -31,6 +34,7 @@ docs/
 
 - [Sandbox quốc gia M3](guides/PLAYER-README-REALM.txt), [RL lab](guides/PLAYER-README-RL.txt), [prototype map](guides/PLAYER-README.txt).
 - [Realm v6 protocol](experiments/realm-rl-experiment-v6.md) là thí nghiệm pilot M3; các protocol v1–v5 được giữ để truy nguyên.
+- [RL data & Kaggle preparation](experiments/rl-data-kaggle-preparation.md) là kế hoạch dữ liệu/GPU cho M7; chưa có bằng chứng train.
 - [Runtime evaluation v3](experiments/realm-runtime-evaluation-v3.md), [economic v1](experiments/rl-experiment-v1.md), [economic schema](experiments/rl-schema-v1.md).
 
 ## Source, bằng chứng và output

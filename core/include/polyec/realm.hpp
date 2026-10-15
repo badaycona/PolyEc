@@ -81,6 +81,17 @@ public:
     int count() const {return int(people_.size());}
     int64_t debt(uint64_t actor) const;
     int64_t available_funds(uint64_t actor)const;
+    // Sparse household membership. A household label is the ID of its founding member,
+    // but membership is a dynamic record: a birth joins the parent household with a
+    // fresh non-consecutive ID, so never scan household..household+3.
+    uint64_t household_of(uint64_t person) const;
+    std::vector<uint64_t> household_members(uint64_t household) const;
+    bool same_household(uint64_t a,uint64_t b) const;
+    uint64_t guardian(uint64_t person) const;
+    // Representative authority of a household: the living adult founding member,
+    // otherwise the oldest living adult member; 0 when the household has none.
+    uint64_t household_authority(uint64_t household) const;
+    size_t household_records() const;
     std::vector<Loan> loans() const {return loans_;}
     std::vector<Project> projects() const {return projects_;}
     std::vector<Edge> relations() const {return edges_;}
@@ -92,6 +103,9 @@ private:
     std::vector<Edge> edges_;std::vector<Loan> loans_;std::vector<Project> projects_;
     std::vector<Fact> facts_;std::vector<Knowledge> knowledge_;std::vector<Proposal> proposals_;
     std::unordered_map<uint64_t,std::unordered_map<uint64_t,int>> knowledge_index_;
+    // Derived household membership index: label -> ascending member IDs. It adds no
+    // money and no second world; it is rebuilt from Person::household after any load.
+    std::unordered_map<uint64_t,std::vector<uint64_t>> households_;
     std::array<std::array<bool,7>,7> routes_{};
     std::array<int64_t,28> organization_funds_{};
     int64_t royal_reference_=0,credit_pool_=0,restricted_fund_=0;
@@ -100,7 +114,10 @@ private:
     std::array<int64_t,7> opening_{},produced_{},consumed_{};
     int64_t opening_money_=0,carrier_=0,estate_=0,endowment_=0;
     Person& mutable_person(uint64_t id);
-    uint64_t guardian(const Person& person)const;
+    uint64_t guardian_of(const Person& person)const;
+    void index_household(uint64_t household,uint64_t person);
+    void reindex_households();
+    bool households_consistent()const;
     void spend(Person& person,int64_t& destination,int64_t amount);
     void payroll(int region,bool public_employer,const std::vector<std::pair<uint64_t,int64_t>>& claims);
     void refresh_demography();

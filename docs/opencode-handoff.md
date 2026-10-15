@@ -1,5 +1,23 @@
 # PolyEc — Bộ giao việc cho OpenCode
 
+## Điểm tiếp tục hiện tại — 2026-10-15
+
+**Các mục M0a bên dưới là hướng dẫn lịch sử. Repo hiện có sandbox M3; không chạy lại M0 theo các prompt cũ.** Đọc `WORK_STATUS.md`, `docs/simulation-complexity-scope.md` và `docs/late-medieval-world-design-discussion.md` trước khi giao việc mới. Người dùng yêu cầu làm rõ độ sâu simulation trước khi triển khai thêm; đã chọn bối cảnh cuối Trung cổ. Các đề xuất còn lại chưa tự trở thành spec đã duyệt.
+
+Docs về nền xã hội và ranh giới simulation đã push ở commit `4cb7969`. Cloud Linux đã cài và khởi động OpenCode 1.19.0; lần gọi model `opencode/step-5-preview-free` của cấu hình repo bị chặn với `Forbidden: Domain forbidden`. Chưa có câu trả lời model hoặc kết quả triển khai từ lần thử đó. Không suy ra OpenCode trên Windows local có cùng lỗi.
+
+Chat cloud chỉ chạy lệnh trong `/workspace/PolyEc`, không điều khiển shell Windows của người dùng. Để Codex trực tiếp chạy và tương tác OpenCode trên máy người dùng, mở chat trong checkout PolyEc ở môi trường Local. Nếu checkout chưa có trong danh sách project local, mở/thêm thư mục đó trước. Không cần tạo phiên OpenCode mới chỉ để lấy lại ngữ cảnh; docs trong Git là hồ sơ bàn giao.
+
+Tại checkout trên Windows, sau khi cập nhật Git mà giữ các thay đổi local, có thể mở OpenCode bằng script sẵn có:
+
+```powershell
+.\start-opencode.ps1 --prompt "Đọc AGENTS.md, WORK_STATUS.md, docs/simulation-complexity-scope.md và docs/late-medieval-world-design-discussion.md. Chỉ review thiết kế: nêu ba quyết định còn mở và đề xuất một tác vụ thiết kế tiếp theo kèm tiêu chí nghiệm thu. Không sửa file, chạy triển khai, tạo subagent, commit, push hoặc training. Không bắt đầu lại M0 và không tự giảm số vùng/dân. Trả lời tiếng Việt."
+```
+
+Lệnh trên là hướng dẫn dựa trên CLI đã kiểm tra và script của repo; **chưa chạy trên máy Windows local trong tác vụ này**. Cần kiểm tra executable/provider thực tế ở máy đó, không sao chép credential vào repo hoặc chat.
+
+---
+
 Ngày: 14/10/2026. Công cụ coding agent đã chọn: **OpenCode**.
 
 Đây là tài liệu để bắt đầu triển khai theo từng mốc, chưa phải mã game hoặc báo cáo build thành công. OpenCode chưa được cài/chạy trong môi trường đang dùng để sửa tài liệu. Không có provider, API key hoặc model được cấu hình trong bước này.

@@ -8,6 +8,8 @@
 
 Đã thêm: docs/developer/M5-refactor-notes.md — ghi lại các thay đổi refactor ban đầu (WorldState, manager helpers, snapshot/restore) để chuẩn bị cho M5.
 
+Đã thêm: docs/developer/M5-refactor-deep.md — ghi chép bước tiếp theo: trích xuất finance/household/project helpers và di chuyển logic từ Realm vào các manager.
+
 ## Đọc theo mục đích
 
 | Mục đích | Tài liệu |
@@ -21,6 +23,7 @@
 | Tiến độ M5 và lệnh đã chạy | [Báo cáo M5-progress](reports/M5-progress.md) |
 | Chuẩn bị dữ liệu RL và GPU | [RL data & Kaggle preparation](experiments/rl-data-kaggle-preparation.md) |
 | Refactor M5 notes | [M5 refactor notes](developer/M5-refactor-notes.md) |
+| Refactor M5 deep | [M5 refactor deep notes](developer/M5-refactor-deep.md) |
 
 ## Folder tree
 

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <cstdint>
 #include <string>
@@ -31,5 +31,15 @@ struct Territory {
     double h = 0.0;
 };
 
+// Explicit state container for the authoritative world snapshot.
+// This keeps entity data (territories) and mutable runtime state separate,
+// making command validation and transactional rollback easier to reason about.
+struct WorldState {
+    GameDate date;
+    EntityId selected;
+    std::vector<Territory> territories;
+    bool paused = true;
+    uint64_t pause_revision = 0;
+};
 
 }

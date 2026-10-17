@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "polyec/types.hpp"
 #include "polyec/command.hpp"
@@ -20,17 +20,19 @@ public:
     EntityId get_selected() const;
     GameDate get_date() const;
     bool is_paused() const;
-    uint64_t pause_revision() const { return m_pause_revision; }
+    uint64_t pause_revision() const { return m_state.pause_revision; }
     PlayerView player_view() const;
 
     CommandResult execute(const Command &cmd);
 
 private:
-    std::vector<Territory> m_territories;
-    EntityId m_selected;
-    GameDate m_date;
-    bool m_paused = true;
-    uint64_t m_pause_revision = 0;
+    // The state is intentionally represented as a dedicated object so the world
+    // entities and runtime flags stay decoupled from their view/serialization
+    // logic and can be snapshot/restore atomically during command processing.
+    WorldState m_state;
+
+    WorldState snapshot() const { return m_state; }
+    void restore(const WorldState &state) { m_state = state; }
 };
 
 // SimulationController owns wall-clock bookkeeping only: fake-time mode, time

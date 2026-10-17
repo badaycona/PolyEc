@@ -1,189 +1,97 @@
-﻿#include "polyec/sim.hpp"
-#include <algorithm>
-#include <cmath>
-#include <limits>
-#include <stdexcept>
+#pragma once
+
+#include "polyec/types.hpp"
+#include "polyec/command.hpp"
+#include <vector>
+#include <memory>
 
 namespace polyec {
 
-GameWorld::GameWorld() {
-    m_selected.value = 0;
-    m_date.day = 0;
-    m_paused = true;
-}
+// GameWorld owns the authoritative simulation state (territories, game date,
+// pause flag, selection). Every mutation arrives as a Command and returns a
+// CommandResult; a rejected command must not change any part of the state.
+class GameWorld {
+public:
+    GameWorld();
+    ~GameWorld() = default;
 
-bool GameWorld::add_territory(const Territory &t) {
-    if (t.id.value == 0 || std::any_of(m_territories.begin(), m_territories.end(),
-            [&](const Territory &existing) { return existing.id == t.id; })) return false;
-    m_territories.push_back(t);
-    return true;
-}
+    bool add_territory(const Territory &t);
+    const std::vector<Territory> &territories() const;
+    EntityId get_selected() const;
+    GameDate get_date() const;
+    bool is_paused() const;
+    uint64_t pause_revision() const { return m_state.pause_revision; }
+    PlayerView player_view() const;
 
-PlayerView GameWorld::player_view() const {
-    return PlayerView{m_date, m_paused, m_selected, m_territories};
-}
+    CommandResult execute(const Command &cmd);
 
-const std::vector<Territory> &GameWorld::territories() const {
-    return m_territories;
-}
+private:
+    // The state is intentionally represented as a dedicated object so the world
+    // entities and runtime flags stay decoupled from their view/serialization
+    // logic and can be snapshot/restore atomically during command processing.
+    WorldState m_state;
 
-EntityId GameWorld::get_selected() const { return m_selected; }
-GameDate GameWorld::get_date() const { return m_date; }
-bool GameWorld::is_paused() const { return m_paused; }
+    WorldState snapshot() const { return m_state; }
+    void restore(const WorldState &state) { m_state = state; }
+};
 
-CommandResult GameWorld::execute(const Command &cmd) {
-    CommandResult r;
-    switch (cmd.type) {
-        case CommandType::SelectTerritory: {
-            // validate target exists; reject leaves selection untouched
-            auto it = std::find_if(m_territories.begin(), m_territories.end(),
-                                   [&](const Territory &x) { return x.id == cmd.target; });
-            if (it == m_territories.end()) {
-                r.success = false;
-                r.reason = "invalid_target";
-                r.date_version = m_date.day;
-                return r;
-            }
-            m_selected = cmd.target;
-            r.success = true;
-            r.reason = "ok";
-            r.date_version = m_date.day;
-            return r;
-        }
-        case CommandType::SetPause: {
-            if (!m_paused) ++m_pause_revision;
-            m_paused = true;
-            r.success = true;
-            r.reason = "paused";
-            r.date_version = m_date.day;
-            return r;
-        }
-        case CommandType::Resume: {
-            if (m_paused) ++m_pause_revision;
-            m_paused = false;
-            r.success = true;
-            r.reason = "resumed";
-            r.date_version = m_date.day;
-            return r;
-        }
-        case CommandType::AdvanceDay: {
-            // paused world never advances the calendar, no matter the caller
-            if (m_paused) {
-                r.success = false;
-                r.reason = "paused";
-                r.date_version = m_date.day;
-                return r;
-            }
-            if (m_date.day == std::numeric_limits<int>::max()) {
-                return CommandResult{false, "date_limit", m_date.day};
-            }
-            m_date += 1;
-            r.success = true;
-            r.reason = "advanced";
-            r.date_version = m_date.day;
-            return r;
-        }
-        case CommandType::None:
-        default: {
-            r.success = false;
-            r.reason = "unknown";
-            r.date_version = m_date.day;
-            return r;
-        }
-    }
-}
+// SimulationController owns wall-clock bookkeeping only: fake-time mode, time
+// scale and the sub-day accumulator. It NEVER owns the pause flag; the pause
+// flag lives in GameWorld and the controller mutates it exclusively through
+// SetPause/Resume commands, so UI and AI observe exactly one state.
+class SimulationController {
+public:
+    explicit SimulationController(std::shared_ptr<GameWorld> world);
 
-// ---------------------------------------------------------------------------
-// SimulationController
-// ---------------------------------------------------------------------------
+    // --- fake time -------------------------------------------------------
+    // Fake time does not mean "one day per update". It means the elapsed time
+    // handed to update() is injected by the caller (test/tool) instead of being
+    // sampled from a real monotonic clock. All accumulation rules below still
+    // apply, so the day count is a deterministic function of injected time.
+    void set_fake_time(bool fake) { m_fake = fake; }
+    bool is_fake_time() const { return m_fake; }
 
-SimulationController::SimulationController(std::shared_ptr<GameWorld> world)
-    : m_world(world), m_fake(false), m_scale(1.0), m_accum(0.0) {
-    if (!m_world) throw std::invalid_argument("SimulationController requires a world");
-    m_seen_pause_revision = m_world->pause_revision();
-}
+    // --- time scale ------------------------------------------------------
+    // M0a supports scales from zero through 4x; rejects all other input.
+    bool set_time_scale(double s);
+    double get_time_scale() const { return m_scale; }
 
-bool SimulationController::set_time_scale(double s) {
-    // reject NaN / Inf / negative: keep the last known-good scale
-    if (!std::isfinite(s) || s < 0.0 || s > 4.0) {
-        return false;
-    }
-    m_scale = s;
-    return true;
-}
+    // --- pause (delegates to the world's authoritative state) ------------
+    bool is_paused() const;
+    void set_paused(bool p);
 
-bool SimulationController::is_paused() const {
-    // single source of truth: the world's pause state
-    return m_world->is_paused();
-}
+    // --- clock -----------------------------------------------------------
+    // dt_real_seconds is the elapsed real time since the previous call (or the
+    // injected elapsed time when fake time is enabled). Must be finite and >= 0;
+    // invalid values are ignored without touching state. A delta larger than
+    // kMaxRealDeltaSeconds (sleep, focus loss, hitch) auto-pauses the world and
+    // discards the pending time: no catch-up run.
+    void update(double dt_real_seconds);
 
-void SimulationController::set_paused(bool p) {
-    if (p) {
-        m_world->execute(Command{CommandType::SetPause, EntityId{}});
-    } else {
-        m_world->execute(Command{CommandType::Resume, EntityId{}});
-    }
-    // Explicit pause/resume is a decision point: drop whatever sub-day time was
-    // pending so resuming never replays the time spent paused.
-    m_accum = 0.0;
-    m_seen_pause_revision = m_world->pause_revision();
-}
+    // Deterministic single-day step for tests/dev tools. Rejected by the world
+    // while paused (returns success == false, date unchanged).
+    CommandResult step_day();
 
-void SimulationController::update(double dt_real_seconds) {
-    // 1) reject non-finite or negative elapsed time: no state change at all
-    if (!std::isfinite(dt_real_seconds) || dt_real_seconds < 0.0) {
-        return;
-    }
+    // Seconds of accumulated sub-day time still pending (diagnostic / test aid).
+    double pending_seconds() const { return m_accum; }
 
-    // Observe transitions even when pause/resume both occurred between ticks.
-    if (m_seen_pause_revision != m_world->pause_revision()) {
-        m_accum = 0.0;
-        m_seen_pause_revision = m_world->pause_revision();
-    }
+    // 1x == 1 game day per real second (M0a tuning; see docs/handoff/opencode-handoff.md).
+    static constexpr double kSecondsPerGameDay = 1.0;
+    // Reject-and-pause threshold for elapsed time: anything above this is not a
+    // frame delta but a gap (window unfocused, machine slept, debugger stopped,
+    // huge hitch). The world is paused and the gap is dropped so pause never
+    // silently runs the calendar forward. 0.25 s ~= 4 frames at 60 Hz.
+    static constexpr double kMaxRealDeltaSeconds = 0.25;
+    // Upper bound of days advanced in a single update() call; leftover time is
+    // dropped (never queued) so one frame cannot turn into a stall.
+    static constexpr int kMaxAdvancePerUpdate = 8;
 
-    // 2) long gap (sleep, focus loss, machine wake, debugger stop): pause and
-    //    drop the gap instead of catching the calendar up
-    if (dt_real_seconds > kMaxRealDeltaSeconds) {
-        set_paused(true);
-        return;
-    }
-
-    // 3) normal frame: paused world does not accumulate or advance
-    if (m_world->is_paused()) {
-        return;
-    }
-
-    m_accum += dt_real_seconds * m_scale;
-    if (!std::isfinite(m_accum)) {
-        m_accum = 0.0;
-        set_paused(true);
-        return;
-    }
-
-    int advanced = 0;
-    while (m_accum >= kSecondsPerGameDay && advanced < kMaxAdvancePerUpdate) {
-        m_accum -= kSecondsPerGameDay;
-        CommandResult r = m_world->execute(Command{CommandType::AdvanceDay, EntityId{}});
-        ++advanced;
-        if (!r.success) {
-            // world rejected the advance (it is paused now): drop the residual
-            m_accum = 0.0;
-            return;
-        }
-    }
-
-    // Any remaining whole days beyond the per-frame cap are dropped, never
-    // queued for a later frame.
-    if (m_accum >= kSecondsPerGameDay) {
-        m_accum = 0.0;
-    }
-}
-
-CommandResult SimulationController::step_day() {
-    // Single command through the same pipeline as UI input: rejected while
-    // paused, no partial state change. The sub-day accumulator is untouched so
-    // fractional time keeps accumulating as usual.
-    return m_world->execute(Command{CommandType::AdvanceDay, EntityId{}});
-}
+private:
+    std::shared_ptr<GameWorld> m_world;
+    bool m_fake = false;
+    double m_scale = 1.0;
+    double m_accum = 0.0; // sub-day remainder in game-time seconds at scale 1
+    uint64_t m_seen_pause_revision = 0;
+};
 
 }

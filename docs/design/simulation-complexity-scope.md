@@ -1,5 +1,7 @@
 # PolyEc — ranh giới độ phức tạp simulation
 
+**Làm rõ đã duyệt 2026-10-17:** [Quyết định mô phỏng](M5-simulation-design-decisions.md) và [bảng thay đổi](../handoff/M5-simulation-change-map.md) thay cách diễn giải cũ mâu thuẫn về busy, hoạt động/ngày, cơ thể, agency và Windows-only. Không chứng nhận đã triển khai hoặc tự phê duyệt tham số cân bằng.
+
 Ngày ghi nhận: 2026-10-15. **Đề xuất thiết kế để tiếp tục thảo luận; chưa phải toàn bộ phạm vi đã được duyệt hoặc đã triển khai.**
 
 ## 1. Ngữ cảnh và trạng thái quyết định

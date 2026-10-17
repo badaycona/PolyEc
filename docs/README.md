@@ -1,5 +1,7 @@
 # Tài liệu PolyEc
 
+**Thiết kế mô phỏng đã duyệt 2026-10-17:** [Quyết định và nguồn tham khảo](design/M5-simulation-design-decisions.md), [bảng phần cần giữ/sửa/build mới](handoff/M5-simulation-change-map.md). Đây là contract thiết kế, không phải chứng nhận các thay đổi gameplay local đã được commit hoặc triển khai đầy đủ.
+
 [WORK_STATUS.md](../WORK_STATUS.md) ghi trạng thái mã và gate còn mở. [Implementation plan](design/implementation-plan.md) mô tả đích sản phẩm. M4 hiện được kiểm chứng Windows với controller kiểm thử có nhãn; chưa chứng nhận RL production hoặc Linux của thay đổi M4.
 
 ## Đọc theo mục đích

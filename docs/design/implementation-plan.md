@@ -1,5 +1,7 @@
 # Đại Bàn Cờ Vương Quyền — Implementation Plan
 
+**Làm rõ đã duyệt 2026-10-17:** [Quyết định mô phỏng](M5-simulation-design-decisions.md) và [bảng thay đổi](../handoff/M5-simulation-change-map.md) thay cách diễn giải cũ mâu thuẫn về busy, hoạt động/ngày, cơ thể, agency và Windows-only. Không chứng nhận đã triển khai hoặc tự phê duyệt tham số cân bằng.
+
 **Phiên bản:** 3.0 · 14/10/2026  
 **Vai trò tài liệu:** Đặc tả sản phẩm và roadmap M0–M7. Đây là mục tiêu thiết kế, không phải bảng trạng thái triển khai. Trạng thái mã hiện tại nằm trong [WORK_STATUS.md](../../WORK_STATUS.md); bằng chứng và các gate M3 nằm trong [M3-evidence.md](../reports/M3-evidence.md).
 **Thể loại:** Mô phỏng cai trị, chính trị–kinh tế; thời gian thực có tạm dừng.  

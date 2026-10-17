@@ -1,5 +1,7 @@
 # M5 — Draft nền xã hội, quốc gia và profile B
 
+**Làm rõ đã duyệt 2026-10-17:** [Quyết định mô phỏng](M5-simulation-design-decisions.md) và [bảng thay đổi](../handoff/M5-simulation-change-map.md) thay cách diễn giải cũ mâu thuẫn về busy, hoạt động/ngày, cơ thể, agency và Windows-only. Không chứng nhận đã triển khai hoặc tự phê duyệt tham số cân bằng.
+
 Ngày: 2026-10-15. **ĐÃ DUYỆT 2026-10-15 — triển khai đã bắt đầu.**
 
 > **Trạng thái: APPROVED 2026-10-15.** Người dùng đã duyệt triển khai gameplay M5. Hướng dẫn nền tảng mới (2026-10-15): ưu tiên Windows trước; việc kiểm chứng app/package Linux bị hoãn trong M5 hiện tại, phần core/Python portable vẫn phải giữ và kiểm thử (chuẩn bị Kaggle). Hướng dẫn này thay thế các gate về app/package Linux, nhưng **không** xóa yêu cầu portability/testing của core và **không** cho phép giảm gameplay, bỏ test hoặc bỏ invariant. Lát cắt đầu tiên (household membership + giám hộ) đã xong; M5.1–M5.5 còn mở — xem [M5 progress](../reports/M5-progress.md).

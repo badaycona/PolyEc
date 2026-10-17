@@ -1,5 +1,7 @@
 # PolyEc — Bộ giao việc cho OpenCode
 
+Điểm tiếp tục cập nhật 2026-10-17: [kế hoạch sau pull](next-steps-2026-10-17.md). Ưu tiên sửa tính toàn vẹn source/build của revision a5647a5 rồi nối timeline theo thiết kế 17/10; các mục tiếp tục 15/10 bên dưới giữ làm lịch sử khi mâu thuẫn. Quy trình plan → review → code/test → nghiệm thu vẫn áp dụng.
+
 ## Tiếp tục hiện tại — M5 lát cắt hộ gia đình (2026-10-15)
 
 Spec đã duyệt: [M5 draft](../design/M5-draft.md) (APPROVED 2026-10-15). Ưu tiên Windows trước; app/package Linux hoãn, core/Python portable vẫn phải kiểm thử (Kaggle). Phân vai: OpenCode viết code chính; Codex chia tác vụ, ra chỉ dẫn, review diff/bằng chứng và phối hợp nghiệm thu — không tự thay OpenCode viết code trong tác vụ đã giao.

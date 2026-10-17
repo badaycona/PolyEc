@@ -1,5 +1,7 @@
 # PolyEc — trạng thái làm việc
 
+Điểm tiếp tục sau pull 2026-10-17: xem [kế hoạch và blocker hiện hành](docs/handoff/next-steps-2026-10-17.md). Revision `a5647a5` đã được OpenCode sửa theo [plan Copilot core repair](docs/handoff/copilot-core-repair-plan.md) (khôi phục file gốc d5751bb + tái áp trích xuất manager có chọn lọc; không revert cả commit). Cửa sổ `build/copilot-core-repair`: CTest 6/6 pass (5 target cũ + `manager_tests` parity/conservation/boundary cho Finance/Household/Project). Codex đã review diff và chạy độc lập CTest 6/6 pass; xem [bằng chứng nghiệm thu](docs/reports/copilot-core-repair-2026-10-17.md). Không commit. Các kết quả test bên dưới là lịch sử. Link review M5.1a đúng là [review quỹ hộ](docs/design/M5-1a-household-accounts-review.md); phần lịch sử mâu thuẫn thiết kế 17/10 không điều hành việc mới.
+
 Cập nhật: 2026-10-17. Phiên này được chỉnh để ăn theo tài liệu mới nhất (docs/README.md — Thiết kế mô phỏng đã duyệt 2026-10-17). Tài liệu cũ trong thư mục docs/ và artifacts/ được giữ làm chứng tích lịch sử; các mục có nhãn "artifact" hoặc "source-snapshot" có thể là bản ghi thí nghiệm chứ không phải trạng thái hoạt động hiện hành.
 
 ## Hiện tại

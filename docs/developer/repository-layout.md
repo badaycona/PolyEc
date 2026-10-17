@@ -14,7 +14,7 @@ Root giữ README, WORK_STATUS, AGENTS, CMake và cấu hình/launcher OpenCode.
 | `godot_project/models`, `fonts` | Tài nguyên runtime đóng gói local |
 | `ai/training`, `evaluation`, `tests` | Training, đánh giá và kiểm tra ML/binding |
 | `scripts` | Build, test, train, package và kiểm tra link repo |
-| `docs/design` | Đích sản phẩm, domain và đề xuất chưa duyệt |
+| `docs/design` | Đích sản phẩm, domain và đề xuất đang được duyệt/triển khai |
 | `docs/developer` | Bài thuyết minh và cách tổ chức source |
 | `docs/experiments` | Protocol/schema theo phiên bản |
 | `docs/guides` | Hướng dẫn người chơi |
@@ -22,19 +22,25 @@ Root giữ README, WORK_STATUS, AGENTS, CMake và cấu hình/launcher OpenCode.
 | `docs/reports` | Kết quả đã chạy, phương pháp và giới hạn |
 | `artifacts/models`, `artifacts/visuals` | Hồ sơ thí nghiệm đã ghi và bằng chứng theo milestone/run |
 
-`build/`, `dist/`, `third_party/`, `.godot/` và native binary sinh ra là output/dependency local, không đưa vào commit source. Các model runtime đã theo dõi bằng Git vẫn giữ nguyên.
+`build/`, `dist/`, `third_party/`, `.godot/` và native binary sinh ra là output/dependency local, không đưa vào commit source. Các model runtime đã theo dõi bằng Git vẫn giữ nguyên với phiên bản tương ứng; các bản lock, snapshot, checkpoint cũ là artifact lịch sử để truy nguyên và không phải “hiện trạng đang active”.
 
-Đặt script và `.uid` cạnh nhau trong nhóm UI tương ứng, giữ UID khi di chuyển. Scene khởi động vẫn là `godot_project/main.tscn`. Sau khi đổi đường dẫn, cập nhật preload/scene, script package và link tài liệu, rồi chạy smoke liên quan cùng `python scripts/check-repository-links.py`.
+Đặt script và `.uid` cạnh nhau trong nhóm UI tương ứng, giữ UID khi di chuyển. Scene khởi động vẫn là `godot_project/main.tscn`. Sau khi đổi đường dẫn, cập nhật tất cả tham chiếu liên quan.
 
 Giữ nguyên source lock/manifest cũ để truy nguyên theo revision. Không chỉnh checkpoint hoặc số liệu lịch sử khi chỉ sắp xếp folder.
 
+## Ghi chú về trạng thái hiện hành
+
+- `WORK_STATUS.md` và `docs/design/M5-simulation-design-decisions.md` là nguồn chuẩn cho trạng thái hiện tại của repo.
+- `docs/reports/*`, `docs/experiments/*`, `artifacts/models/*`, `artifacts/visuals/*` là minh chứng lịch sử hoặc snapshot thí nghiệm; các file đó không thay thế trạng thái active nếu không được cập nhật lại trong `WORK_STATUS.md`.
+- Khi một báo cáo cũ nói “đã chạy” nhưng không có xác nhận mới trong trạng thái hiện hành, hãy coi đó là artifact quyết định theo thời điểm, không phải “đang đúng ngay lúc này”.
+
 ## Ghi chú Godot 4.5.1 trên Windows
 
-Sau lần chuyển đường dẫn UI, các smoke từ source vẫn pass nhưng import/export headless đã có lần crash. Lần kiểm tra này đã tạo lại cache local và chạy editor thêm 30 frame trước khi export; cả warmup và package sau đó exit 0. Có [báo cáo upstream về crash headless import với GDExtension](https://github.com/godotengine/godot/issues/111645); chưa khẳng định cùng stack trace vì binary local không có debug symbols.
+Sau lần chuyển đường dẫn UI, các smoke từ source vẫn pass nhưng import/export headless đã có lần crash. Lần kiểm tra này đã tạo lại cache local và chạy editor headless để xác minh không lỗi trùng path. 
 
 ```powershell
 <Godot-console.exe> --headless --editor --frame-delay 250 --path godot_project --quit-after 30
 .\scripts\package-windows.ps1 -Godot <Godot-console.exe> -BuildDir build/windows -OutputDir dist/PolyEc-M4-Windows -IncludeM4
 ```
 
-Kiểm tra exit code/log của từng bước; không coi pack cũ còn trên đĩa là bằng chứng export mới thành công. Cache cũ của lần kiểm tra được giữ trong `build/godot-cache-before-layout` để có thể phục hồi, không đưa vào Git.
+Kiểm tra exit code/log của từng bước; không coi pack cũ còn trên đĩa là bằng chứng export mới thành công. Cache cũ của lần kiểm tra được giữ trong `build/godot/...` để thuận tiện so sánh và truy nguyên.

@@ -11,6 +11,7 @@
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <set>
 #include <utility>
 
 namespace polyec {
@@ -114,8 +115,7 @@ std::vector<uint64_t> Realm::due(Family family)const{
     std::vector<uint64_t> ids;int cadence=family==Family::Economic?7:30;
     for(auto&p:people_)if(p.alive&&p.family==family&&p.busy_until<=day_&&p.last_decision_day!=day_&&day_%cadence==int(p.id%cadence))ids.push_back(p.id);return ids;
 }
-std::array<Candidate,realm_actions> Realm::candidates(uint64_t id)const{
-    auto&p=person(id);std::array<Candidate,realm_actions> c{};
+std::array<Candidate,realm_actions> Realm::candidates(uint64_t id)const{if(schedule_book_.timeline_contract)throw std::runtime_error("Legacy policy access disabled under timeline contract");    auto&p=person(id);std::array<Candidate,realm_actions> c{};
     if(p.family==Family::Economic){
         for(int g=0;g<7;++g){c[1+g]={Intent::Buy,p.region,g,4};c[8+g]={Intent::Sell,p.region,g,4};}
         for(int r=0;r<7;++r)c[15+r]={Intent::Travel,r};
@@ -147,7 +147,10 @@ std::array<Candidate,realm_actions> Realm::candidates(uint64_t id)const{
 bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
     if(id==0||id>people_.size()){reason="Unknown actor";return false;}auto&p=person(id);
     if(c.kind==Intent::Hold)return true;
-    if(!p.alive){reason="Actor deceased";return false;}if(p.busy_until>day_){reason="Action duration not finished";return false;}
+    if(!p.alive){reason="Actor deceased";return false;}
+    bool busyBlocks=p.busy_until>day_;
+    if(schedule_book_.timeline_contract)switch(c.kind){case Intent::Buy:case Intent::Sell:case Intent::Borrow:case Intent::Repay:case Intent::Tax:case Intent::Aid:case Intent::Investigate:case Intent::Offer:case Intent::Accept:case Intent::Reject:case Intent::Support:case Intent::Hire:case Intent::Project:case Intent::Appoint:case Intent::Resign:busyBlocks=false;break;default:break;}
+    if(busyBlocks){reason="Action duration not finished";return false;}
     if(c.amount<0||c.amount>1000000||c.target<0){reason="Invalid terms";return false;}
     if(c.kind==Intent::Accept||c.kind==Intent::Reject){if(legal_proposal_response(id,c))return true;reason="Proposal unavailable";return false;}
     if(c.kind==Intent::Support){if(p.family!=Family::Civilian||p.age_days<6*365||c.target<=0||c.target!=int(household_authority(p.household))||uint64_t(c.target)==id||c.target>int(people_.size())||!person(c.target).alive||p.cash<c.amount){reason="Household transfer unavailable";return false;}return true;}
@@ -189,8 +192,7 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
     }
     reason="Resources, charter, age, capacity or location prevents action";return false;
 }
-std::array<float,realm_actions> Realm::mask(uint64_t id)const{
-    std::array<float,realm_actions> m{};auto c=candidates(id);for(int i=0;i<realm_actions;++i){std::string why;m[i]=(i==0||c[i].kind!=Intent::Hold)&&legal(id,c[i],why)?1.f:0.f;}return m;
+std::array<float,realm_actions> Realm::mask(uint64_t id)const{if(schedule_book_.timeline_contract)throw std::runtime_error("Legacy policy access disabled under timeline contract");    std::array<float,realm_actions> m{};auto c=candidates(id);for(int i=0;i<realm_actions;++i){std::string why;m[i]=(i==0||c[i].kind!=Intent::Hold)&&legal(id,c[i],why)?1.f:0.f;}return m;
 }
 RealmResult Realm::execute(const RealmCommand&cmd){
     std::string why;if(cmd.actor==0||cmd.actor>people_.size())return {false,"Unknown actor"};auto&p=mutable_person(cmd.actor);
@@ -198,7 +200,8 @@ RealmResult Realm::execute(const RealmCommand&cmd){
     if(!legal(cmd.actor,cmd.action,why))return {false,why};
     auto c=cmd.action;auto&v=provinces_[p.region];auto&funds=p.family==Family::Governance?v.treasury:p.cash;
     // Validation above covers every source/capacity before any mutation.
-    if(c.kind!=Intent::Hold&&p.job>=0){v.employed=std::max(0,v.employed-1);if(p.job_kind==1)v.teachers=std::max(0,v.teachers-1);p.job=-1;}
+    bool clearsJob=!schedule_book_.timeline_contract||(c.kind==Intent::Travel||c.kind==Intent::Migrate||c.kind==Intent::Work||c.kind==Intent::Study||c.kind==Intent::Rest||c.kind==Intent::Social||c.kind==Intent::Join||c.kind==Intent::Mobilize);
+    if(c.kind!=Intent::Hold&&p.job>=0&&clearsJob){v.employed=std::max(0,v.employed-1);if(p.job_kind==1)v.teachers=std::max(0,v.teachers-1);p.job=-1;}
     switch(c.kind){
     case Intent::Hold:break;
     case Intent::Buy:transfer(p.cash,v.firm,(v.price[c.good]+1)*c.amount);sales_tax(v,(v.price[c.good]+1)*c.amount);v.stock[c.good]-=c.amount;p.inventory[c.good]+=c.amount;break;
@@ -224,6 +227,86 @@ RealmResult Realm::execute(const RealmCommand&cmd){
     case Intent::Mobilize:transfer(funds,v.firm,c.amount);v.unrest=std::max(0,v.unrest-p.stats.values[5]/10);break;
     }
     p.last_decision_day=day_;++p.decisions;++p.sampling;event(p.id,p.region,int(c.kind),c.amount,uint64_t(c.target));return {true,"Committed",next_fact_-1};
+}
+RealmResult Realm::execute(const ScheduleCommand&cmd){
+    if(cmd.actor==0||cmd.actor>people_.size())return {false,"Unknown actor"};
+    auto&p=mutable_person(cmd.actor);
+    if(cmd.sequence!=p.decisions+1)return {false,"Stale or duplicate decision ID"};
+    if(!p.alive)return {false,"Actor deceased"};
+    if(next_fact_==UINT64_MAX)return {false,"Fact counter overflow"};
+    auto&book=schedule_book_;
+    const int64_t maxTick=365000LL*kSubdayUnitsPerDay;
+    if(cmd.operation==ScheduleCommand::Operation::Submit){
+        if(cmd.begin<book.cursor)return {false,"Processed time"};
+        if(cmd.begin>=cmd.end)return {false,"Invalid session range"};
+        if(cmd.begin>maxTick||cmd.end>maxTick)return {false,"Session outside world horizon"};
+        if(cmd.demand_rate<activity::kMinDemandRate||cmd.demand_rate>activity::kMaxDemandRate)return {false,"Invalid demand rate"};
+        if(p.decisions==UINT64_MAX||book.next_session_id==UINT64_MAX||p.sampling==UINT64_MAX)return {false,"Decision counter overflow"};
+        uint64_t newId=book.next_session_id;
+        std::vector<ActivitySession> staged;
+        auto found=book.sessions.find(cmd.actor);
+        if(found!=book.sessions.end())staged=found->second;
+        ActivitySession session{newId,cmd.actor,cmd.begin,cmd.end,cmd.priority,cmd.demand_rate};
+        staged.push_back(session);
+        std::vector<activity::SessionView> views;
+        for(auto const&s:staged)views.push_back({s.id,s.actor,s.begin,s.end,s.priority,s.demand_rate});
+        auto probe=activity::evaluateActivity(cmd.actor,activity::Horizon{cmd.begin,cmd.end},views);
+        if(!probe.ok){
+            return {false,"Schedule arithmetic overflow"};
+        }
+        book.next_session_id=newId+1;
+        if(found==book.sessions.end())book.sessions.emplace(cmd.actor,std::move(staged));else found->second=std::move(staged);
+        book.timeline_contract=true;
+        p.last_decision_day=day_;++p.decisions;++p.sampling;
+        event(cmd.actor,p.region,200,0,0,false,0);
+        uint64_t factId=next_fact_==0?0:next_fact_-1;
+        return {true,"Committed",factId,newId};
+    }
+    auto it=book.sessions.find(cmd.actor);
+    if(it==book.sessions.end())return {false,"Unknown session"};
+    auto sit=std::find_if(it->second.begin(),it->second.end(),[&](const ActivitySession&s){return s.id==cmd.session;});
+    if(sit==it->second.end())return {false,"Unknown session"};
+    if(sit->retired||sit->begin<book.cursor)return {false,"Processed time"};
+    if(cmd.operation==ScheduleCommand::Operation::Cancel){
+        if(p.decisions==UINT64_MAX||p.sampling==UINT64_MAX)return {false,"Decision counter overflow"};
+        std::vector<ActivitySession> staged=it->second;
+        staged.erase(std::remove_if(staged.begin(),staged.end(),[&](const ActivitySession&s){return s.id==cmd.session;}),staged.end());
+        std::vector<activity::SessionView> views;
+        for(auto const&s:staged)views.push_back({s.id,s.actor,s.begin,s.end,s.priority,s.demand_rate});
+        if(!staged.empty()){auto probe=activity::evaluateActivity(cmd.actor,activity::Horizon{sit->begin,sit->end},views);if(!probe.ok)return {false,"Schedule arithmetic overflow"};}
+        it->second=std::move(staged);
+        if(it->second.empty())book.sessions.erase(cmd.actor);
+        p.last_decision_day=day_;++p.decisions;++p.sampling;
+        event(cmd.actor,p.region,201,0,cmd.session,false,0);
+        uint64_t factId=next_fact_==0?0:next_fact_-1;
+        return {true,"Committed",factId,cmd.session};
+    }
+    if(cmd.operation==ScheduleCommand::Operation::Reprioritize){
+        if(p.decisions==UINT64_MAX||p.sampling==UINT64_MAX)return {false,"Decision counter overflow"};
+        std::vector<ActivitySession> staged=it->second;
+        for(auto&s:staged)if(s.id==cmd.session)s.priority=cmd.priority;
+        std::vector<activity::SessionView> views;
+        for(auto const&s:staged)views.push_back({s.id,s.actor,s.begin,s.end,s.priority,s.demand_rate});
+        auto probe=activity::evaluateActivity(cmd.actor,activity::Horizon{sit->begin,sit->end},views);
+        if(!probe.ok)return {false,"Schedule arithmetic overflow"};
+        it->second=std::move(staged);
+        p.last_decision_day=day_;++p.decisions;++p.sampling;
+        event(cmd.actor,p.region,202,0,cmd.session,false,0);
+        uint64_t factId=next_fact_==0?0:next_fact_-1;
+        return {true,"Committed",factId,cmd.session};
+    }
+    return {false,"Unsupported schedule operation"};
+}
+RealmResult Realm::execute(const RealmClockCommand&cmd){
+    if(cmd.operation!=RealmClockCommand::Operation::Pause&&cmd.operation!=RealmClockCommand::Operation::Resume)return {false,"Unknown clock operation"};
+    if(cmd.expected_pause_revision.has_value()&&*cmd.expected_pause_revision!=pause_revision_)return {false,"Stale clock revision"};    if(cmd.operation==RealmClockCommand::Operation::Pause){
+        if(paused_)return {true,"Committed"};
+        if(pause_revision_==UINT64_MAX)return {false,"Pause revision overflow"};
+        paused_=true;++pause_revision_;return {true,"Committed"};
+    }
+    if(!paused_)return {true,"Committed"};
+    if(pause_revision_==UINT64_MAX)return {false,"Pause revision overflow"};
+    paused_=false;++pause_revision_;return {true,"Committed"};
 }
 int Realm::distance(int from,int to)const{
     if(from<0||from>regions_||to<0||to>regions_)return -1;
@@ -289,7 +372,43 @@ void Realm::daily(){
     refresh_demography();prices();
 }
 void Realm::refresh_demography(){for(auto&v:provinces_){v.residents=0;v.health_sum=0;}for(auto&p:people_){auto&v=provinces_[p.region];++v.residents;v.health_sum+=p.alive?p.health:0;}}
-void Realm::advance(int days){if(days<0||days>36500)throw std::invalid_argument("days bounds");for(int i=0;i<days;++i)daily();}
+void Realm::advance(int days){if(days<0||days>36500)throw std::invalid_argument("days bounds");advance_ticks(static_cast<int64_t>(days)*kSubdayUnitsPerDay);}
+void Realm::advance_ticks(int64_t ticks){
+    if(ticks<0)throw std::invalid_argument("ticks bounds");
+    if(ticks>0 && paused_)throw std::runtime_error("Realm is paused");
+    const int64_t maxTick=365000LL*kSubdayUnitsPerDay;
+    if(schedule_book_.cursor>maxTick||ticks>maxTick-schedule_book_.cursor)throw std::invalid_argument("ticks bounds");
+    int64_t target=schedule_book_.cursor+ticks;
+    while(schedule_book_.cursor<target){
+        int64_t nextBoundary=((schedule_book_.cursor/kSubdayUnitsPerDay)+1)*kSubdayUnitsPerDay;
+        int64_t chunk=std::min(target,nextBoundary)-schedule_book_.cursor;
+        if(chunk<=0)throw std::runtime_error("Schedule cursor stuck");
+        // Stage the whole sparse schedule book before any commit.
+        ScheduleBook staged=schedule_book_;
+        // retire dead owners in staged book without deleting evidence.
+        for(auto&[actor,sessions]:staged.sessions){
+            if(actor==0||actor>people_.size()||!person(actor).alive){
+                for(auto&s:sessions)if(!s.retired){s.retired=true;s.retired_tick=staged.cursor;s.retired_cause=100;}
+            }
+        }
+        // integrate attention for each live actor into staged sessions.
+        for(auto&[actor,sessions]:staged.sessions){
+            if(actor==0||actor>people_.size()||!person(actor).alive)continue;
+            std::vector<activity::SessionView> views;
+            for(auto const&s:sessions)if(!s.retired&&s.begin<staged.cursor+chunk&&s.end>staged.cursor)views.push_back({s.id,s.actor,s.begin,s.end,s.priority,s.demand_rate});
+            if(views.empty())continue;
+            auto result=activity::evaluateActivity(actor,activity::Horizon{staged.cursor,staged.cursor+chunk},views);
+            if(!result.ok)throw std::runtime_error("Schedule attention overflow");
+            for(auto const&r:result.results){
+                for(auto&s:sessions)if(s.id==r.id){s.requested+=r.requested;s.delivered+=r.delivered;s.unmet+=r.unmet;s.capacity_unmet+=r.capacity_unmet;s.unresolved_unmet+=r.unresolved_unmet;}
+            }
+        }
+        // commit staged book and cursor.
+        schedule_book_=std::move(staged);
+        schedule_book_.cursor+=chunk;
+        if(schedule_book_.cursor%kSubdayUnitsPerDay==0)daily();
+    }
+}
 std::array<int64_t,9> Realm::balances()const{std::array<int64_t,9>b{};for(auto&p:people_)b[0]+=p.cash;for(auto&p:provinces_){b[1]+=p.firm;b[2]+=p.treasury;}b[3]=carrier_;b[4]=estate_;for(auto f:organization_funds_)b[5]+=f;b[6]=credit_pool_;b[7]=restricted_fund_;for(auto&o:proposals_)b[8]+=o.escrow;return b;}
 int64_t Realm::total_money()const{int64_t n=carrier_+estate_+credit_pool_+restricted_fund_;for(auto&o:proposals_)n+=o.escrow;for(auto&p:people_)n+=p.cash;for(auto&p:provinces_)n+=p.firm+p.treasury;for(auto funds:organization_funds_)n+=funds;return n;}
 bool Realm::invariant(const std::array<int64_t,7>& bonded_goods)const{
@@ -301,6 +420,37 @@ bool Realm::invariant(const std::array<int64_t,7>& bonded_goods)const{
     for(auto&l:loans_)if(l.principal<=0||l.principal>1000000||l.interest<0||l.paid<0||l.paid>l.principal+l.interest||l.debtor==0||l.debtor>people_.size()||l.creditor<0||l.creditor>regions_||l.due<0)return false;
     for(auto&e:edges_)if(!e.from||!e.to||e.from>people_.size()||e.to>people_.size())return false;
     if(!households_consistent())return false;
+    if(schedule_book_.cursor<0||schedule_book_.cursor>365000LL*kSubdayUnitsPerDay)return false;
+    if(day_!=static_cast<int>(schedule_book_.cursor/kSubdayUnitsPerDay))return false;
+    std::set<uint64_t> seen;
+    for(auto const&[actor,sessions]:schedule_book_.sessions){
+        if(actor==0||actor>people_.size())return false;
+        if(sessions.empty())return false;
+        for(auto const&s:sessions){
+            if(s.id==0||seen.count(s.id))return false;
+            seen.insert(s.id);
+            if(s.actor!=actor)return false;
+            if(s.begin<0||s.begin>=s.end||s.end>365000LL*kSubdayUnitsPerDay)return false;
+            if(s.demand_rate<activity::kMinDemandRate||s.demand_rate>activity::kMaxDemandRate)return false;
+            if(s.requested<0||s.delivered<0||s.unmet<0||s.capacity_unmet<0||s.unresolved_unmet<0)return false;
+            if(s.delivered>s.requested||s.capacity_unmet>s.unmet||s.unresolved_unmet>s.unmet)return false;
+             if(s.delivered>s.requested)return false;
+             if(s.unmet!=s.requested-s.delivered)return false;
+            if(s.capacity_unmet>s.unmet)return false;
+            if(s.unresolved_unmet!=s.unmet-s.capacity_unmet)return false;
+            if(s.retired&&(s.retired_tick<0||s.retired_tick>schedule_book_.cursor))return false;
+            int64_t processedEnd=s.retired?s.retired_tick:schedule_book_.cursor;if(processedEnd>s.end)processedEnd=s.end;if(processedEnd<s.begin)processedEnd=s.begin;if(s.requested!=s.demand_rate*(processedEnd-s.begin))return false;
+            if(s.retired){if(s.retired_tick<0||s.retired_tick>schedule_book_.cursor)return false;if(!s.retired_cause)return false;}
+            else {if(s.retired_tick!=0||s.retired_cause!=0)return false;}
+        }
+    }
+    if(schedule_book_.timeline_contract){
+        // sessions may exist; no extra constraint.
+    } else {
+        if(!schedule_book_.sessions.empty())return false;
+    }
+    if(schedule_book_.next_session_id<1)return false;
+    for(uint64_t id:seen)if(id>=schedule_book_.next_session_id)return false;
     return true;
 }
 RealmView Realm::view(uint64_t observer)const{RealmView v;v.day=day_;v.regions=regions_;v.persons=people_.size();v.money=total_money();v.provinces=provinces_;v.draft=draft_;for(auto&p:people_){v.alive+=p.alive;v.children+=p.alive&&p.age_days<18*365;v.decisions+=p.decisions;}for(auto&f:facts_)if(knows(observer,f))v.facts.push_back(f);return v;}
@@ -309,8 +459,7 @@ double Realm::utility(uint64_t id)const{auto&p=person(id);auto&v=provinces_[p.re
     if(p.family==Family::Governance){double wellbeing=0;int n=0;for(auto&c:people_)if(c.region==p.region){wellbeing+=c.alive?c.health:0;++n;}double reserve_target=std::max(100.,double(n)*3.);double fiscal=5*std::min(1.,v.treasury/reserve_target);return (p.alive?0:-100)+(p.goal==0?2.:1.)*fiscal+(p.goal==1?3.:1.)*wellbeing/std::max(1,n)-v.unrest*.4+std::min(v.road,4)*5+std::min(v.school,std::max(8,n/4))*.1-debt(id)*.01;}
     return (p.alive?0:-100)+p.health*.8+p.nutrition*.2+(p.goal==0?2.:.7)*p.skill+(p.goal==1?.08:.02)*wealth+(p.goal==2?2.:.3)*p.social;
 }
-std::array<float,realm_obs> Realm::observation(uint64_t id)const{
-    std::array<float,realm_obs> o{};auto&p=person(id);auto&v=provinces_[p.region];
+std::array<float,realm_obs> Realm::observation(uint64_t id)const{if(schedule_book_.timeline_contract)throw std::runtime_error("Legacy policy access disabled under timeline contract");    std::array<float,realm_obs> o{};auto&p=person(id);auto&v=provinces_[p.region];
     o[0]=float(p.family);o[1]=p.age_days/36500.f;o[2]=p.cash/500.f;o[3]=p.health/100.f;o[4]=p.skill/100.f;o[5]=p.goal/2.f;o[6]=p.region/6.f;o[7]=day_/7300.f;o[8]=debt(id)/300.f;o[9]=p.social/100.f;
     o[94]=available_funds(id)/500.f;o[97]=p.taxing_authority;o[98]=p.sovereign;
     o[99]=float(v.health_sum)/float(std::max(1,v.residents)*100);o[100]=p.nutrition/100.f;
@@ -336,7 +485,7 @@ std::string Realm::action_name(const Candidate&c){static const char* names[]={"C
 
 // Text format uses explicit scalar fields, not compiler-dependent struct bytes.
 std::string Realm::serialize(const std::string&bundle)const{
-    std::ostringstream s;s<<"POLYEC_REALM_6 "<<std::quoted(bundle)<<' '<<day_<<' '<<regions_<<' '<<seed_<<' '<<next_id_<<' '<<next_fact_<<' '<<opening_money_<<' '<<carrier_<<' '<<estate_<<' '<<endowment_<<' ';
+    std::ostringstream s;s<<"POLYEC_REALM_7 "<<std::quoted(bundle)<<' '<<day_<<' '<<regions_<<' '<<seed_<<' '<<next_id_<<' '<<next_fact_<<' '<<opening_money_<<' '<<carrier_<<' '<<estate_<<' '<<endowment_<<' ';
     s<<draft_.tier<<' '<<draft_.seen<<' '<<draft_.chosen<<' '<<draft_.rerolled<<' ';for(auto v:draft_.cards)s<<v<<' ';for(auto&a:{opening_,produced_,consumed_})for(auto v:a)s<<v<<' ';
     for(auto&r:routes_)for(bool open:r)s<<open<<' ';for(auto funds:organization_funds_)s<<funds<<' ';s<<rng_<<' '<<people_.size()<<' ';for(auto&p:people_){s<<p.id<<' '<<p.household<<' '<<p.decisions<<' '<<p.sampling<<' '<<p.region<<' '<<p.age_days<<' '<<p.health<<' '<<p.skill<<' '<<p.job<<' '<<p.busy_until<<' '<<p.destination<<' '<<p.goal<<' '<<p.school_days<<' '<<p.social<<' '<<p.alive<<' '<<int(p.family)<<' '<<p.cash<<' '<<p.tax_remainder<<' '<<p.organization<<' '<<p.job_kind<<' '<<p.taxing_authority<<' '<<p.sovereign<<' '<<p.nutrition<<' ';for(auto v:p.stats.values)s<<v<<' ';for(auto v:p.inventory)s<<v<<' ';}
     s<<provinces_.size()<<' ';for(auto&p:provinces_){s<<p.treasury<<' '<<p.firm<<' '<<p.tax<<' '<<p.school<<' '<<p.school_used<<' '<<p.jobs<<' '<<p.employed<<' '<<p.road<<' '<<p.unrest<<' '<<p.teachers<<' '<<p.charter<<' '<<p.sales_tax_remainder<<' ';for(auto v:p.stock)s<<v<<' ';for(auto v:p.price)s<<v<<' ';}
@@ -345,10 +494,15 @@ std::string Realm::serialize(const std::string&bundle)const{
     s<<projects_.size()<<' ';for(auto&j:projects_)s<<j.id<<' '<<j.owner<<' '<<j.region<<' '<<j.due<<' '<<j.kind<<' '<<j.budget<<' '<<j.completed<<' ';
     s<<facts_.size()<<' ';for(auto&f:facts_)s<<f.id<<' '<<f.parent<<' '<<f.actor<<' '<<f.target<<' '<<f.day<<' '<<f.region<<' '<<f.kind<<' '<<f.amount<<' '<<f.secret<<' ';
     s<<knowledge_.size()<<' ';for(auto&k:knowledge_)s<<k.observer<<' '<<k.fact<<' '<<k.arrives<<' ';
-    s<<proposals_.size()<<' ';for(auto&o:proposals_)s<<o.id<<' '<<o.from<<' '<<o.to<<' '<<o.amount<<' '<<o.due<<' '<<o.resolved<<' ';write_court(s);return s.str();
+    s<<proposals_.size()<<' ';for(auto&o:proposals_)s<<o.id<<' '<<o.from<<' '<<o.to<<' '<<o.amount<<' '<<o.due<<' '<<o.resolved<<' ';write_court(s);
+    std::vector<ActivitySession> allSessions;for(auto const&[actor,sessions]:schedule_book_.sessions)for(auto const&s:sessions)allSessions.push_back(s);std::sort(allSessions.begin(),allSessions.end(),[](const ActivitySession&a,const ActivitySession&b){return a.id<b.id;});
+    s<<" CLOCK_1 "<<(paused_?1:0)<<' '<<pause_revision_<<' ';
+    s<<" SCHEDULE_1 "<<(schedule_book_.timeline_contract?1:0)<<' '<<schedule_book_.cursor<<' '<<schedule_book_.next_session_id<<' '<<allSessions.size()<<' ';
+    for(auto const&session:allSessions)s<<session.id<<' '<<session.actor<<' '<<session.begin<<' '<<session.end<<' '<<session.priority<<' '<<session.demand_rate<<' '<<session.requested<<' '<<session.delivered<<' '<<session.unmet<<' '<<session.capacity_unmet<<' '<<session.unresolved_unmet<<' '<<session.retired<<' '<<session.retired_tick<<' '<<session.retired_cause<<' ';
+    return s.str();
 }
 bool Realm::deserialize(const std::string&data,const std::string&bundle,std::string&error,const std::array<int64_t,7>& bonded_goods){try{
-    if(data.size()>256*1024*1024)throw std::runtime_error("Save size limit");Realm w(1,1,128);std::istringstream s(data);std::string magic,b;s>>magic>>std::quoted(b);if(magic!="POLYEC_REALM_6"||b!=bundle)throw std::runtime_error("Save schema/model bundle mismatch");
+    if(data.size()>256*1024*1024)throw std::runtime_error("Save size limit");Realm w(1,1,128);std::istringstream s(data);std::string magic,b;s>>magic>>std::quoted(b);if(magic!="POLYEC_REALM_7"||b!=bundle)throw std::runtime_error("Save schema/model bundle mismatch");
     s>>w.day_>>w.regions_>>w.seed_>>w.next_id_>>w.next_fact_>>w.opening_money_>>w.carrier_>>w.estate_>>w.endowment_;if(!s||(w.regions_!=1&&w.regions_!=2&&w.regions_!=6))throw std::runtime_error("Save geography");
     s>>w.draft_.tier>>w.draft_.seen>>w.draft_.chosen>>w.draft_.rerolled;for(auto&v:w.draft_.cards)s>>v;for(auto*a:{&w.opening_,&w.produced_,&w.consumed_})for(auto&v:*a)s>>v;for(auto&r:w.routes_)for(auto&open:r)s>>open;for(auto&funds:w.organization_funds_)s>>funds;s>>w.rng_;
     auto size=[&](size_t max){size_t n=0;s>>n;if(!s||n>max)throw std::runtime_error("Save count limit");return n;};
@@ -362,6 +516,26 @@ bool Realm::deserialize(const std::string&data,const std::string&bundle,std::str
     w.knowledge_.resize(size(1000000));for(auto&k:w.knowledge_){s>>k.observer>>k.fact>>k.arrives;auto&known=w.knowledge_index_[k.observer];auto previous=known.find(k.fact);if(previous==known.end()||previous->second>k.arrives)known[k.fact]=k.arrives;}
     w.proposals_.resize(size(1000000));for(auto&o:w.proposals_)s>>o.id>>o.from>>o.to>>o.amount>>o.due>>o.resolved;
     if(!w.read_court(s))throw std::runtime_error("Save court fields");
+    std::string clockTag;int pausedFlag=0;uint64_t pauseRevision=0;s>>clockTag>>pausedFlag>>pauseRevision;if(!s||clockTag!="CLOCK_1"||(pausedFlag!=0&&pausedFlag!=1))throw std::runtime_error("Save clock header");w.paused_=pausedFlag==1;w.pause_revision_=pauseRevision;
+    std::string scheduleTag;int timelineFlag=0;int64_t cursor=0;uint64_t nextSession=1;size_t sessionCount=0;s>>scheduleTag>>timelineFlag>>cursor>>nextSession>>sessionCount;if(!s||scheduleTag!="SCHEDULE_1"||(timelineFlag!=0&&timelineFlag!=1)||cursor<0||nextSession<1)throw std::runtime_error("Save schedule header");
+    if(sessionCount>1000000)throw std::runtime_error("Save schedule count limit");
+    const int64_t maxTick=365000LL*kSubdayUnitsPerDay;
+    if(cursor>maxTick)throw std::runtime_error("Save schedule cursor");
+    if(w.day_!=static_cast<int>(cursor/kSubdayUnitsPerDay))throw std::runtime_error("Save schedule day mismatch");
+    std::vector<ActivitySession> loaded;loaded.reserve(sessionCount);std::set<uint64_t> seenIds;
+    for(size_t i=0;i<sessionCount;++i){ActivitySession sess{};int retired=0;s>>sess.id>>sess.actor>>sess.begin>>sess.end>>sess.priority>>sess.demand_rate>>sess.requested>>sess.delivered>>sess.unmet>>sess.capacity_unmet>>sess.unresolved_unmet>>retired>>sess.retired_tick>>sess.retired_cause;if(!s)throw std::runtime_error("Save schedule fields");if(sess.id==0||seenIds.count(sess.id))throw std::runtime_error("Save schedule id");seenIds.insert(sess.id);if(sess.actor==0||sess.actor>w.people_.size())throw std::runtime_error("Save schedule actor");if(sess.begin<0||sess.begin>=sess.end||sess.end>maxTick)throw std::runtime_error("Save schedule range");if(sess.demand_rate<activity::kMinDemandRate||sess.demand_rate>activity::kMaxDemandRate)throw std::runtime_error("Save schedule rate");if(sess.requested<0||sess.delivered<0||sess.unmet<0||sess.capacity_unmet<0||sess.unresolved_unmet<0)throw std::runtime_error("Save schedule totals");if(sess.delivered>sess.requested)throw std::runtime_error("Save schedule totals");if(sess.unmet!=sess.requested-sess.delivered)throw std::runtime_error("Save schedule total mismatch");if(sess.capacity_unmet>sess.unmet)throw std::runtime_error("Save schedule totals");if(sess.unresolved_unmet!=sess.unmet-sess.capacity_unmet)throw std::runtime_error("Save schedule reason mismatch");if(retired!=0&&retired!=1)throw std::runtime_error("Save schedule retired");sess.retired=retired==1;if(sess.retired_tick<0||sess.retired_tick>cursor)throw std::runtime_error("Save schedule retired tick");if(sess.retired){if(sess.retired_cause==0)throw std::runtime_error("Save schedule retired cause");}else{if(sess.retired_tick!=0||sess.retired_cause!=0)throw std::runtime_error("Save schedule retired fields");}
+        int64_t processedEnd=sess.retired?sess.retired_tick:cursor;if(processedEnd>sess.end)processedEnd=sess.end;if(processedEnd<sess.begin)processedEnd=sess.begin;int64_t expected=sess.demand_rate*(processedEnd-sess.begin);if(expected!=sess.requested)throw std::runtime_error("Save schedule processed mismatch");if(sess.delivered>sess.requested)throw std::runtime_error("Save schedule delivered");loaded.push_back(sess);}
+    if(!seenIds.empty()){
+        uint64_t maxId=*std::max_element(seenIds.begin(),seenIds.end());
+        if(nextSession<=maxId)throw std::runtime_error("Save schedule next id");
+    }
+    if(timelineFlag==0&&!loaded.empty())throw std::runtime_error("Save schedule timeline flag");
+    w.schedule_book_.cursor=cursor;
+    w.schedule_book_.timeline_contract=timelineFlag==1;
+    w.schedule_book_.next_session_id=nextSession;
+    w.schedule_book_.sessions.clear();
+    for(auto const&s:loaded)w.schedule_book_.sessions[s.actor].push_back(s);
+    for(auto&[actor,sessions]:w.schedule_book_.sessions)std::sort(sessions.begin(),sessions.end(),[](const ActivitySession&a,const ActivitySession&b){return a.id<b.id;});
     if(w.provinces_.size()!=size_t(w.regions_+1))throw std::runtime_error("Save province count");w.refresh_demography();s>>std::ws;if(!s.eof()||s.fail()&&!s.eof()||w.people_.size()<128||w.day_<0||w.day_>365000||!w.invariant(bonded_goods))throw std::runtime_error("Corrupt save/invariant");*this=std::move(w);error.clear();return true;
 }catch(const std::exception&e){error=e.what();return false;}}
 bool Realm::save(const std::string&path,const std::string&bundle,std::string&error)const{try{auto dest=std::filesystem::u8path(path),temp=dest;temp+=".tmp";auto data=serialize(bundle);{std::ofstream out(temp,std::ios::binary|std::ios::trunc);out<<hash_text(data)<<'\n'<<data;out.flush();if(!out)throw std::runtime_error("Save write failed");}auto backup=dest;backup+=".bak";if(std::filesystem::exists(dest))std::filesystem::copy_file(dest,backup,std::filesystem::copy_options::overwrite_existing);std::filesystem::rename(temp,dest);error.clear();return true;}catch(const std::exception&e){error=e.what();return false;}}

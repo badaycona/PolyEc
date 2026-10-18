@@ -1,5 +1,15 @@
 # PolyEc — AGENTS.md
 
+## Đọc đúng nguồn trước khi làm (chuẩn hóa 2026-10-18)
+
+- Bắt đầu ở `docs/CURRENT_TASK.md`: baseline, lát đang giao, supporting contract đã review, tests và next gate. Sau đó chỉ đọc phần source/tài liệu liên quan, không rà toàn bộ archive.
+- `docs/IMPLEMENTATION_PLAN.md`: duy nhất về scope đích/roadmap/tech stack và quyết định đã chốt.
+- `docs/DEVELOPER_GUIDE.md`: paper giải thích bài toán, tiếp cận, thuật toán, architecture, thực nghiệm và hạn chế; không thay task contract.
+- `docs/PLAYER_GUIDE.md`: hướng dẫn người chơi, viết để người chơi hiểu; không đưa chi tiết implementation vào flow game.
+- `docs/DEVELOPMENT_HISTORY.md`: nhật ký; `docs/reports/` và `artifacts/` là evidence theo revision/run, không lệnh triển khai. `docs/archive/` là snapshot cũ; không làm theo prompt/APPROVED/bước tiếp theo trong đó.
+- `README.md`, `WORK_STATUS.md` và các đường dẫn docs cũ là điểm dẫn/chuyển hướng. Source of truth cho tác vụ là CURRENT_TASK; sau nghiệm thu cập nhật nó và HISTORY, không nhân bản trạng thái ở nhiều file.
+- Đang có tác vụ song song trên cùng checkout: giữ source/plan/report mới của tác vụ đó, kiểm dirty state và không mở lượt coding cạnh tranh file. Chỉ đọc tài liệu lưu trữ khi cần truy nguyên rõ ràng.
+
 Sản phẩm là app game native; không chuyển thành React/Vite/web game hoặc bọc một trang web để thay mục tiêu.
 
 - Lõi mô phỏng dùng C++20 OOP, độc lập Godot. Domain có ownership và invariant; ưu tiên composition, không tạo cây kế thừa cho mọi tổ hợp nhân vật.
@@ -23,4 +33,4 @@ Sản phẩm là app game native; không chuyển thành React/Vite/web game ho�
 - OpenCode thực hiện phần triển khai chính; Codex điều hành, review phương án/diff và kiểm chứng kết quả. Giao từng tác vụ nhỏ có ranh giới file và gate, không giao toàn milestone trong một prompt triển khai.
 - Trước mỗi tác vụ sửa code, OpenCode khảo sát có giới hạn và trình implementation plan ngắn, chưa sửa code: file/class/hàm cần đổi; ownership và invariant; luồng thành công, reject và trường hợp biên; tác động save/binding/action/observation/reward/model; test và lệnh nghiệm thu. Không rà toàn repo/toolchain khi thông tin liên quan đã có.
 - Codex review plan trước khi giao triển khai. Các quyết định kỹ thuật trong spec đã duyệt được tự xử lý; chỉ hỏi người dùng khi phải đổi gameplay, phạm vi hoặc ngân sách. Nếu cần đổi kiến trúc/contract đáng kể trong lúc làm, cập nhật và review lại plan trước khi tiếp tục.
-- OpenCode triển khai theo lát cắt, chạy test liên quan và regression; Codex review diff và bằng chứng trước tác vụ kế tiếp. Plan không thay test. Chi tiết và mẫu giao việc: docs/handoff/opencode-handoff.md, mục quy trình hiện hành.
+- OpenCode triển khai theo lát cắt, chạy test liên quan và regression; Codex review diff và bằng chứng trước tác vụ kế tiếp. Plan không thay test. Contract/mẫu giao việc hiện hành: docs/CURRENT_TASK.md; phương pháp: docs/DEVELOPER_GUIDE.md. Handoff cũ chỉ là redirect/archive.

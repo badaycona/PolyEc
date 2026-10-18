@@ -1,18 +1,5 @@
-# M5 deep refactor notes
+# Đường dẫn cũ — M5-refactor-deep.md
 
-This document documents the deeper Realm refactor that extracts domain subsystems
-and migrates behavior into small manager helpers.
+Từ 2026-10-18, đọc [DEVELOPER_GUIDE.md](../DEVELOPER_GUIDE.md) và [mục lục hiện hành](../README.md).
 
-Summary of changes
-- Replaced internal transfer implementation with FinanceManager::transfer.
-- Extracted payroll-like behavior into FinanceManager::payroll (keeps tax rounding
-  semantics and transfers to people' cash and province treasury).
-- Replaced household reindexing with HouseholdIndex::build.
-- Replaced inline active project counting with ProjectManager::active_projects_count.
-- Added manager headers in core/include/polyec/managers.
-
-Guidance
-- The extraction is conservative: behaviour is intentionally preserved while
-  moving code into small units so the next step is to migrate full implementations
-  (start_project/finish_projects/loans/serialize) into managers and add unit tests.
-
+Nội dung trước đây đã chuyển vào [kho lịch sử](../archive/developer/M5-refactor-deep.md). Bản lưu dùng để truy nguyên; các prompt, trạng thái và chữ APPROVED cũ không tự điều hành tác vụ hiện tại. Không tiếp tục code từ bản lưu.

@@ -1,39 +1,51 @@
-# Tài liệu PolyEc
+# PolyEc — tài liệu hiện hành
 
-**Thiết kế mô phỏng đã duyệt 2026-10-17:** [Quyết định và nguồn tham khảo](design/M5-simulation-design-decisions.md), [bảng phần cần giữ/sửa/build mới](handoff/M5-s[...]
+Chuẩn hóa ngày 2026-10-18. Chọn theo người đọc; có **năm tài liệu chính**. Các file còn lại là supporting contract, evidence hoặc lịch sử, không một bộ chỉ đạo cạnh tranh.
 
-[WORK_STATUS.md](../WORK_STATUS.md) ghi trạng thái mã và gate còn mở. [Implementation plan](design/implementation-plan.md) mô tả đích sản phẩm. M4 hiện được kiểm chứng Wi[...]
-
-## Tệp refactor M5
-
-Đã thêm: docs/developer/M5-refactor-notes.md — ghi lại các thay đổi refactor ban đầu (WorldState, manager helpers, snapshot/restore) để chuẩn bị cho M5.
-
-Đã thêm: docs/developer/M5-refactor-deep.md — ghi chép bước tiếp theo: trích xuất finance/household/project helpers và di chuyển logic từ Realm vào các manager.
-
-## Đọc theo mục đích
-
-| Mục đích | Tài liệu |
+| Tài liệu | Người đọc và câu hỏi trả lời |
 |---|---|
-| Chơi thử M4 | [Hướng dẫn M4](guides/PLAYER-README-M4.txt) |
-| Hiểu kiến trúc và toán học | [Bài thuyết minh kỹ thuật](developer/polyec-technical-paper.md) |
-| Build/test/package và kết quả M4 | [Báo cáo M4](reports/M4-evidence.md) |
-| Chất lượng policy pilot | [Báo cáo M3](reports/M3-evidence.md) |
-| Tiếp tục thiết kế xã hội | [Ranh giới độ sâu](design/simulation-complexity-scope.md), [nghiên cứu cuối Trung cổ](design/late-medieval-world-design-discussion.md) |
-| Duyệt phạm vi trước khi code M5 | [Draft M5: luật, giao dịch, quốc gia và gates](design/M5-draft.md) |
-| Tiến độ M5 và lệnh đã chạy | [Báo cáo M5-progress](reports/M5-progress.md) |
-| Chuẩn bị dữ liệu RL và GPU | [RL data & Kaggle preparation](experiments/rl-data-kaggle-preparation.md) |
-| Refactor M5 notes | [M5 refactor notes](developer/M5-refactor-notes.md) |
-| Refactor M5 deep | [M5 refactor deep notes](developer/M5-refactor-deep.md) |
+| [IMPLEMENTATION_PLAN](IMPLEMENTATION_PLAN.md) | Chủ dự án/dev: toàn project cần làm gì, lựa chọn đã chốt, stack/roadmap/gates |
+| [PLAYER_GUIDE](PLAYER_GUIDE.md) | Người chơi: mở game, điều khiển, tính năng có thật và điều cần hiểu, bằng ngôn ngữ đời thường |
+| [DEVELOPER_GUIDE](DEVELOPER_GUIDE.md) | Dev: paper về bài toán, phương pháp, kiến trúc/thuật toán, thực nghiệm, hạn chế và build |
+| [DEVELOPMENT_HISTORY](DEVELOPMENT_HISTORY.md) | Người theo dõi: quyết định, thay đổi và evidence theo ngày/revision |
+| [CURRENT_TASK](CURRENT_TASK.md) | Agent/coding agent/dev bàn giao: task đang làm, files/contract/ownership, tests và next action |
 
-## Folder tree
+## Quy tắc đọc và cập nhật
 
-~~~text
-docs/
-├── README.md
-├── design/                 Đích sản phẩm, domain và đề xuất độ sâu
-├── developer/              Bài thuyết minh và quy ước cấu trúc source
-├── experiments/            Protocol, schema và thí nghiệm RL
-├── guides/                 PLAYER-README theo bản build
-├── handoff/                OpenCode và hồ sơ review
-└── reports/                M3/M4 evidence và giới hạn kiểm chứng
-~~~
+Agent: AGENTS → CURRENT_TASK → đúng supporting plan/source được giao. Scope hỏi IMPLEMENTATION_PLAN; cần hiểu phương pháp đọc DEVELOPER_GUIDE. Không tự đọc toàn repo/archive hoặc thực thi prompt cũ. Plan phải được review trước code; plan không thay test.
+
+Nguồn ưu tiên: chỉ đạo trực tiếp người dùng/AGENTS → IMPLEMENTATION_PLAN cho scope → CURRENT_TASK cho tác vụ/status → DEVELOPER_GUIDE cho giải thích. Evidence theo revision dùng xác nhận kết quả, không tự sửa luật. Nếu các nguồn mâu thuẫn hoặc contract còn thiếu, ghi lại và review thay vì chọn tài liệu cũ thuận tiện hơn.
+
+Sau nghiệm thu cập nhật CURRENT_TASK, HISTORY và report tương ứng. Thay luật/scope thì cập nhật IMPLEMENTATION_PLAN; đổi implementation/phương pháp thì cập nhật DEVELOPER_GUIDE; tính năng người chơi đã có thì cập nhật PLAYER_GUIDE. Không đồng loạt copy trạng thái sang mọi file.
+
+## Ma trận bao phủ toàn project
+
+Bộ docs phải giữ chi tiết cần thiết trong nguồn chuẩn, không chỉ tóm tắt rồi đẩy người đọc về archive. Các đường dẫn dưới đây trả lời câu hỏi hiện hành; bản lưu chỉ dùng đối chiếu nguồn gốc.
+
+| Nội dung | Nguồn chi tiết hiện hành | Phần chưa thể tuyên bố hoàn thành |
+|---|---|---|
+| Tầm nhìn, vòng chơi, ending | IMPLEMENTATION_PLAN 1–4, 11; PLAYER_GUIDE | Campaign một đời vua/ending M6 |
+| Địa lý, 24+3 khu, tuyến, bản đồ/overlay | IMPLEMENTATION_PLAN 12; PLAYER_GUIDE | Quốc gia đầy đủ; ánh xạ dân số atlas sang cá thể |
+| Chính trị, quyền, cam kết, điều tra | IMPLEMENTATION_PLAN 2, 13–14 | Hệ quyền/thiết chế M5, privacy đầy đủ |
+| Hộ, công việc, hôn nhân, di sản | IMPLEMENTATION_PLAN 2–3, 7; DEVELOPER_GUIDE 2–5 | Domain động và năm giao dịch nghiệm thu |
+| 16 hàng, chợ, nợ, dự án, quân sự/ngoại thương | IMPLEMENTATION_PLAN 15–17; DEVELOPER_GUIDE 3, 5 | Chuyển từ pilot sang quy mô và luật đích |
+| UI và trải nghiệm, F1, ending, accessibility | IMPLEMENTATION_PLAN 18; PLAYER_GUIDE | M6 và kiểm thử luồng hoàn chỉnh |
+| 12 augment, draft, stat/traits/XP | IMPLEMENTATION_PLAN 19–20; DEVELOPER_GUIDE 6 | Hệ số kế thừa chưa hiệu chuẩn, chưa chứng minh agency |
+| Sự kiện/knowledge/causal chain | IMPLEMENTATION_PLAN 21; DEVELOPER_GUIDE 5 | Chuỗi đủ M5, information audit và đối chứng |
+| Kiến trúc, source map, toán, thuật toán | DEVELOPER_GUIDE 2–8, 11 | Mỗi công thức phân biệt code/đích thiết kế |
+| RL, dataset, curriculum, co-play, quality | IMPLEMENTATION_PLAN 8; DEVELOPER_GUIDE 6, 9 | R1–R4 còn các phần chưa chứng minh; production sau freeze |
+| Hiệu năng, thread, save, platform/package | IMPLEMENTATION_PLAN 9; DEVELOPER_GUIDE 7–8, 11 | B/S, full-cycle và platform chưa đo phải ghi riêng |
+| Milestones, phụ thuộc và nghiệm thu | IMPLEMENTATION_PLAN 6–9; CURRENT_TASK | Không lấy milestone có code thay mọi gate |
+| Lý do thay đổi, run và giới hạn thực tế | DEVELOPMENT_HISTORY; reports | Evidence chỉ áp revision/workload của report |
+
+Những chỗ chưa có contract hoặc evidence là khoảng trống của project được nêu rõ, không được lấp bằng việc viết một công thức mới như thể đã duyệt. Khi thêm yêu cầu mới, phải đưa vào một hàng/phần tương ứng, cập nhật trạng thái và nguồn chi tiết; không chỉ tăng số trang.
+
+## Tài liệu hỗ trợ và kho lịch sử
+
+- [Reports](reports/README.md): output/evidence theo revision/platform/workload. M3/M4 cũ không chứng nhận M5 hoặc HEAD mới.
+- [Task contracts hiện còn dùng](CURRENT_TASK.md): plan activity/T1 và execution ledger của tab chính giữ đường dẫn để tránh ảnh hưởng tác vụ đang chạy. Chỉ active khi CURRENT_TASK dẫn đúng bản đã review.
+- [Guides theo gói](guides/README.md): file .txt cố định theo build, còn dùng cho package; hướng dẫn người chơi mới đọc PLAYER_GUIDE.
+- [Archive](archive/README.md): docs design/developer/experiments/handoff trước hợp nhất, gồm cả proposal/APPROVED/prompt cũ. Không là lệnh active. File ở đường dẫn cũ chỉ chuyển hướng.
+- [Artifacts](../artifacts/README.md): checkpoint/source-lock/evaluation/visual; giữ nguyên vì còn dependency và provenance. Source snapshot không là source làm việc.
+
+Việc tổ chức docs không thay đổi gameplay, không chạy training hoặc chứng nhận test/benchmark mới.

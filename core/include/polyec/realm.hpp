@@ -1,4 +1,6 @@
 #pragma once
+#include "polyec/schedule.hpp"
+#include "polyec/realm_clock.hpp"
 #include <array>
 #include <cstdint>
 #include <random>
@@ -39,7 +41,7 @@ struct Proposal {uint64_t id=0,from=0,to=0;int64_t amount=0;int due=0;bool resol
 struct Investigation {uint64_t id=0,owner=0,cause=0;int region=0,due=0;bool completed=false;};
 struct Candidate {Intent kind=Intent::Hold;int target=0,good=0;int64_t amount=0;int term=0;};
 struct RealmCommand {uint64_t actor=0,sequence=0;Candidate action;};
-struct RealmResult {bool success=false;std::string reason;uint64_t fact=0;};
+struct RealmResult {bool success=false;std::string reason;uint64_t fact=0;uint64_t session=0;};
 struct Draft {int tier=0;std::array<int,3> cards{};int seen=0,chosen=-1;bool rerolled=false;};
 struct RealmView {int day=0,regions=0;uint64_t persons=0,alive=0,children=0,decisions=0;int64_t money=0;std::vector<Province> provinces;std::vector<Fact> facts;Draft draft;};
 // Owns all mutable campaign state. Snapshots and observations are copies.
@@ -55,7 +57,10 @@ public:
     std::array<float,realm_actions> mask(uint64_t actor) const;
     std::array<float,realm_obs> observation(uint64_t actor) const;
     RealmResult execute(const RealmCommand& command);
+    RealmResult execute(const ScheduleCommand& command);
+    RealmResult execute(const RealmClockCommand& command);
     void advance(int days=1);
+    void advance_ticks(int64_t ticks);
     RealmView view(uint64_t observer=1) const;
     // A containing domain may own bonded goods (e.g. M4 manifests in transit).
     bool invariant(const std::array<int64_t,7>& bonded_goods={}) const;
@@ -79,6 +84,13 @@ public:
     int day() const {return day_;}
     int regions() const {return regions_;}
     int count() const {return int(people_.size());}
+    int64_t game_tick() const {return schedule_book_.cursor;}
+    bool paused() const {return paused_;}
+    uint64_t pause_revision() const {return pause_revision_;}
+    bool timeline_contract() const {return schedule_book_.timeline_contract;}
+    bool pilot_policy_compatible() const {return !schedule_book_.timeline_contract;}
+    const char* model_contract() const {return schedule_book_.timeline_contract ? "realm-timeline-v1" : "realm-v6-pilot";}
+    const ScheduleBook& schedule_book() const {return schedule_book_;}
     int64_t debt(uint64_t actor) const;
     int64_t available_funds(uint64_t actor)const;
     // Sparse household membership. A household label is the ID of its founding member,
@@ -113,6 +125,9 @@ private:
     std::vector<uint64_t> referrals_;std::vector<Investigation> investigations_;
     std::array<int64_t,7> opening_{},produced_{},consumed_{};
     int64_t opening_money_=0,carrier_=0,estate_=0,endowment_=0;
+    ScheduleBook schedule_book_;
+    bool paused_ = false;
+    uint64_t pause_revision_ = 0;
     Person& mutable_person(uint64_t id);
     uint64_t guardian_of(const Person& person)const;
     void index_household(uint64_t household,uint64_t person);
@@ -120,7 +135,6 @@ private:
     bool households_consistent()const;
     void spend(Person& person,int64_t& destination,int64_t amount);
     void payroll(int region,bool public_employer,const std::vector<std::pair<uint64_t,int64_t>>& claims);
-    void refresh_demography();
     void sales_tax(Province& province,int64_t gross);
     int64_t harvest_quantity(int region,int good,int residents,int weather=-1,int productivity=100)const;
     void initialize_court_reference();
@@ -138,6 +152,7 @@ private:
     void write_court(std::ostream& stream)const;
     bool read_court(std::istream& stream);
     bool legal(uint64_t actor,const Candidate& c,std::string& reason) const;
+    void refresh_demography();
     void daily();void prices();void event(uint64_t actor,int region,int kind,int64_t amount=0,uint64_t target=0,bool secret=false,uint64_t parent=0);
     void transfer(int64_t& from,int64_t& to,int64_t amount);
     bool knows(uint64_t observer,const Fact& f) const;

@@ -1,14 +1,5 @@
-# Realm v2 amendment — before training and test50000..50099
+# Đường dẫn cũ — realm-rl-experiment-v2.md
 
-Fix fractional wage tax rounding (carry remainder per person), distribute aid
-from treasury to actual residents, add route closures/pathfinding and persist
-routes/tax carry under realm save schema2. Actor observation/action schema512/32
-retained. Civilian development partners choose work/study in the training-only
-binding. Native release contains no such baseline. This exposes governance to
-labor, funded tax and household tradeoffs instead of passive partners starving.
+Từ 2026-10-18, đọc [DEVELOPER_GUIDE.md](../DEVELOPER_GUIDE.md) và [mục lục hiện hành](../README.md).
 
-V1 test remains preserved; it cannot select this run. New test50000..50099,
-validation10000..10031. Three NEW random-initialized seeds per family,160 updates
-or180s each, no imitation, same locked metric/margin as v1. All tests including
-failed comparisons retained. Model schema realm-v2. Save/weights never silently
-migrate across schema. Co-play eval uses ONLY the3learned families.
+Nội dung trước đây đã chuyển vào [kho lịch sử](../archive/experiments/realm-rl-experiment-v2.md). Bản lưu dùng để truy nguyên; các prompt, trạng thái và chữ APPROVED cũ không tự điều hành tác vụ hiện tại. Không tiếp tục code từ bản lưu.

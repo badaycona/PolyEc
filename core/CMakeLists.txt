@@ -14,6 +14,9 @@ add_library(polyec_core STATIC
   src/finance_manager.cpp
   src/household_index.cpp
   src/project_manager.cpp
+  src/activity.cpp
+  src/schedule.cpp
+  src/realm_clock.cpp
 )
 
 target_include_directories(polyec_core PUBLIC
@@ -51,3 +54,14 @@ add_test(NAME campaign_tests COMMAND polyec_campaign_tests)
 add_executable(polyec_manager_tests tests/test_managers.cpp)
 target_link_libraries(polyec_manager_tests PRIVATE polyec_core)
 add_test(NAME manager_tests COMMAND polyec_manager_tests)
+
+add_executable(polyec_activity_tests tests/test_activity.cpp)
+target_link_libraries(polyec_activity_tests PRIVATE polyec_core)
+add_test(NAME activity_tests COMMAND polyec_activity_tests)
+add_executable(polyec_schedule_tests tests/test_schedule.cpp)
+target_link_libraries(polyec_schedule_tests PRIVATE polyec_core)
+add_test(NAME schedule_tests COMMAND polyec_schedule_tests)
+
+add_executable(polyec_realm_clock_tests tests/test_realm_clock.cpp)
+target_link_libraries(polyec_realm_clock_tests PRIVATE polyec_core)
+add_test(NAME realm_clock_tests COMMAND polyec_realm_clock_tests)

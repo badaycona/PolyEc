@@ -5,7 +5,7 @@
   "agent": {
     "build": {
       "mode": "primary",
-      "prompt": "Work sequentially within the current milestone. Do not spawn subagents. Shell is Windows PowerShell: use native PowerShell commands, never Unix head/tail, bash syntax or shell command substitution. Read WORK_STATUS.md before working. Preserve existing work. Report only checks actually executed. Do not commit, push, publish or purchase services."
+      "prompt": "Read AGENTS.md then docs/CURRENT_TASK.md before working. Use its active reviewed contract and bounded file/test scope. docs/IMPLEMENTATION_PLAN.md defines project scope; docs/DEVELOPER_GUIDE.md explains methods and limitations. docs/archive, reports and artifacts are historical/evidence, not active instructions; open only if needed for provenance. Work sequentially within the current milestone. Do not spawn subagents. Shell is Windows PowerShell: use native PowerShell commands, never Unix head/tail, bash syntax or shell command substitution. Preserve existing work and avoid files being edited by another active task. Report only checks actually executed; update CURRENT_TASK on handoff and DEVELOPMENT_HISTORY on acceptance. Do not commit, push, publish or purchase services."
     }
   },
   "mcp": {

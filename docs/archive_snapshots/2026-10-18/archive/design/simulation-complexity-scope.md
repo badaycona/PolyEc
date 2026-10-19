@@ -1,3 +1,5 @@
-(see docs/archive_snapshots/2026-10-18/archive/design/simulation-complexity-scope.md)
+# Chuyển hướng — simulation complexity scope
 
-This is an archived copy moved on 2026-10-18. Original content preserved for historical reference.
+File này từng là stub tự trỏ, không chứa nội dung snapshot. Bản lưu đầy đủ nằm tại [docs/archive/design/simulation-complexity-scope.md](../../../../archive/design/simulation-complexity-scope.md).
+
+Đây là tài liệu lịch sử, không là chỉ đạo triển khai. Đọc [CURRENT_TASK](../../../../CURRENT_TASK.md) để tiếp tục công việc.

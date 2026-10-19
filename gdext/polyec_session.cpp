@@ -43,6 +43,11 @@ protected:
         ClassDB::bind_method(D_METHOD("m4_fingerprint"), &PolyEcSession::m4_fingerprint);
         ClassDB::bind_method(D_METHOD("m4_preview", "from", "to", "quantity"), &PolyEcSession::m4_preview);
         ClassDB::bind_method(D_METHOD("m4_step", "days"), &PolyEcSession::m4_step);
+        ClassDB::bind_method(D_METHOD("m4_step_one_day"), &PolyEcSession::m4_step_one_day);
+        ClassDB::bind_method(D_METHOD("m4_pause"), &PolyEcSession::m4_pause);
+        ClassDB::bind_method(D_METHOD("m4_resume"), &PolyEcSession::m4_resume);
+        ClassDB::bind_method(D_METHOD("m4_paused"), &PolyEcSession::m4_paused);
+        ClassDB::bind_method(D_METHOD("m4_pause_revision"), &PolyEcSession::m4_pause_revision);
         ClassDB::bind_method(D_METHOD("m4_command", "action", "target", "quantity", "sequence", "revision"), &PolyEcSession::m4_command);
         ClassDB::bind_method(D_METHOD("m4_save", "path", "restore"), &PolyEcSession::m4_save);
 #ifdef POLYEC_AI_ENABLED
@@ -52,6 +57,11 @@ protected:
         ClassDB::bind_method(D_METHOD("realm_schema"), &PolyEcSession::realm_schema);
         ClassDB::bind_method(D_METHOD("realm_load", "paths", "hashes", "seed", "population"), &PolyEcSession::realm_load);
         ClassDB::bind_method(D_METHOD("realm_step", "days"), &PolyEcSession::realm_step);
+        ClassDB::bind_method(D_METHOD("realm_step_one_day"), &PolyEcSession::realm_step_one_day);
+        ClassDB::bind_method(D_METHOD("realm_pause"), &PolyEcSession::realm_pause);
+        ClassDB::bind_method(D_METHOD("realm_resume"), &PolyEcSession::realm_resume);
+        ClassDB::bind_method(D_METHOD("realm_paused"), &PolyEcSession::realm_paused);
+        ClassDB::bind_method(D_METHOD("realm_pause_revision"), &PolyEcSession::realm_pause_revision);
         ClassDB::bind_method(D_METHOD("realm_snapshot", "actor"), &PolyEcSession::realm_snapshot,DEFVAL(int64_t(1)));
         ClassDB::bind_method(D_METHOD("realm_command", "actor", "action", "expected"), &PolyEcSession::realm_command,DEFVAL(String()));
         ClassDB::bind_method(D_METHOD("realm_draft", "card", "reroll"), &PolyEcSession::realm_draft);
@@ -60,21 +70,26 @@ protected:
 #endif
     }
 public:
-    bool m4_start(int64_t seed=37,int64_t population=10000){try{campaign=std::make_unique<polyec::Campaign>(uint64_t(seed),int(population));campaign_error.clear();return true;}catch(const std::exception&e){campaign_error=e.what();return false;}}
+    bool m4_start(int64_t seed=37,int64_t population=10000){try{auto next=std::make_unique<polyec::Campaign>(uint64_t(seed),int(population));next->pause();campaign=std::move(next);campaign_error.clear();return true;}catch(const std::exception&e){campaign_error=e.what();return false;}}
     bool m4_step(int64_t days){if(!active||!campaign||days<1||days>30){campaign_error=!active?"Cửa sổ không hoạt động":(!campaign?"Chưa mở sổ M4":"Khoảng ngày phải trong 1–30");return false;}try{campaign->advance(int(days));campaign_error.clear();return true;}catch(const std::exception&e){campaign_error=e.what();return false;}}
+    bool m4_step_one_day(){if(!active||!campaign){campaign_error=!active?"Cửa sổ không hoạt động":"Chưa mở sổ M4";return false;}try{campaign->step_one_day();campaign_error.clear();return true;}catch(const std::exception&e){campaign_error=e.what();return false;}}
+    bool m4_pause(){if(!campaign){campaign_error="Chưa mở sổ M4";return false;}try{campaign->pause();campaign_error.clear();return true;}catch(const std::exception&e){campaign_error=e.what();return false;}}
+    bool m4_resume(){if(!active||!campaign){campaign_error=!active?"Cửa sổ không hoạt động":"Chưa mở sổ M4";return false;}try{campaign->resume();campaign_error.clear();return true;}catch(const std::exception&e){campaign_error=e.what();return false;}}
+    bool m4_paused()const{return campaign&&campaign->paused();}
+    uint64_t m4_pause_revision()const{return campaign?campaign->pause_revision():0;}
     bool m4_command(int64_t action,int64_t target,int64_t quantity,int64_t sequence,int64_t revision){
         if(!active||!campaign){campaign_error="Cửa sổ không hoạt động";return false;}
         if(action<0||action>6||target<0||target>6||sequence<1||revision<0||uint64_t(revision)!=campaign->revision()){campaign_error="Lệnh hoặc hồ sơ đã cũ; hãy xem lại";return false;}
         auto r=campaign->execute({1,uint64_t(sequence),polyec::CampaignAction(action),int(target),quantity});campaign_error=r.success?"":r.reason;return r.success;
     }
-    bool m4_save(const String&path,bool restore){if(!campaign){campaign_error="Chưa mở sổ M4";return false;}return restore?campaign->load(path.utf8().get_data(),campaign_error):campaign->save(path.utf8().get_data(),campaign_error);}
+    bool m4_save(const String&path,bool restore){if(!campaign){campaign_error="Chưa mở sổ M4";return false;}return restore?campaign->load(path.utf8().get_data(),campaign_error,true):campaign->save(path.utf8().get_data(),campaign_error);}
     String m4_fingerprint()const{return campaign?String::num_uint64(campaign->fingerprint()):String();}
     Dictionary m4_preview(int64_t from,int64_t to,int64_t quantity)const{
         Dictionary d;if(!campaign||from<0||from>6||to<0||to>6)return d;auto p=campaign->preview(int(from),int(to),quantity);d["reachable"]=p.reachable;d["days"]=p.days;d["fee"]=p.fee;Array path;for(auto r:p.regions)path.push_back(r);d["path"]=path;return d;
     }
     Dictionary m4_snapshot()const{
         Dictionary d;d["loaded"]=bool(campaign);d["error"]=String::utf8(campaign_error.c_str());if(!campaign)return d;auto v=campaign->view();
-        d["day"]=v.realm.day;d["population"]=int64_t(v.realm.persons);d["alive"]=int64_t(v.realm.alive);d["money"]=v.realm.money;d["crown"]=v.crown;d["invariant"]=v.invariant;d["revision"]=int64_t(v.revision);d["sequence"]=int64_t(v.player_sequence);d["workshop_cash"]=v.workshop_cash;d["workshop_workers"]=v.workshop_workers;d["cloth"]=v.cloth;d["inspecting_until"]=v.inspecting_until;
+        d["day"]=v.realm.day;d["population"]=int64_t(v.realm.persons);d["alive"]=int64_t(v.realm.alive);d["money"]=v.realm.money;d["crown"]=v.crown;d["invariant"]=v.invariant;d["revision"]=int64_t(v.revision);d["sequence"]=int64_t(v.player_sequence);d["workshop_cash"]=v.workshop_cash;d["workshop_workers"]=v.workshop_workers;d["cloth"]=v.cloth;d["inspecting_until"]=v.inspecting_until;d["paused"]=v.paused;d["pause_revision"]=int64_t(v.pause_revision);
         Array regions;for(int i=0;i<int(v.regions.size());++i){auto&g=v.regions[i];auto&p=v.realm.provinces[i];Dictionary r;r["id"]=i;r["name"]=String::utf8(g.name.c_str());r["terrain"]=String::utf8(g.terrain.c_str());r["center"]=Vector2(g.center.x,g.center.y);PackedVector2Array boundary;for(auto point:g.boundary)boundary.push_back(Vector2(point.x,point.y));r["polygon"]=boundary;r["food"]=p.stock[0];r["cover"]=int(p.stock[0]*7/std::max(1,p.residents));r["residents"]=p.residents;r["treasury"]=p.treasury;r["price"]=p.price[0];r["unrest"]=p.unrest;r["road"]=p.road;r["harvest"]=g.harvest;regions.push_back(r);}d["regions"]=regions;
         Array routes;for(auto&r:v.routes){Dictionary x;x["from"]=r.from;x["to"]=r.to;x["days"]=r.days;x["capacity"]=r.capacity;x["terrain"]=String::utf8(r.terrain.c_str());x["open"]=r.open;x["claimed"]=r.claimed;x["works_due"]=r.works_due;routes.push_back(x);}d["routes"]=routes;
         Array cargo;for(auto&c:v.cargo){Dictionary x;x["id"]=int64_t(c.id);x["cause"]=int64_t(c.cause);x["from"]=c.from;x["to"]=c.to;x["quantity"]=c.quantity;x["cost"]=c.cost;x["depart"]=c.depart;x["arrives"]=c.arrives;x["delivered"]=c.delivered;Array path,starts,ends,arrivals;for(int r:c.path)path.push_back(r);for(int t:c.leg_starts)starts.push_back(t);for(int t:c.leg_ends)ends.push_back(t);for(int t:c.leg_arrivals)arrivals.push_back(t);x["path"]=path;x["starts"]=starts;x["ends"]=ends;x["arrivals"]=arrivals;cargo.push_back(x);}d["cargo"]=cargo;
@@ -96,13 +111,20 @@ public:
         if(paths.size()!=3||hashes.size()!=3||population<128||population>100000){realm.stop("Invalid model bundle/profile");return false;}
         std::array<std::string,3> names;std::string bundle;
         for(int i=0;i<3;++i){String path=paths[i],hash=hashes[i];if(hash.length()!=64||FileAccess::get_sha256(path)!=hash){realm.stop("Realm model checksum mismatch");return false;}names[i]=path.utf8().get_data();bundle+=hash.utf8().get_data();}
-        return realm.load_models(names,bundle,uint64_t(seed),int(population));
+        if(!realm.load_models(names,bundle,uint64_t(seed),int(population)))return false;
+        if(!realm.pause()){realm.stop(realm.error().empty()?"Realm interactive pause failed":realm.error());return false;}
+        return true;
     }
     bool realm_step(int64_t days){if(!active||days<1||days>30)return false;return realm.advance(int(days));}
+    bool realm_step_one_day(){if(!active)return false;return realm.step_one_day();}
+    bool realm_pause(){return realm.pause();}
+    bool realm_resume(){if(!active)return false;return realm.resume();}
+    bool realm_paused()const{return realm.paused();}
+    uint64_t realm_pause_revision()const{return realm.pause_revision();}
     bool realm_command(int64_t actor,int64_t action,const String&expected=String()){if(!active)return false;return realm.command(uint64_t(actor),int(action),expected.utf8().get_data());}
     bool realm_route(int64_t actor,int64_t from,int64_t to,bool open){return active&&realm.route(uint64_t(actor),int(from),int(to),open);}
     bool realm_draft(int64_t card,bool reroll){return reroll?realm.reroll(int(card)):realm.choose(int(card));}
-    bool realm_save(const String&path,bool restore){return restore?realm.restore(path.utf8().get_data()):realm.save(path.utf8().get_data());}
+    bool realm_save(const String&path,bool restore){return restore?realm.restore_interactive(path.utf8().get_data()):realm.save(path.utf8().get_data());}
     Dictionary realm_snapshot(int64_t actor=1)const{
         Dictionary d;d["loaded"]=realm.loaded();d["error"]=String::utf8(realm.error().c_str());
         auto*w=realm.world();if(!w)return d;if(actor<1||actor>w->count())actor=1;auto v=w->view(uint64_t(actor));

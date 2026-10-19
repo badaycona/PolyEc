@@ -73,7 +73,7 @@ func _ready() -> void:
     var title=label_at(self,"Đất nước. Con người. Quyết định.",36,Vector2(30,46))
     title.add_theme_font_override("font",preload("res://fonts/Newsreader.ttf"))
     status=label_at(self,"Đang nạp ba policy…",12,Vector2(32,100),Color("74b7a5"))
-    var back=button(self,"←  Về địa đồ",func(): running=false;hide();session.command("pause"))
+    var back=button(self,"←  Về địa đồ",back_to_map)
     back.position=Vector2(1220,30)
     back.size.x=185
     funds_label=label_at(self,"",11,Vector2(32,121),Color("91a7a4"))
@@ -132,8 +132,8 @@ func _ready() -> void:
     add_child(bar)
     run_button=button(bar,"▶  Chạy thế giới",toggle_run)
     button(bar,"Một ngày",func(): step_day())
-    button(bar,"Lưu",func(): running=false;feedback.text="Đã lưu world + RNG + memory" if session.realm_save(save_path,false) else "Lưu thất bại";refresh())
-    button(bar,"Tải",func(): running=false;feedback.text="Đã khôi phục; đang tạm dừng" if session.realm_save(save_path,true) else "Tải thất bại; giữ world hiện tại";refresh())
+    button(bar,"Lưu",func(): save_game())
+    button(bar,"Tải",func(): load_game())
     button(bar,"F1 · Hướng dẫn",show_guide)
     feedback=label_at(self,"Space chạy/dừng · Esc trở về · Rời cửa sổ sẽ tạm dừng",11,Vector2(32,862),Color("91a7a4"))
     draft_box=HBoxContainer.new()
@@ -142,7 +142,7 @@ func _ready() -> void:
     add_child(draft_box)
     timer=Timer.new()
     timer.wait_time=.2
-    timer.timeout.connect(func(): if running: step_day())
+    timer.timeout.connect(func(): advance_automatic_day())
     add_child(timer)
     timer.start()
     if not session.has_method("realm_schema") or session.realm_schema()!="realm-v6":
@@ -203,7 +203,7 @@ func refresh() -> void:
                     text+=" · đóng %d đ + vật tư" % offer.amount if offer.kind==2 else " · nhận %d đ" % offer.amount
                     break
         var action_index=int(a.index)
-        var b=button(commands,text,func(): running=false;var ok=session.realm_command(actor,action_index,str(v.fingerprint));feedback.text="Đã thực hiện lệnh" if ok else str(session.realm_snapshot(actor).get("error","Lệnh bị từ chối"));refresh())
+        var b=button(commands,text,func(): run_actor_command(actor,action_index,str(v.fingerprint)))
         b.disabled=not a.legal
     facts.clear()
     for f in v.facts:
@@ -218,18 +218,92 @@ func refresh() -> void:
         var reroll=button(draft_box,"Đổi thẻ đầu (1 lần)",func(): session.realm_draft(0,true);for child in draft_box.get_children(): draft_box.remove_child(child);child.queue_free();refresh())
         reroll.disabled=v.rerolled
 
-func step_day() -> void:
+func back_to_map() -> void:
+    if not pause_core_and_stop_ui():
+        if is_node_ready():
+            refresh()
+        return
+    hide()
+    session.command("pause")
+
+func close_panel() -> void:
+    if pause_core_and_stop_ui():
+        hide()
+    elif is_node_ready():
+        refresh()
+
+func pause_core_and_stop_ui() -> bool:
+    running=false
+    if not session.realm_pause():
+        feedback.text="Không tạm dừng được lõi Realm"
+        return false
+    return true
+
+func advance_automatic_day() -> void:
+    if not running:
+        return
+    if session.realm_paused():
+        running=false
+        feedback.text="Lõi Realm đang tạm dừng"
+        refresh()
+        return
     if not session.realm_step(1):
         running=false
         feedback.text=str(session.realm_snapshot(actor).get("error","World đã dừng"))
     refresh()
 
+func step_day() -> void:
+    if not pause_core_and_stop_ui():
+        feedback.text="Không tạm dừng được lõi Realm"
+        refresh()
+        return
+    if not session.realm_step_one_day():
+        running=false
+        feedback.text=str(session.realm_snapshot(actor).get("error","World đã dừng"))
+    else:
+        feedback.text="Đã tiến một ngày"
+    refresh()
+
 func toggle_run() -> void:
-    running=not running
+    if running:
+        pause_core_and_stop_ui()
+        refresh()
+        return
+    if session.realm_resume():
+        running=true
+        feedback.text="Đang chạy"
+    else:
+        running=false
+        feedback.text=str(session.realm_snapshot(actor).get("error","Không tiếp tục được"))
+    refresh()
+
+func run_actor_command(actor_id: int, action_index: int, expected: String) -> void:
+    if not pause_core_and_stop_ui():
+        feedback.text="Không tạm dừng được lõi Realm"
+        refresh()
+        return
+    var ok=session.realm_command(actor_id,action_index,expected)
+    feedback.text="Đã thực hiện lệnh" if ok else str(session.realm_snapshot(actor_id).get("error","Lệnh bị từ chối"))
+    refresh()
+
+func save_game() -> void:
+    if not pause_core_and_stop_ui():
+        feedback.text="Không tạm dừng được lõi Realm"
+        refresh()
+        return
+    feedback.text="Đã lưu world + RNG + memory" if session.realm_save(save_path,false) else "Lưu thất bại"
+    refresh()
+
+func load_game() -> void:
+    if not pause_core_and_stop_ui():
+        feedback.text="Không tạm dừng được lõi Realm"
+        refresh()
+        return
+    feedback.text="Đã khôi phục; đang tạm dừng" if session.realm_save(save_path,true) else "Tải thất bại; giữ world hiện tại"
     refresh()
 
 func show_guide() -> void:
-    running=false
+    pause_core_and_stop_ui()
     var dialog=AcceptDialog.new()
     dialog.title="Hướng dẫn sandbox"
     dialog.dialog_text="Chọn một thẻ mở sổ, rồi chạy thế giới hoặc tiến một ngày.\nBa policy PPO dùng chung trọng số theo họ; từng người có memory và sampling riêng.\nĐổi ID để xem cá thể, quyền biết và lệnh hợp lệ. Lệnh UI đi cùng pipeline với AI.\nViệc làm, học, vận tải và điều tra có thời lượng; nợ/dự án có hạn ngày game.\nLưu chứa world, RNG, counters và memory; tải luôn tạm dừng.\nĐây là sandbox M3 thử nghiệm; không phải campaign hoàn chỉnh.\nMột số augment/chính trị/stat còn giới hạn được ghi trong báo cáo."
@@ -238,8 +312,13 @@ func show_guide() -> void:
     refresh()
 
 func _process(delta: float) -> void:
-    if delta>.25: running=false
+    if delta>.25:
+        if pause_core_and_stop_ui():
+            feedback.text="Khung hình quá dài; đã tạm dừng"
+        refresh()
 
 func _notification(what: int) -> void:
     if what==NOTIFICATION_APPLICATION_FOCUS_OUT or what==NOTIFICATION_WM_WINDOW_FOCUS_OUT:
-        running=false
+        pause_core_and_stop_ui()
+        if is_node_ready():
+            refresh()

@@ -1,8 +1,12 @@
 #include "polyec/realm.hpp"
 #include "polyec/trade.hpp"
 #include "polyec/managers/finance_manager.hpp"
+#include "polyec/managers/employment_manager.hpp"
 #include "polyec/managers/household_index.hpp"
 #include "polyec/managers/project_manager.hpp"
+#include "polyec/jobs/worker_job.hpp"
+#include "polyec/jobs/teacher_job.hpp"
+#include "polyec/jobs/office_role_job.hpp"
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
@@ -180,13 +184,13 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
     case Intent::Tax:if(p.family==Family::Governance&&p.taxing_authority&&c.target==p.region&&c.amount>=0&&c.amount<=20&&local.charter)return true;break;
     case Intent::Aid:if(p.family==Family::Governance&&(c.target==p.region||p.sovereign)&&funds>=c.amount&&c.amount>0)return true;break;
     case Intent::Investigate:{int active=0;for(auto&i:investigations_)active+=i.owner==id&&!i.completed;if(p.family==Family::Governance&&c.target==p.region&&funds>=c.amount&&c.amount>0&&active<(p.sovereign&&draft_.chosen==7?2:1))return true;break;}
-    case Intent::Work:if(p.family!=Family::Governance&&p.age_days>=14*365&&c.target==p.region&&(v.employed<v.jobs||p.job==p.region)&&c.term>0&&c.term<=30)return true;break;
+    case Intent::Work:if(EmploymentManager::can_start_work(p,v,c.target,c.term,day_))return true;break;
     case Intent::Study:if(p.family==Family::Civilian&&p.age_days>=6*365&&p.age_days<65*365&&p.skill<100&&c.target==p.region&&v.school_used<v.school&&available_funds(id)>=c.amount&&c.term>0&&c.term<=30)return true;break;
     case Intent::Rest:if(p.family==Family::Civilian&&c.target==p.region&&p.cash>=c.amount&&c.term>0&&c.term<=30)return true;break;
     case Intent::Social:if(p.family==Family::Civilian&&p.age_days>=6*365&&c.target==p.region&&p.cash>=c.amount&&c.term>0&&c.term<=30)return true;break;
     case Intent::Join:if(p.family==Family::Civilian&&p.age_days>=6*365&&c.target==p.region&&c.good>=0&&c.good<4&&p.organization!=1+4*p.region+c.good&&p.cash>=c.amount&&c.term>0&&c.term<=30)return true;break;
-    case Intent::Resign:if(p.hired_by&&day_>=p.office_notice)return true;break;
-    case Intent::Appoint:if(p.sovereign&&office_used(id)<office_capacity(id)&&funds>=20){for(auto ref:referrals_)if(person(ref).alive&&person(ref).candidate)return true;}break;
+    case Intent::Resign:if(EmploymentManager::can_resign(p,day_))return true;break;
+    case Intent::Appoint:if(p.sovereign&&office_used(id)<office_capacity(id)&&funds>=EmploymentManager::kAppointmentFee){for(auto ref:referrals_){auto&a=person(ref);if(!a.alive||!a.candidate)continue;return EmploymentManager::can_appoint(a,provinces_,funds,p.id,day_);}}break;
     case Intent::Mobilize:if(p.family==Family::Governance&&c.target==p.region&&funds>=c.amount&&c.term>0&&c.term<=30)return true;break;
     default:break;
     }
@@ -201,7 +205,7 @@ RealmResult Realm::execute(const RealmCommand&cmd){
     auto c=cmd.action;auto&v=provinces_[p.region];auto&funds=p.family==Family::Governance?v.treasury:p.cash;
     // Validation above covers every source/capacity before any mutation.
     bool clearsJob=!schedule_book_.timeline_contract||(c.kind==Intent::Travel||c.kind==Intent::Migrate||c.kind==Intent::Work||c.kind==Intent::Study||c.kind==Intent::Rest||c.kind==Intent::Social||c.kind==Intent::Join||c.kind==Intent::Mobilize);
-    if(c.kind!=Intent::Hold&&p.job>=0&&clearsJob){v.employed=std::max(0,v.employed-1);if(p.job_kind==1)v.teachers=std::max(0,v.teachers-1);p.job=-1;}
+    if(c.kind!=Intent::Hold&&clearsJob)EmploymentManager::clear_work(p,v);
     switch(c.kind){
     case Intent::Hold:break;
     case Intent::Buy:transfer(p.cash,v.firm,(v.price[c.good]+1)*c.amount);sales_tax(v,(v.price[c.good]+1)*c.amount);v.stock[c.good]-=c.amount;p.inventory[c.good]+=c.amount;break;
@@ -216,14 +220,14 @@ RealmResult Realm::execute(const RealmCommand&cmd){
     case Intent::Investigate:{transfer(funds,v.firm,c.amount);int due=day_+std::max(1,60*(150-p.stats.values[4])/100);investigations_.push_back({next_id_++,p.id,next_fact_,p.region,due});break;}
     case Intent::Offer:create_proposal(p.id,c);break;
     case Intent::Accept:case Intent::Reject:resolve_proposal(p.id,c);break;
-    case Intent::Work:p.job=p.region;p.job_kind=(p.age_days>=18*365&&p.skill>=20&&v.teachers<(v.school+19)/20&&v.treasury>=2)?1:0;if(p.job_kind==1)++v.teachers;++v.employed;p.busy_until=day_+c.term;break;
+    case Intent::Work:EmploymentManager::start_work(p,provinces_,day_,p.region,c.term);break;
     case Intent::Study:spend(p,v.firm,c.amount);p.school_days=c.term;++v.school_used;p.busy_until=day_+c.term;break;
     case Intent::Rest:{transfer(p.cash,v.firm,c.amount);int before=p.health;p.health=std::min(100,p.health+(p.nutrition>=40?15:0));v.health_sum+=p.health-before;p.busy_until=day_+c.term;break;}
     case Intent::Social:transfer(p.cash,v.firm,c.amount);p.social=std::min(100,p.social+2);p.busy_until=day_+c.term;break;
     case Intent::Join:p.organization=1+4*p.region+c.good;transfer(p.cash,organization_funds_[p.organization-1],c.amount);p.busy_until=day_+c.term;break;
     case Intent::Support:transfer(p.cash,mutable_person(c.target).cash,c.amount);break;
-    case Intent::Appoint:for(auto ref:referrals_){auto&a=mutable_person(ref);if(!a.alive||!a.candidate)continue;if(a.job>=0){auto&av=provinces_[a.region];av.employed=std::max(0,av.employed-1);if(a.job_kind==1)av.teachers=std::max(0,av.teachers-1);}a.job=-1;a.school_days=0;a.busy_until=day_;a.candidate=false;a.office=true;a.hired_by=p.id;a.salary_due=day_+30;a.office_notice=day_+30;a.family=Family::Governance;a.taxing_authority=false;transfer(funds,a.cash,20);break;}break;
-    case Intent::Resign:p.office=false;p.hired_by=0;p.family=Family::Civilian;break;
+    case Intent::Appoint:for(auto ref:referrals_){auto&a=mutable_person(ref);if(!a.alive||!a.candidate)continue;EmploymentManager::appoint(a,provinces_,funds,p.id,day_);break;}break;
+    case Intent::Resign:EmploymentManager::resign(p);break;
     case Intent::Mobilize:transfer(funds,v.firm,c.amount);v.unrest=std::max(0,v.unrest-p.stats.values[5]/10);break;
     }
     p.last_decision_day=day_;++p.decisions;++p.sampling;event(p.id,p.region,int(c.kind),c.amount,uint64_t(c.target));return {true,"Committed",next_fact_-1};
@@ -298,15 +302,26 @@ RealmResult Realm::execute(const ScheduleCommand&cmd){
     return {false,"Unsupported schedule operation"};
 }
 RealmResult Realm::execute(const RealmClockCommand&cmd){
-    if(cmd.operation!=RealmClockCommand::Operation::Pause&&cmd.operation!=RealmClockCommand::Operation::Resume)return {false,"Unknown clock operation"};
-    if(cmd.expected_pause_revision.has_value()&&*cmd.expected_pause_revision!=pause_revision_)return {false,"Stale clock revision"};    if(cmd.operation==RealmClockCommand::Operation::Pause){
+    if(cmd.operation!=RealmClockCommand::Operation::Pause&&cmd.operation!=RealmClockCommand::Operation::Resume&&cmd.operation!=RealmClockCommand::Operation::StepOneDay)return {false,"Unknown clock operation"};
+    if(cmd.expected_pause_revision.has_value()&&*cmd.expected_pause_revision!=pause_revision_)return {false,"Stale clock revision"};
+    if(cmd.operation==RealmClockCommand::Operation::Pause){
         if(paused_)return {true,"Committed"};
         if(pause_revision_==UINT64_MAX)return {false,"Pause revision overflow"};
         paused_=true;++pause_revision_;return {true,"Committed"};
     }
-    if(!paused_)return {true,"Committed"};
-    if(pause_revision_==UINT64_MAX)return {false,"Pause revision overflow"};
-    paused_=false;++pause_revision_;return {true,"Committed"};
+    if(cmd.operation==RealmClockCommand::Operation::Resume){
+        if(!paused_)return {true,"Committed"};
+        if(pause_revision_==UINT64_MAX)return {false,"Pause revision overflow"};
+        paused_=false;++pause_revision_;return {true,"Committed"};
+    }
+    const int64_t maxTick=365000LL*kSubdayUnitsPerDay;
+    if(schedule_book_.cursor>maxTick||64>maxTick-schedule_book_.cursor)return {false,"ticks bounds"};
+    try{
+        advance_ticks_preserving_paused(64);
+    }catch(const std::exception&e){
+        return {false,e.what()};
+    }
+    return {true,"Committed"};
 }
 int Realm::distance(int from,int to)const{
     if(from<0||from>regions_||to<0||to>regions_)return -1;
@@ -331,20 +346,19 @@ int64_t Realm::harvest_quantity(int region,int good,int residents,int weather,in
 }
 void Realm::daily(){
     ++day_;
-    for(auto&v:provinces_) {v.employed=0;v.school_used=0;v.teachers=0;v.teacher_skill_sum=0;}
+    for(auto&v:provinces_)v.school_used=0;
+    EmploymentManager::reset_day_counters(provinces_);
     std::array<std::vector<std::pair<uint64_t,int64_t>>,7> private_claims,public_claims;
     for(auto&p:people_)if(p.alive){
-        if(p.job>=0&&p.busy_until>=day_){if(p.job_kind==1)public_claims[p.region].push_back({p.id,2});else private_claims[p.region].push_back({p.id,1+p.skill/25});}
+        if(EmploymentManager::has_active_work(p,day_)){if(p.job_kind==1)public_claims[p.region].push_back({p.id,2});else private_claims[p.region].push_back({p.id,1+p.skill/25});}
         if(!p.hired_by&&day_%30==0&&p.family!=Family::Civilian){auto&claims=p.family==Family::Governance?public_claims[p.region]:private_claims[p.region];claims.push_back({p.id,20});}
     }
     for(int r=0;r<=regions_;++r){payroll(r,false,private_claims[r]);payroll(r,true,public_claims[r]);}
     for(auto&p:people_)if(p.alive){++p.age_days;
-        if(p.hired_by&&p.salary_due<=day_){auto&employer=person(p.hired_by);auto&source=provinces_[employer.region].treasury;if(source>=20){transfer(source,p.cash,20);p.salary_due=day_+30;}else {p.hired_by=0;p.office=false;p.family=Family::Civilian;event(p.id,p.region,110);}}
+        if(p.hired_by&&p.salary_due<=day_){auto&employer=person(p.hired_by);auto&source=provinces_[employer.region].treasury;if(source>=EmploymentManager::kOfficeSalary){transfer(source,p.cash,EmploymentManager::kOfficeSalary);p.salary_due=day_+EmploymentManager::kOfficeSalaryPeriod;}else {EmploymentManager::end_office(p);event(p.id,p.region,110);}}
         if(p.destination>=0&&p.busy_until<=day_){p.region=p.destination;p.destination=-1;p.job=-1;event(p.id,p.region,int(Intent::Migrate));}
         auto&v=provinces_[p.region];
-        if(p.job>=0&&p.busy_until>=day_){++v.employed;if(p.job_kind==1){++v.teachers;v.teacher_skill_sum+=p.skill;}
-            else {int g=p.region%7;int n=1+p.skill/40;v.stock[g]+=n;produced_[g]+=n;}
-        }else p.job=-1;
+        if(EmploymentManager::account_day(p,v,day_)==0){int g=p.region%7;int n=1+p.skill/40;v.stock[g]+=n;produced_[g]+=n;}
         if(p.school_days>0){++v.school_used;--p.school_days;if(p.school_days==0){p.skill=std::min(100,p.skill+5+p.stats.values[0]/20+(v.teachers?v.teacher_skill_sum/std::max(1,v.teachers)/25:0));event(p.id,p.region,int(Intent::Study),p.skill);}}
         // Essentials are a biological process, not a strategic purchase selector.
         if(day_%7==int(p.id%7)){if(p.inventory[0]>0){--p.inventory[0];++consumed_[0];p.nutrition=std::min(100,p.nutrition+20);p.health=std::min(100,p.health+1);}
@@ -376,6 +390,10 @@ void Realm::advance(int days){if(days<0||days>36500)throw std::invalid_argument(
 void Realm::advance_ticks(int64_t ticks){
     if(ticks<0)throw std::invalid_argument("ticks bounds");
     if(ticks>0 && paused_)throw std::runtime_error("Realm is paused");
+    advance_ticks_preserving_paused(ticks);
+}
+void Realm::advance_ticks_preserving_paused(int64_t ticks){
+    if(ticks<0)throw std::invalid_argument("ticks bounds");
     const int64_t maxTick=365000LL*kSubdayUnitsPerDay;
     if(schedule_book_.cursor>maxTick||ticks>maxTick-schedule_book_.cursor)throw std::invalid_argument("ticks bounds");
     int64_t target=schedule_book_.cursor+ticks;
@@ -476,6 +494,36 @@ std::array<float,realm_obs> Realm::observation(uint64_t id)const{if(schedule_boo
     for(int i=0;i<realm_actions;++i){auto&c=cs[i];auto*f=o.data()+realm_state+i*realm_features;f[0]=int(c.kind)/24.f;f[1]=c.target/7.f;f[2]=c.good/7.f;f[3]=c.amount/200.f;f[4]=c.term/180.f;f[5]=ms[i];f[6]=c.target==p.region;f[7]=std::abs(c.target-p.region)/6.f;f[8]=v.price[std::clamp(c.good,0,6)]/float(kReference[std::clamp(c.good,0,6)]);f[9]=v.stock[std::clamp(c.good,0,6)]/1000.f;f[10]=p.inventory[std::clamp(c.good,0,6)]/16.f;f[11]=v.school/100.f;}
     return o;
 }
+
+const Job* describe_job(const Person& person, int current_day) noexcept {
+    if (!person.alive) return nullptr;
+    // Appointed office takes precedence; requires a valid appointment.
+    if (person.office && person.hired_by != 0 && person.family == Family::Governance) {
+        return &kAppointedOfficeJob;
+    }
+    // Active work job: canonical assignment with job_kind exactly 0 or 1.
+    if (person.job >= 0 && person.busy_until >= current_day) {
+        if (person.job_kind == 0) return &kWorkerJob;
+        if (person.job_kind == 1) return &kTeacherJob;
+    }
+    return nullptr;
+}
+
+JobType Realm::job_type(uint64_t id) const {
+    if (id < 1 || id > people_.size()) return JobType::None;
+    const Job* job = describe_job(people_[id - 1], day_);
+    return job ? job->type() : JobType::None;
+}
+
+EmploymentState Realm::employment_state(uint64_t id) const {
+    return (job_type(id) == JobType::None) ? EmploymentState::Idle : EmploymentState::Employed;
+}
+
+const Job* Realm::job_descriptor(uint64_t id) const {
+    if (id < 1 || id > people_.size()) return nullptr;
+    return describe_job(people_[id - 1], day_);
+}
+
 bool Realm::reroll(int slot){if(slot<0||slot>2||draft_.rerolled||draft_.chosen>=0||day_!=0)return false;for(int i=4*draft_.tier;i<4*draft_.tier+4;++i)if(!(draft_.seen&(1<<i))){draft_.cards[slot]=i;draft_.seen|=1<<i;draft_.rerolled=true;return true;}return false;}
 bool Realm::choose(int card){if(day_||draft_.chosen>=0||std::find(draft_.cards.begin(),draft_.cards.end(),card)==draft_.cards.end())return false;draft_.chosen=card;
     apply_augment(card);

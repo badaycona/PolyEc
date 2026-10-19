@@ -301,7 +301,7 @@ func _input(event: InputEvent) -> void:
         get_viewport().set_input_as_handled()
         return
     if realm_panel!=null and realm_panel.visible:
-        if event.keycode==KEY_ESCAPE: realm_panel.running=false;realm_panel.hide();session.command("pause")
+        if event.keycode==KEY_ESCAPE: realm_panel.close_panel();session.command("pause")
         elif event.keycode==KEY_SPACE: realm_panel.toggle_run()
         elif event.keycode==KEY_F1: realm_panel.show_guide()
         get_viewport().set_input_as_handled()
@@ -328,6 +328,12 @@ func _input(event: InputEvent) -> void:
 func _notification(what: int) -> void:
     if session==null: return
     if what==NOTIFICATION_APPLICATION_FOCUS_OUT or what==NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+        if campaign_panel!=null and campaign_panel.visible:
+            campaign_panel.pause_core_and_stop_ui()
+        elif realm_panel!=null:
+            realm_panel.pause_core_and_stop_ui()
+        else:
+            session.realm_pause()
         app_active=false
         session.set_active(false)
     elif what==NOTIFICATION_APPLICATION_FOCUS_IN or what==NOTIFICATION_WM_WINDOW_FOCUS_IN:

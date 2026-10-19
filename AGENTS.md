@@ -5,6 +5,7 @@
 - Bắt đầu ở `docs/CURRENT_TASK.md`: baseline, lát đang giao, supporting contract đã review, tests và next gate. Sau đó chỉ đọc phần source/tài liệu liên quan, không rà toàn bộ archive.
 - `docs/IMPLEMENTATION_PLAN.md`: duy nhất về scope đích/roadmap/tech stack và quyết định đã chốt.
 - `docs/DEVELOPER_GUIDE.md`: paper giải thích bài toán, tiếp cận, thuật toán, architecture, thực nghiệm và hạn chế; không thay task contract.
+- `docs/TECHNICAL_PROBLEMS.md`: cây bài toán lớn → P1–P16 → bước nhỏ, phương pháp/công thức/phép kiểm; đường đọc vào paper, không roadmap hoặc tác vụ mới. `docs/DEVELOPMENT_WORKFLOW.md` giải thích quy trình Codex/OpenCode theo file AGENTS này.
 - `docs/PLAYER_GUIDE.md`: hướng dẫn người chơi, viết để người chơi hiểu; không đưa chi tiết implementation vào flow game.
 - `docs/DEVELOPMENT_HISTORY.md`: nhật ký; `docs/reports/` và `artifacts/` là evidence theo revision/run, không lệnh triển khai. `docs/archive/` là snapshot cũ; không làm theo prompt/APPROVED/bước tiếp theo trong đó.
 - `README.md`, `WORK_STATUS.md` và các đường dẫn docs cũ là điểm dẫn/chuyển hướng. Source of truth cho tác vụ là CURRENT_TASK; sau nghiệm thu cập nhật nó và HISTORY, không nhân bản trạng thái ở nhiều file.

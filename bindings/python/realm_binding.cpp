@@ -1,3 +1,8 @@
+// Bundled Zig's libc++ exposes std::jthread only with this experimental flag.
+// Keep the workaround scoped to Clang-based toolchains.
+#if defined(__clang__)
+#define _LIBCPP_ENABLE_EXPERIMENTAL
+#endif
 #include "polyec/realm.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
@@ -60,14 +65,48 @@ class RealmNativeTag {};
 #ifdef POLYEC_AI_ENABLED
 class RealmNativePolicy:public NativePolicy {public:using NativePolicy::NativePolicy;};
 #endif
-void bind_realm(py::module_&m){m.attr("REALM_OBS")=realm_obs;m.attr("REALM_ACTIONS")=realm_actions;m.attr("REALM_SCHEMA")=realm_schema;
+void bind_realm(py::module_&m){m.attr("REALM_OBS")=realm_obs;m.attr("REALM_ACTIONS")=realm_actions;m.attr("REALM_SCHEMA")=realm_schema;m.attr("REALM_TICKS_PER_DAY")=kSubdayUnitsPerDay;
     py::class_<Realm>(m,"Realm").def(py::init<uint64_t,int,int>(),py::arg("seed")=1,py::arg("regions")=6,py::arg("people")=10000)
     .def("view",&realm_view,py::arg("observer")=1).def("observe",&Realm::observation).def("mask",&Realm::mask).def("advance",&Realm::advance,py::arg("days")=1).def("invariant",[](const Realm&w){return w.invariant();}).def("fingerprint",&Realm::fingerprint).def("due",[](Realm&w,int role){return w.due(Family(role));})
     .def("step",[](Realm&w,uint64_t id,int a){if(a<0||a>=realm_actions)throw std::invalid_argument("Action bounds");auto result=w.execute({id,w.person(id).decisions+1,w.candidates(id)[a]});return py::make_tuple(result.success,result.reason);})
-    .def("person",[](Realm&w,uint64_t id){auto&p=w.person(id);py::dict d;d["id"]=id;d["region"]=p.region;d["age_days"]=p.age_days;d["cash"]=p.cash;d["health"]=p.health;d["nutrition"]=p.nutrition;d["job_kind"]=p.job_kind;d["taxing_authority"]=p.taxing_authority;d["skill"]=p.skill;d["goal"]=p.goal;d["stats"]=p.stats.values;d["family"]=int(p.family);d["alive"]=p.alive;d["decisions"]=p.decisions;d["sampling"]=p.sampling;return d;})
+    .def("person",[](Realm&w,uint64_t id){auto&p=w.person(id);py::dict d;d["id"]=id;d["region"]=p.region;d["age_days"]=p.age_days;d["cash"]=p.cash;d["health"]=p.health;d["nutrition"]=p.nutrition;d["job_kind"]=p.job_kind;d["taxing_authority"]=p.taxing_authority;d["skill"]=p.skill;d["goal"]=p.goal;d["stats"]=p.stats.values;d["family"]=int(p.family);d["alive"]=p.alive;d["decisions"]=p.decisions;d["sampling"]=p.sampling;auto est=w.employment_state(id);d["employment_state"]=est==EmploymentState::Employed?"Employed":"Idle";auto jt=w.job_type(id);switch(jt){case JobType::Worker:d["job_type"]="Worker";break;case JobType::Teacher:d["job_type"]="Teacher";break;case JobType::AppointedOffice:d["job_type"]="AppointedOffice";break;default:d["job_type"]="None";break;}return d;})
     .def("utility",&Realm::utility).def("choose",&Realm::choose).def("reroll",&Realm::reroll).def("serialize",&Realm::serialize).def("deserialize",[](Realm&w,const std::string&s,const std::string&b){std::string error;bool ok=w.deserialize(s,b,error);return py::make_tuple(ok,error);})
     .def_static("scenario",&Realm::scenario,py::arg("seed"),py::arg("actor"),py::arg("age")=-1,py::arg("stat")=-1,py::arg("goal")=-1,py::arg("budget")=-1,py::arg("schools")=-1,py::arg("jobs")=-1,py::arg("nutrition")=-1,py::arg("health")=-1)
-    .def("route",[](Realm&w,uint64_t actor,int from,int to,bool open){return w.route_command(actor,from,to,open).success;});
+    .def("route",[](Realm&w,uint64_t actor,int from,int to,bool open){return w.route_command(actor,from,to,open).success;})
+    .def_property_readonly("paused",&Realm::paused)
+    .def_property_readonly("pause_revision",&Realm::pause_revision)
+    .def_property_readonly("day",&Realm::day)
+    .def_property_readonly("game_tick",&Realm::game_tick)
+    .def_property_readonly("timeline_contract",&Realm::timeline_contract)
+    .def_property_readonly("pilot_policy_compatible",&Realm::pilot_policy_compatible)
+    .def_property_readonly("model_contract",&Realm::model_contract)
+    .def_property_readonly("schedule_cursor",[](const Realm&w){return w.schedule_book().cursor;})
+    .def_property_readonly("schedule_next_session_id",[](const Realm&w){return w.schedule_book().next_session_id;})
+    .def("advance_ticks",&Realm::advance_ticks,py::arg("ticks"))
+    .def("pause",[](Realm&w,std::optional<uint64_t>expected=std::nullopt){auto r=w.execute(RealmClockCommand{RealmClockCommand::Operation::Pause,expected});return py::make_tuple(r.success,r.reason);},py::arg("expected")=py::none())
+    .def("resume",[](Realm&w,std::optional<uint64_t>expected=std::nullopt){auto r=w.execute(RealmClockCommand{RealmClockCommand::Operation::Resume,expected});return py::make_tuple(r.success,r.reason);},py::arg("expected")=py::none())
+    .def("schedule_command",[](Realm&w,int operation,uint64_t actor,uint64_t sequence,uint64_t session,int64_t begin,int64_t end,int32_t priority,int32_t demand_rate){
+        ScheduleCommand cmd;cmd.operation=static_cast<ScheduleCommand::Operation>(operation);cmd.actor=actor;cmd.sequence=sequence;cmd.session=session;cmd.begin=begin;cmd.end=end;cmd.priority=priority;cmd.demand_rate=demand_rate;
+        auto r=w.execute(cmd);return py::make_tuple(r.success,r.reason,r.session);
+    },py::arg("operation"),py::arg("actor"),py::arg("sequence"),py::arg("session")=0,py::arg("begin")=0,py::arg("end")=0,py::arg("priority")=0,py::arg("demand_rate")=0)
+    .def("schedule_sessions",[](const Realm&w,std::optional<uint64_t>actor=std::nullopt){
+        struct Record{uint64_t actor;ActivitySession session;};
+        std::vector<Record> records;
+        const auto&book=w.schedule_book();
+        for(auto const&[a,sessions]:book.sessions){
+            if(actor&&a!=*actor)continue;
+            for(auto const&s:sessions)records.push_back({a,s});
+        }
+        std::sort(records.begin(),records.end(),[](const Record&a,const Record&b){if(a.actor!=b.actor)return a.actor<b.actor;return a.session.id<b.session.id;});
+        py::list result;
+        for(auto const&record:records){
+            auto const&s=record.session;
+            py::dict d;
+            d["actor"]=record.actor;d["id"]=s.id;d["begin"]=s.begin;d["end"]=s.end;d["priority"]=s.priority;d["demand_rate"]=s.demand_rate;d["requested"]=s.requested;d["delivered"]=s.delivered;d["unmet"]=s.unmet;d["capacity_unmet"]=s.capacity_unmet;d["unresolved_unmet"]=s.unresolved_unmet;d["retired"]=s.retired;d["retired_tick"]=s.retired_tick;d["retired_cause"]=s.retired_cause;
+            result.append(d);
+        }
+        return result;
+    },py::arg("actor")=py::none());
     py::class_<RealmBatch>(m,"RealmBatch").def(py::init<int,uint64_t,int,int,int,int>(),py::arg("count"),py::arg("seed"),py::arg("role"),py::arg("regions"),py::arg("horizon"),py::arg("workers")=4).def("observe",&RealmBatch::observe).def("step",&RealmBatch::step,py::arg("actions"),py::arg("auto_reset")=true).def("outcomes",&RealmBatch::outcomes);
 #ifdef POLYEC_AI_ENABLED
     py::class_<RealmNativePolicy>(m,"RealmNativePolicy").def(py::init<int,int>(),py::arg("observations")=realm_obs,py::arg("actions")=realm_actions).def("load",&NativePolicy::load).def("error",&NativePolicy::error).def("predict",[](RealmNativePolicy&p,py::array_t<float,py::array::c_style|py::array::forcecast>o,py::array_t<float,py::array::c_style|py::array::forcecast>h){if(o.ndim()!=2||o.shape(1)!=realm_obs||h.ndim()!=2||h.shape(0)!=o.shape(0)||h.shape(1)!=64)throw std::invalid_argument("Realm ONNX input shape");auto r=p.predict({o.data(),o.data()+o.size()},{h.data(),h.data()+h.size()},int(o.shape(0)));if(!r.success)throw std::runtime_error(r.error);py::array_t<float>logits({int(o.shape(0)),realm_actions}),memory({int(o.shape(0)),64});std::copy(r.logits.begin(),r.logits.end(),logits.mutable_data());std::copy(r.hidden.begin(),r.hidden.end(),memory.mutable_data());return py::make_tuple(logits,memory);});

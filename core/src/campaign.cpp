@@ -107,9 +107,32 @@ void Campaign::controller(){
         world_.execute({p.id,p.decisions+1,{Intent::Work,p.region,0,0,30}});
     }
 }
+void Campaign::pause(std::optional<uint64_t> expected_pause_revision){
+    RealmClockCommand cmd;cmd.operation=RealmClockCommand::Operation::Pause;cmd.expected_pause_revision=expected_pause_revision;
+    auto result=world_.execute(cmd);if(!result.success)throw std::runtime_error(result.reason);
+}
+void Campaign::resume(std::optional<uint64_t> expected_pause_revision){
+    RealmClockCommand cmd;cmd.operation=RealmClockCommand::Operation::Resume;cmd.expected_pause_revision=expected_pause_revision;
+    auto result=world_.execute(cmd);if(!result.success)throw std::runtime_error(result.reason);
+}
+void Campaign::step_one_day(std::optional<uint64_t> expected_pause_revision){
+    if(expected_pause_revision&&*expected_pause_revision!=world_.pause_revision())throw std::runtime_error("Campaign clock revision changed");
+    const int64_t maxTick=365000LL*kSubdayUnitsPerDay;
+    if(world_.game_tick()>maxTick||kSubdayUnitsPerDay>maxTick-world_.game_tick())throw std::invalid_argument("Campaign day exceeds the world horizon");
+    controller();
+    RealmClockCommand cmd;cmd.operation=RealmClockCommand::Operation::StepOneDay;cmd.expected_pause_revision=expected_pause_revision;
+    auto result=world_.execute(cmd);if(!result.success)throw std::runtime_error(result.reason);
+    settle_day();
+}
 void Campaign::advance(int days){
     if(days<1||days>30)throw std::invalid_argument("M4 day chunk 1..30");
-    for(int i=0;i<days;++i){controller();world_.advance();int day=world_.day();
+    if(world_.paused())throw std::runtime_error("Campaign is paused");
+    const int64_t maxTick=365000LL*kSubdayUnitsPerDay,requested=int64_t(days)*kSubdayUnitsPerDay;
+    if(world_.game_tick()>maxTick||requested>maxTick-world_.game_tick())throw std::invalid_argument("Campaign advance exceeds the world horizon");
+    for(int i=0;i<days;++i){controller();world_.advance();settle_day();}
+}
+void Campaign::settle_day(){
+    int day=world_.day();
         if(day%90==0)for(int r=0;r<7;++r){auto&v=world_.provinces_[r];int weather=45+int(noise(seed_^uint64_t(day/90)*7919^uint64_t(r/3))%76);int alive=0;for(auto&p:world_.people_)alive+=p.alive&&p.region==r;
             // Both baseline and terrain/weather variant use the one Realm rule.
             int64_t original=world_.harvest_quantity(r,0,alive);
@@ -129,7 +152,6 @@ void Campaign::advance(int days){
             }
         }
         world_.prices();update_cases();++revision_;if(!invariant())throw std::logic_error("M4 accounting invariant at day "+std::to_string(day)+", raw realm="+std::to_string(world_.invariant()));
-    }
 }
 void Campaign::update_cases(){
     for(int r=0;r<6;++r){auto&v=world_.provinces_[r];bool overdue=false;for(auto&l:world_.loans_)overdue|=world_.person(l.debtor).region==r&&l.due<=world_.day()&&l.paid<l.principal+l.interest;
@@ -144,7 +166,7 @@ void Campaign::update_cases(){
     }
 }
 CampaignView Campaign::view()const{
-    CampaignView v;v.realm=world_.view();v.regions=geography();v.routes=routes_;v.revision=revision_;v.cargo=cargo_;v.loans=world_.loans_;v.crown=world_.provinces_[6].treasury;v.workshop_cash=world_.organization_funds_[27];v.workshop_workers=int(workers_.size());v.cloth=workshop_output_;v.inspecting_until=inspecting_until_;v.player_sequence=sequence_;v.invariant=invariant();
+    CampaignView v;v.realm=world_.view();v.regions=geography();v.routes=routes_;v.revision=revision_;v.cargo=cargo_;v.loans=world_.loans_;v.crown=world_.provinces_[6].treasury;v.workshop_cash=world_.organization_funds_[27];v.workshop_workers=int(workers_.size());v.cloth=workshop_output_;v.inspecting_until=inspecting_until_;v.player_sequence=sequence_;v.invariant=invariant();v.paused=world_.paused();v.pause_revision=world_.pause_revision();
     for(auto&p:v.realm.provinces)p.residents=0;for(auto&p:world_.people_)if(p.alive)++v.realm.provinces[p.region].residents;
     for(auto&k:cases_)if(k.reported<=world_.day())v.cases.push_back(k);
     for(auto&f:journal_)if(f.day+2<=world_.day())v.journal.push_back(f);return v;
@@ -174,7 +196,7 @@ std::string Campaign::state()const{
 }
 std::string Campaign::serialize()const{return state();}
 uint64_t Campaign::fingerprint()const{return hash(state());}
-bool Campaign::deserialize(const std::string&data,std::string&error){try{
+bool Campaign::deserialize(const std::string&data,std::string&error,bool interactive){try{
     if(data.size()>256*1024*1024)throw std::runtime_error("M4 save exceeds size limit");
     Campaign restored(1,128);std::istringstream s(data);std::string magic;s>>magic;if(magic!="POLYEC_M4_1")throw std::runtime_error("M4 schema mismatch");
     s>>restored.seed_>>restored.revision_>>restored.sequence_>>restored.next_record_>>restored.inspecting_until_>>restored.surveyed_>>restored.workshop_output_;
@@ -184,7 +206,9 @@ bool Campaign::deserialize(const std::string&data,std::string&error){try{
     restored.cases_.resize(size(100000));for(auto&k:restored.cases_)s>>k.id>>k.cause>>k.region>>k.opened>>k.reported>>k.closed>>k.evidence>>std::quoted(k.title);
     restored.journal_.resize(size(1000000));for(auto&f:restored.journal_)s>>f.id>>f.parent>>f.day>>f.region>>f.kind>>f.amount;
     restored.workers_.resize(size(6));for(auto&id:restored.workers_)s>>id;std::string realm;s>>std::quoted(realm);if(!s)throw std::runtime_error("M4 save incomplete");s>>std::ws;if(!s.eof())throw std::runtime_error("M4 save trailing data");
-    if(!restored.world_.deserialize(realm,bundle,error,bonded)||!restored.invariant())throw std::runtime_error("M4 world/accounting invalid: "+error);
+    if(!restored.world_.deserialize(realm,bundle,error,bonded))throw std::runtime_error("M4 world/accounting invalid: "+error);
+    if(interactive)restored.pause();
+    if(!restored.invariant())throw std::runtime_error("M4 world/accounting invalid: "+error);
     *this=std::move(restored);error.clear();return true;
 }catch(const std::exception&e){error=e.what();return false;}}
 bool Campaign::save(const std::string&path,std::string&error)const{try{
@@ -199,7 +223,7 @@ bool Campaign::save(const std::string&path,std::string&error)const{try{
 #endif
     error.clear();return true;
 }catch(const std::exception&e){error=e.what();return false;}}
-bool Campaign::load(const std::string&path,std::string&error){try{
-    auto p=std::filesystem::u8path(path);if(std::filesystem::file_size(p)>256*1024*1024)throw std::runtime_error("M4 save exceeds size limit");std::ifstream f(p,std::ios::binary);uint64_t expected=0;f>>expected;f.get();std::string data((std::istreambuf_iterator<char>(f)),{});if(!f||expected!=hash(data))throw std::runtime_error("M4 save checksum failed");return deserialize(data,error);
+bool Campaign::load(const std::string&path,std::string&error,bool interactive){try{
+    auto p=std::filesystem::u8path(path);if(std::filesystem::file_size(p)>256*1024*1024)throw std::runtime_error("M4 save exceeds size limit");std::ifstream f(p,std::ios::binary);uint64_t expected=0;f>>expected;f.get();std::string data((std::istreambuf_iterator<char>(f)),{});if(!f||expected!=hash(data))throw std::runtime_error("M4 save checksum failed");return deserialize(data,error,interactive);
 }catch(const std::exception&e){error=e.what();return false;}}
 }

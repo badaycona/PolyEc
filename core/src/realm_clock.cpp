@@ -72,7 +72,8 @@ bool RealmClockController::update(double dt) {
         return false;
     }
     if (dt > 0.25) {
-        realm_.execute(RealmClockCommand{RealmClockCommand::Operation::Pause});
+        auto paused = realm_.execute(RealmClockCommand{RealmClockCommand::Operation::Pause});
+        if (!paused.success) throw std::runtime_error("clock pause failed");
         accum_ticks_ = 0.0;
         seen_revision_ = realm_.pause_revision();
         return false;

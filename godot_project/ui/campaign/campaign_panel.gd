@@ -153,6 +153,8 @@ func _ready() -> void:
     add_child(help_dialog)
     if not session.m4_start(37, 10000):
         feedback.text = "Không khởi tạo được core M4"
+    running = false
+    elapsed = 0.0
     refresh()
 
 func select_region(id: int) -> void:
@@ -164,8 +166,9 @@ func refresh() -> void:
     snapshot = session.m4_snapshot()
     if not snapshot.get("loaded", false):
         return
-    heading.text = "Ngày %d · %s · %d / %d người còn sống · Ngân khố %d đ" % [snapshot.day, "ĐANG CHẠY" if running else "TẠM DỪNG", snapshot.alive, snapshot.population, snapshot.crown]
-    run_button.text = "Ⅱ Tạm dừng" if running else "▶ Tiếp tục"
+    var core_paused = bool(snapshot.get("paused", true))
+    heading.text = "Ngày %d · %s · %d / %d người còn sống · Ngân khố %d đ" % [snapshot.day, "ĐANG CHẠY" if running and not core_paused else "TẠM DỪNG", snapshot.alive, snapshot.population, snapshot.crown]
+    run_button.text = "Ⅱ Tạm dừng" if running and not core_paused else "▶ Tiếp tục"
     map.update_world(snapshot)
     var r = snapshot.regions[selected]
     profile.text = "%s\n%s\n%d cư dân · %d lương thực / khoảng %d ngày\nGiá lương thực %d đ · Ngân khố vùng %d đ\nBất mãn %d · Năng suất địa hình %d%%\nHắc Sơn: còn nợ %d đ%s\nDệt Bạch Khâu: %d thợ · %d vải · vốn %d đ" % [r.name, r.terrain, r.residents, r.food, r.cover, r.price, r.treasury, r.unrest, r.harvest, snapshot.debt, " · quá hạn" if snapshot.overdue else "", snapshot.workshop_workers, snapshot.cloth, snapshot.workshop_cash]
@@ -196,45 +199,89 @@ func refresh_route() -> void:
     map.queue_redraw()
     route_label.text = "Kho hoàng gia → %s · %d ngày vận tải · phí %d đ + tiền mua · lượng hàng và đèo/cầu ảnh hưởng thời gian" % [snapshot.regions[selected].name, p.get("days", 0), p.get("fee", 0)]
 
-func send_command(action: int, target: int, amount: int = 200) -> void:
+func pause_core_and_stop_ui() -> bool:
     running = false
     elapsed = 0.0
+    if session.m4_pause():
+        return true
+    var error = str(session.m4_snapshot().get("error", ""))
+    feedback.text = "Không tạm dừng được lõi Campaign" + (": " + error if error != "" else "")
+    return false
+
+func send_command(action: int, target: int, amount: int = 200) -> void:
+    if not pause_core_and_stop_ui():
+        refresh()
+        return
     var ok = session.m4_command(action, target, amount, snapshot.sequence, snapshot.revision)
     feedback.text = "Đã ghi lệnh vào sổ; hãy tiến thời gian để thấy hệ quả" if ok else str(session.m4_snapshot().error)
     refresh()
 
 func step_day() -> void:
-    if not session.m4_step(1):
-        running = false
+    if not pause_core_and_stop_ui():
+        refresh()
+        return
+    if not session.m4_step_one_day():
         feedback.text = "Không tiến ngày: " + str(session.m4_snapshot().get("error", ""))
+    else:
+        feedback.text = "Đã tiến đúng một ngày; lịch vẫn tạm dừng"
     refresh()
 
 func toggle_run() -> void:
     if help_dialog.visible:
         return
-    running = not running
     elapsed = 0.0
+    if running:
+        pause_core_and_stop_ui()
+        refresh()
+        return
+    if session.m4_resume():
+        running = true
+        feedback.text = "Đang chạy; rời cửa sổ hoặc khung hình dài sẽ tạm dừng"
+    else:
+        running = false
+        feedback.text = "Không tiếp tục được: " + str(session.m4_snapshot().get("error", ""))
+    refresh()
+
+func advance_automatic_day() -> void:
+    if not running:
+        return
+    if session.m4_paused():
+        running = false
+        elapsed = 0.0
+        feedback.text = "Lõi Campaign đang tạm dừng; hãy tiếp tục trước"
+    elif not session.m4_step(1):
+        var error = str(session.m4_snapshot().get("error", ""))
+        running = false
+        elapsed = 0.0
+        session.m4_pause()
+        feedback.text = "Không tiến ngày: " + error
     refresh()
 
 func save_game() -> void:
-    running = false
+    if not pause_core_and_stop_ui():
+        refresh()
+        return
     feedback.text = "Đã lưu; bản cũ giữ trong .bak" if session.m4_save(save_path, false) else str(session.m4_snapshot().error)
     refresh()
 
 func load_game() -> void:
-    running = false
-    elapsed = 0.0
+    if not pause_core_and_stop_ui():
+        refresh()
+        return
     feedback.text = "Đã tải; đang tạm dừng" if session.m4_save(save_path, true) else "Tải thất bại; giữ world hiện tại: " + str(session.m4_snapshot().error)
     refresh()
 
 func show_guide() -> void:
-    running = false
+    if not pause_core_and_stop_ui():
+        refresh()
+        return
     refresh()
     help_dialog.popup_centered(Vector2i(850, 450))
 
 func close_panel() -> void:
-    running = false
-    elapsed = 0.0
+    if not pause_core_and_stop_ui():
+        refresh()
+        return
     help_dialog.hide()
     hide()
     closed.emit()
@@ -243,18 +290,23 @@ func _process(delta: float) -> void:
     if not visible or not running:
         return
     if delta > 0.25:
+        if pause_core_and_stop_ui():
+            feedback.text = "Khung hình quá dài; đã tạm dừng"
+        refresh()
+        return
+    if session.m4_paused():
         running = false
         elapsed = 0.0
+        feedback.text = "Lõi Campaign đang tạm dừng; hãy tiếp tục trước"
         refresh()
         return
     elapsed += delta * speed
     if elapsed >= 1.0:
         elapsed -= 1.0
-        step_day()
+        advance_automatic_day()
 
 func _notification(what: int) -> void:
     if what in [NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_WINDOW_FOCUS_OUT]:
-        running = false
-        elapsed = 0.0
         if is_node_ready():
+            pause_core_and_stop_ui()
             refresh()

@@ -1,6 +1,7 @@
 #pragma once
 #include "polyec/schedule.hpp"
 #include "polyec/realm_clock.hpp"
+#include "polyec/jobs/job.hpp"
 #include <array>
 #include <cstdint>
 #include <random>
@@ -30,6 +31,12 @@ struct Person {
     Family family=Family::Civilian; Stats stats;
     int64_t cash=100; std::array<int64_t,7> inventory{};
 };
+// Pure read-only job classifier: returns the shared singleton descriptor for the
+// person's active assignment at current_day, or nullptr for no active job.
+// Alive + valid canonical assignment required: appointed office (office &&
+// hired_by!=0 && Governance) or active work job (job>=0 && busy_until>=day with
+// job_kind exactly 0 or 1). Unknown job_kind/dead/expired/invalid -> nullptr.
+const Job* describe_job(const Person& person, int current_day) noexcept;
 struct Province { int64_t treasury=10000,firm=30000;std::array<int64_t,7> stock{};std::array<int,7> price{};int tax=10,school=8,school_used=0,jobs=32,employed=0,road=0,unrest=0,teachers=0;bool charter=true;int residents=0;int64_t health_sum=0;int sales_tax_remainder=0;int64_t tax_receipts=0,food_capacity=0;int teacher_skill_sum=0; };
 struct Edge { uint64_t from=0,to=0;int kind=0; };
 // creditor is the provincial firm-account index, not a Person ID.
@@ -93,6 +100,11 @@ public:
     const ScheduleBook& schedule_book() const {return schedule_book_;}
     int64_t debt(uint64_t actor) const;
     int64_t available_funds(uint64_t actor)const;
+    // Read-only employment/job classification queries
+    EmploymentState employment_state(uint64_t id) const;
+    JobType job_type(uint64_t id) const;
+    // nullptr when the person has no active job (None/Idle).
+    const Job* job_descriptor(uint64_t id) const;
     // Sparse household membership. A household label is the ID of its founding member,
     // but membership is a dynamic record: a birth joins the parent household with a
     // fresh non-consecutive ID, so never scan household..household+3.
@@ -154,6 +166,7 @@ private:
     bool legal(uint64_t actor,const Candidate& c,std::string& reason) const;
     void refresh_demography();
     void daily();void prices();void event(uint64_t actor,int region,int kind,int64_t amount=0,uint64_t target=0,bool secret=false,uint64_t parent=0);
+    void advance_ticks_preserving_paused(int64_t ticks);
     void transfer(int64_t& from,int64_t& to,int64_t amount);
     bool knows(uint64_t observer,const Fact& f) const;
 };

@@ -12,6 +12,7 @@ add_library(polyec_core STATIC
   src/realm_court.cpp
   src/campaign.cpp
   src/finance_manager.cpp
+  src/employment_manager.cpp
   src/household_index.cpp
   src/project_manager.cpp
   src/activity.cpp
@@ -65,3 +66,7 @@ add_test(NAME schedule_tests COMMAND polyec_schedule_tests)
 add_executable(polyec_realm_clock_tests tests/test_realm_clock.cpp)
 target_link_libraries(polyec_realm_clock_tests PRIVATE polyec_core)
 add_test(NAME realm_clock_tests COMMAND polyec_realm_clock_tests)
+
+add_executable(polyec_realm_clock_replay tests/realm_clock_replay.cpp)
+target_link_libraries(polyec_realm_clock_replay PRIVATE polyec_core)
+add_test(NAME realm_clock_replay COMMAND polyec_realm_clock_replay)

@@ -2,8 +2,10 @@
 #include "polyec/realm_clock.hpp"
 #include <cmath>
 #include <cstdio>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <string>
 namespace {
@@ -438,6 +440,205 @@ int main() {
             check(c.accumulated_ticks() > 0.49 && c.accumulated_ticks() < 0.51, "new pending 0.5");
             check(c.update(1.0 / 128.0), "next update");
             check(r.game_tick() == before + 1, "next 1/128 advances 1");
+        }
+
+        // T1b1 overflow: core Pause at UINT64_MAX rejects atomically.
+        {
+            const std::string bundle = "test";
+            const std::string maxstr = std::to_string(std::numeric_limits<uint64_t>::max());
+            Realm base(100, 1, 128);
+            std::string data = base.serialize(bundle);
+            const std::string needle = "CLOCK_1 0 0";
+            size_t pos = data.find(needle);
+            check(pos != std::string::npos, "unpaused clock needle present");
+            std::string beforeState = data;
+            beforeState.replace(pos, needle.size(), "CLOCK_1 0 " + maxstr);
+            Realm w(1, 1, 128);
+            std::string err;
+            check(w.deserialize(beforeState, bundle, err), "unpaused MAX deserialize ok");
+            check(!w.paused(), "unpaused MAX state");
+            check(w.pause_revision() == std::numeric_limits<uint64_t>::max(), "unpaused MAX revision");
+            std::string serializedBefore = w.serialize(bundle);
+            uint64_t rev = w.pause_revision();
+            auto res = w.execute(RealmClockCommand{RealmClockCommand::Operation::Pause});
+            check(!res.success, "Pause overflow rejected");
+            check(res.reason == "Pause revision overflow", "Pause overflow reason exact");
+            check(!w.paused(), "Pause overflow leaves unpaused");
+            check(w.pause_revision() == rev, "Pause overflow revision unchanged");
+            check(w.serialize(bundle) == serializedBefore, "Pause overflow serialized state unchanged");
+        }
+
+        // T1b1 overflow: core Resume at UINT64_MAX rejects atomically.
+        {
+            const std::string bundle = "test";
+            const std::string maxstr = std::to_string(std::numeric_limits<uint64_t>::max());
+            Realm base(101, 1, 128);
+            check(base.execute(RealmClockCommand{RealmClockCommand::Operation::Pause}).success, "base pause for Resume overflow");
+            std::string data = base.serialize(bundle);
+            const std::string needle = "CLOCK_1 1 1";
+            size_t pos = data.find(needle);
+            check(pos != std::string::npos, "paused clock needle present");
+            std::string beforeState = data;
+            beforeState.replace(pos, needle.size(), "CLOCK_1 1 " + maxstr);
+            Realm w(1, 1, 128);
+            std::string err;
+            check(w.deserialize(beforeState, bundle, err), "paused MAX deserialize ok");
+            check(w.paused(), "paused MAX state");
+            check(w.pause_revision() == std::numeric_limits<uint64_t>::max(), "paused MAX revision");
+            std::string serializedBefore = w.serialize(bundle);
+            uint64_t rev = w.pause_revision();
+            auto res = w.execute(RealmClockCommand{RealmClockCommand::Operation::Resume});
+            check(!res.success, "Resume overflow rejected");
+            check(res.reason == "Pause revision overflow", "Resume overflow reason exact");
+            check(w.paused(), "Resume overflow leaves paused");
+            check(w.pause_revision() == rev, "Resume overflow revision unchanged");
+            check(w.serialize(bundle) == serializedBefore, "Resume overflow serialized state unchanged");
+        }
+
+        // T1b1 overflow: controller update must surface failed Pause at UINT64_MAX.
+        {
+            const std::string bundle = "test";
+            const uint64_t maxrev = std::numeric_limits<uint64_t>::max();
+            const std::string maxstr = std::to_string(maxrev);
+            Realm base(102, 1, 128);
+            check(base.execute(RealmClockCommand{RealmClockCommand::Operation::Pause}).success, "base pause for controller overflow");
+            std::string data = base.serialize(bundle);
+            const std::string needle = "CLOCK_1 1 1";
+            size_t pos = data.find(needle);
+            check(pos != std::string::npos, "controller overflow clock needle present");
+            std::string beforeState = data;
+            beforeState.replace(pos, needle.size(), "CLOCK_1 1 " + std::to_string(maxrev - 1));
+            Realm w(1, 1, 128);
+            std::string err;
+            check(w.deserialize(beforeState, bundle, err), "paused MAX-1 deserialize ok");
+            check(w.paused(), "paused MAX-1 state");
+            check(w.pause_revision() == maxrev - 1, "paused MAX-1 revision");
+            RealmClockController c(w, 1.0);
+            check(w.paused(), "controller constructor idempotent pause");
+            check(w.pause_revision() == maxrev - 1, "constructor revision unchanged");
+            check(c.seen_pause_revision() == maxrev - 1, "constructor seen revision");
+            check(c.set_paused(false), "resume to MAX");
+            check(!w.paused(), "unpaused at MAX");
+            check(w.pause_revision() == maxrev, "revision MAX after resume");
+            check(c.accumulated_ticks() == 0.0, "accum cleared by resume");
+            check(c.update(1.0 / 128.0), "small update creates residual");
+            check(c.accumulated_ticks() > 0.49 && c.accumulated_ticks() < 0.51, "residual accum present");
+
+            int64_t beforeTick = w.game_tick();
+            double beforeAccum = c.accumulated_ticks();
+            uint64_t beforeRev = w.pause_revision();
+            bool beforePaused = w.paused();
+            std::string serializedBefore = w.serialize(bundle);
+            uint64_t beforeSeen = c.seen_pause_revision();
+
+            bool threw = false;
+            try {
+                c.update(0.5);
+            } catch (const std::runtime_error& e) {
+                threw = true;
+                check(std::string(e.what()) == "clock pause failed", "controller overflow throw reason");
+            }
+            check(threw, "controller update overflow throws");
+            check(w.game_tick() == beforeTick, "controller overflow no tick advance");
+            check(c.accumulated_ticks() == beforeAccum, "controller overflow accum unchanged");
+            check(w.pause_revision() == beforeRev, "controller overflow revision unchanged");
+            check(w.paused() == beforePaused, "controller overflow paused state unchanged");
+            check(w.serialize(bundle) == serializedBefore, "controller overflow serialized state unchanged");
+            check(c.seen_pause_revision() == beforeSeen, "controller overflow seen revision unchanged");
+        }
+
+        // T1b1 overflow: already-paused at MAX follows idempotent long-gap path.
+        {
+            const std::string bundle = "test";
+            const uint64_t maxrev = std::numeric_limits<uint64_t>::max();
+            const std::string maxstr = std::to_string(maxrev);
+            Realm base(103, 1, 128);
+            check(base.execute(RealmClockCommand{RealmClockCommand::Operation::Pause}).success, "base pause for idempotent MAX");
+            std::string data = base.serialize(bundle);
+            const std::string needle = "CLOCK_1 1 1";
+            size_t pos = data.find(needle);
+            check(pos != std::string::npos, "idempotent MAX clock needle present");
+            std::string beforeState = data;
+            beforeState.replace(pos, needle.size(), "CLOCK_1 1 " + maxstr);
+            Realm w(1, 1, 128);
+            std::string err;
+            check(w.deserialize(beforeState, bundle, err), "paused MAX deserialize ok");
+            check(w.paused(), "paused MAX state");
+            check(w.pause_revision() == maxrev, "paused MAX revision");
+            RealmClockController c(w, 1.0);
+            check(c.accumulated_ticks() == 0.0, "idempotent MAX accum starts zero");
+            check(!c.update(0.5), "idempotent MAX long gap returns false");
+            check(w.paused(), "idempotent MAX remains paused");
+            check(c.accumulated_ticks() == 0.0, "idempotent MAX accum dropped");
+        }
+
+        // StepOneDay clock command: exact one day, paused state/revision unchanged.
+        {
+            Realm r(900, 1, 128);
+            r.execute(RealmClockCommand{RealmClockCommand::Operation::Pause});
+            int64_t t0 = r.game_tick();
+            int d0 = r.day();
+            uint64_t rev0 = r.pause_revision();
+            bool paused0 = r.paused();
+            auto result = r.execute(RealmClockCommand{RealmClockCommand::Operation::StepOneDay, rev0});
+            check(result.success, "StepOneDay succeeds while paused");
+            check(r.paused() == paused0, "StepOneDay leaves paused unchanged");
+            check(r.pause_revision() == rev0, "StepOneDay leaves revision unchanged");
+            check(r.game_tick() == t0 + 64, "StepOneDay advances exactly 64 ticks");
+            check(r.day() == d0 + 1, "StepOneDay advances exactly one day");
+        }
+        {
+            Realm r(901, 1, 128);
+            int64_t t0 = r.game_tick();
+            int d0 = r.day();
+            uint64_t rev0 = r.pause_revision();
+            auto result = r.execute(RealmClockCommand{RealmClockCommand::Operation::StepOneDay, rev0});
+            check(result.success, "StepOneDay succeeds while unpaused");
+            check(!r.paused(), "StepOneDay leaves unpaused unchanged");
+            check(r.pause_revision() == rev0, "StepOneDay unpaused revision unchanged");
+            check(r.game_tick() == t0 + 64, "StepOneDay unpaused 64 ticks");
+            check(r.day() == d0 + 1, "StepOneDay unpaused one day");
+        }
+        // Stale expected revision rejects without time mutation.
+        {
+            Realm r(902, 1, 128);
+            r.execute(RealmClockCommand{RealmClockCommand::Operation::Pause});
+            uint64_t stale = r.pause_revision();
+            r.execute(RealmClockCommand{RealmClockCommand::Operation::Resume});
+            r.execute(RealmClockCommand{RealmClockCommand::Operation::Pause});
+            int64_t t0 = r.game_tick();
+            auto result = r.execute(RealmClockCommand{RealmClockCommand::Operation::StepOneDay, stale});
+            check(!result.success, "stale StepOneDay rejected");
+            check(r.game_tick() == t0, "stale StepOneDay no tick mutation");
+            check(r.paused(), "stale StepOneDay leaves paused");
+        }
+        // Ordinary advance still rejects while paused.
+        {
+            Realm r(903, 1, 128);
+            r.execute(RealmClockCommand{RealmClockCommand::Operation::Pause});
+            int64_t t0 = r.game_tick();
+            bool threw = false;
+            try { r.advance(1); } catch (const std::runtime_error&) { threw = true; }
+            check(threw, "ordinary advance throws while paused");
+            check(r.game_tick() == t0, "ordinary advance no tick while paused");
+            check(r.paused(), "ordinary advance leaves paused");
+        }
+        // Horizon boundary: one final day is allowed, then StepOneDay rejects without time mutation.
+        {
+            Realm r(904, 1, 128);
+            r.advance_ticks(364999LL * 64);
+            check(r.game_tick() == 364999LL * 64, "horizon fixture advanced");
+            r.execute(RealmClockCommand{RealmClockCommand::Operation::Pause});
+            uint64_t rev0 = r.pause_revision();
+            auto finalDay = r.execute(RealmClockCommand{RealmClockCommand::Operation::StepOneDay, rev0});
+            check(finalDay.success, "horizon final StepOneDay succeeds");
+            check(r.game_tick() == 365000LL * 64, "horizon final StepOneDay reaches limit");
+            int64_t t0 = r.game_tick();
+            auto result = r.execute(RealmClockCommand{RealmClockCommand::Operation::StepOneDay, rev0});
+            check(!result.success, "horizon StepOneDay rejected");
+            check(result.reason == "ticks bounds", "horizon StepOneDay reason exact");
+            check(r.game_tick() == t0, "horizon StepOneDay no tick mutation");
+            check(r.pause_revision() == rev0, "horizon StepOneDay revision unchanged");
         }
 
         std::cout << "realm clock checks=" << checks << "\n";

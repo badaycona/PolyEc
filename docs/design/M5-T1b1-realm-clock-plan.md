@@ -1,6 +1,6 @@
 # M5 T1b1 — Realm clock/pause adapter (implementation contract)
 
-Status: plan approved with corrections; implementation in progress.
+Status: core implementation accepted by Codex 2026-10-19 after overflow repair review, full rebuild and CTest 9/9; native/Python T1b2 remains separate.
 
 ## Files
 - `core/include/polyec/realm_clock.hpp` (new)
@@ -42,7 +42,7 @@ Status: plan approved with corrections; implementation in progress.
 - `update(dt)`:
   - reject NaN/Inf/negative `dt` with no mutation;
   - if inactive, drop accum and return `false`;
-  - if `dt > 0.25`, pause core, drop accum, return `false`;
+  - if `dt > 0.25`, pause core, drop accum, return `false`; if the Pause command fails (for example, unpaused core at `UINT64_MAX` pause revision), throw `std::runtime_error("clock pause failed")` before mutating accum, seen revision, or cursor, leaving the failed call atomic; an already-paused core at `UINT64_MAX` remains idempotent success;
   - if `seen_revision_ != realm.pause_revision()`, drop accum and sync (external pause/resume detection);
   - if core paused, drop accum and return `false`;
   - add `dt * speed * 64` ticks to accum;

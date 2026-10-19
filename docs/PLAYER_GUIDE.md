@@ -2,6 +2,19 @@
 
 Cập nhật: 2026-10-18. Hướng dẫn này giải thích bản chơi hiện có và điều người chơi cần biết. Game đang phát triển: bản M4 là màn chơi thử có mục tiêu; sandbox M3 là phòng thử mô phỏng. Quốc gia và luật xã hội đầy đủ vẫn đang được xây.
 
+## Đọc nhanh nếu bạn mới đến
+
+Bạn không cần kiến thức lập trình hay kinh tế để bắt đầu. Hãy đọc “Mở bản chơi”, bảng điều khiển và “Lần chơi thử đầu tiên” trước. Các mục còn lại giải thích vì sao một lệnh chưa chắc tạo kết quả ngay. Phần “Hiểu toàn bộ hướng chơi” mô tả game dự kiến, có thể chưa có trong gói bạn đang chơi.
+
+| Từ gặp trong hướng dẫn | Hiểu đơn giản |
+|---|---|
+| M4 / bản chơi thử | Màn thử các cơ chế bản đồ và hồ sơ, chưa là chiến dịch đầy đủ |
+| Sandbox / phòng thử | Nơi quan sát mô phỏng, không phải một lượt chơi có đủ mục tiêu/kết thúc |
+| Ngân khố | Tiền của triều đình; khác tài sản riêng của vua và người khác |
+| Nghĩa vụ | Việc hoặc khoản phải hoàn thành, có thể có hạn và người chịu trách nhiệm |
+| Hàng đang đi | Hàng đã xuất phát nhưng chưa nhập kho nơi nhận |
+| Báo cáo | Thông tin bạn nhận được tại một thời điểm, có thể chậm hơn sự việc |
+
 ## Bạn vào vai ai?
 
 Bạn là vua của một quốc gia giả tưởng lấy cảm hứng cuối Trung cổ. Tiền, lương thực, lao động và quyền lực đều có giới hạn. Bạn đọc báo cáo, giao việc, cấp nguồn lực và theo dõi kết quả. Có quyền ra lệnh chưa có nghĩa cấp dưới có đủ tiền, người, đường đi hoặc quyền địa phương để thi hành.
@@ -29,6 +42,16 @@ App chơi offline, không cần Python, Node hay API key. Gói Windows hiện đ
 | Esc | Về địa đồ và tạm dừng |
 
 Bản M4 dùng 1× tương ứng một ngày game mỗi giây thực. Khi rời cửa sổ hoặc có khoảng dừng dài, game tạm dừng và không chạy bù. Đóng hướng dẫn không phải tín hiệu tự tiếp tục thời gian. Quan sát trạng thái chạy/dừng trước khi chờ hàng hoặc công trình.
+
+## Lần chơi thử đầu tiên
+
+1. Mở **M4 · Đường đèo & nguồn sống**. Tạm dừng bằng Space để có thời gian đọc bản đồ.
+2. Click Hắc Sơn, xem kho và hồ sơ. Phân biệt điều đang thiếu, khoản sắp đến hạn và điều kiện đường vận chuyển.
+3. Trước khi chọn cách xử lý, xem ai trả tiền, cần quyền gì và bao lâu mới có tác dụng. Chọn một việc để dễ theo dõi kết quả.
+4. Cho thời gian chạy, rồi tạm dừng để xem tiến độ và báo cáo mới. Hàng đã đặt chưa chắc đã tới; đường đang xây chưa làm chuyến hàng nhanh hơn.
+5. Theo dõi việc vừa giao tới kết quả hoặc lý do bị chặn. Mục tiêu lần đầu là hiểu một chuỗi quyết định–hậu quả; không cần giải quyết mọi vùng cùng lúc.
+
+Bạn có thể mở F1 để xem hướng dẫn và tạm dừng. Sau khi đọc xong, tự chọn tiếp tục; đừng mặc định đóng hướng dẫn sẽ cho game chạy lại.
 
 ## Bạn có thể làm gì trong M4?
 
@@ -62,6 +85,18 @@ Một lượt thử dễ theo dõi là hồ sơ Hắc Sơn:
 M4 lưu world, tiến độ, hàng, quyền đường, hồ sơ và trạng thái ngẫu nhiên. Tải mở ở trạng thái tạm dừng; lưu đè giữ bản trước trong `.bak` ở thư mục user-data Godot. Save sai phiên bản hoặc hỏng phải báo lỗi thay vì thay một phần phiên đang chơi.
 
 Không mặc định save hoặc model của các bản thử cũ tương thích phiên bản mới. Giữ bản sao save quan trọng trước khi đổi gói game.
+
+## Khi chưa hiểu vì sao một việc không chạy
+
+| Bạn thấy | Nên kiểm tra |
+|---|---|
+| Đã chờ nhưng không có tiến độ | Game có đang tạm dừng không? Bạn vừa rời cửa sổ hoặc mở hướng dẫn không? |
+| Có tiền nhưng lệnh bị từ chối | Đúng tài khoản có quyền chi chưa? Có thiếu hàng, người hoặc quyền đường không? Đọc lý do lệnh báo. |
+| Đã mua/cấp hàng nhưng kho chưa tăng | Xem tuyến, sức tải và ngày tới; hàng có thể còn trên đường. |
+| Báo cáo khác điều bạn vừa làm | Xem ngày của báo cáo; thông tin có độ trễ. |
+| Không có tính năng được nói ở phần dưới | Đó có thể là thiết kế dự kiến; bản thử chưa cung cấp toàn bộ. |
+
+Khi báo lỗi, ghi tên bản/gói đang chơi, màn đang mở, các bước trước khi xảy ra và thông báo nhìn thấy. Nếu có save giúp tái hiện, giữ bản sao. Đừng xóa save đang có chỉ để thử tải lại.
 
 ## Hiểu toàn bộ hướng chơi của PolyEc
 

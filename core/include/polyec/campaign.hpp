@@ -1,5 +1,6 @@
 #pragma once
 #include "polyec/realm.hpp"
+#include <optional>
 
 namespace polyec {
 // M4 adds a versioned scenario/controller around the shared Realm, not a second
@@ -19,6 +20,7 @@ struct CampaignView {
     std::vector<Loan> loans; std::vector<Fact> journal;
     int64_t crown=0,workshop_cash=0,cloth=0; int workshop_workers=0,inspecting_until=0;
     uint64_t player_sequence=1; bool invariant=false;
+    bool paused=false; uint64_t pause_revision=0;
 };
 class Campaign {
 public:
@@ -27,14 +29,19 @@ public:
     CampaignView view()const;
     CampaignResult execute(const CampaignCommand&);
     void advance(int days=1);
+    void step_one_day(std::optional<uint64_t> expected_pause_revision=std::nullopt);
+    void pause(std::optional<uint64_t> expected_pause_revision=std::nullopt);
+    void resume(std::optional<uint64_t> expected_pause_revision=std::nullopt);
+    bool paused()const{return world_.paused();}
+    uint64_t pause_revision()const{return world_.pause_revision();}
     RoutePreview preview(int from,int to,int64_t quantity=200)const;
     bool invariant()const;
     uint64_t fingerprint()const;
     uint64_t revision()const{return revision_;}
     bool save(const std::string&,std::string&)const;
-    bool load(const std::string&,std::string&);
+    bool load(const std::string&,std::string&,bool interactive=false);
     std::string serialize()const;
-    bool deserialize(const std::string&,std::string&);
+    bool deserialize(const std::string&,std::string&,bool interactive=false);
 private:
     Realm world_;
     std::vector<MapRoute> routes_;
@@ -48,6 +55,7 @@ private:
     std::vector<uint64_t> workers_;
     void update_cases();
     void controller();
+    void settle_day();
     void record(int kind,int region,int64_t amount=0,uint64_t parent=0);
     uint64_t latest(int region,int kind)const;
     std::string state()const;

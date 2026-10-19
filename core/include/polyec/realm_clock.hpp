@@ -11,7 +11,7 @@ class Realm;
 // Control command for the Realm-owned pause clock. This is a control-plane
 // command, not an NPC decision: it changes no money, actors, or strategy.
 struct RealmClockCommand {
-    enum class Operation { Pause, Resume };
+    enum class Operation { Pause, Resume, StepOneDay };
     Operation operation = Operation::Pause;
     // nullopt means unconditional. A value (including 0) is an exact expectation
     // and must equal Realm::pause_revision(); 0 is a valid initial revision.
@@ -20,6 +20,7 @@ struct RealmClockCommand {
     // Compatibility aliases for call sites/tests that use RealmClockCommand::Pause.
     static constexpr Operation Pause = Operation::Pause;
     static constexpr Operation Resume = Operation::Resume;
+    static constexpr Operation StepOneDay = Operation::StepOneDay;
 };
 
 // Wall-clock adapter around a Realm. Owns only transient timing state; the

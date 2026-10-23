@@ -46,3 +46,6 @@ Khi mở lại RL, phải ghi rõ: cách world/transition được tạo qua cù
 Khi người dùng yêu cầu tiếp tục, trước hết sửa test route Atlas để dùng route index API, chạy lại test Python và CTest battle sau query cuối. Tiếp theo build GDExtension liên quan, Godot editor scan và smoke UI/native; kiểm chuỗi command tạo raid → Sovereign phòng thủ/rút lui → ngày game xử lý casualty → save/load. Chỉ khi đã qua các bước này mới đóng nhóm battle và đi tới nhóm M5 thiếu kế tiếp. Không bắt đầu RL cho tới khi gameplay, tích hợp, policy, hiệu năng và package đạt các tiêu chí roadmap.
 
 Việc commit/push được thực hiện theo yêu cầu hiện tại của người dùng và chỉ sau khi rà soát staged files. Không force push. Nếu remote từ chối push, báo rõ lỗi và giữ commit local; không tìm cách vượt qua bảo vệ branch.
+
+
+Mã commit nội dung tại điểm dừng: `918323d008c7eee7ed82c787f162a839e936d096` trên nhánh `main`; nhánh đích là `origin/main`. Tài liệu này được cập nhật ngay sau commit để giữ lại mã nhận dạng; lần push được xác minh sau commit tài liệu.

@@ -55,3 +55,6 @@ RL đang tạm dừng theo yêu cầu: không train, chọn candidate, validatio
 3. Chỉ sau khi nhóm chiến đấu đạt các kiểm tra đó mới đóng nhóm; tiếp tục nhóm thiếu kế tiếp trong roadmap M5. RL vẫn chờ tới khi chức năng gameplay đầy đủ và gate tích hợp/hiệu năng/package đã đạt.
 
 Lịch sử và báo cáo chi tiết: [nhật ký phát triển](DEVELOPMENT_HISTORY.md), [báo cáo điểm dừng](reports/M5-checkpoint-handoff-2026-10-23.md). Không gọi M5, game hoàn chỉnh, battle UI hoặc learned RL là hoàn tất tại điểm dừng này.
+
+
+Commit nội dung tại điểm dừng: `918323d008c7eee7ed82c787f162a839e936d096` trên `main`; xác minh đẩy lên `origin/main` sau commit tài liệu bàn giao.

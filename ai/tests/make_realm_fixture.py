@@ -7,3 +7,8 @@ for family in ('governance','economic','civilian'):
 subprocess.run([str(a.native_replay.resolve()),*paths,bundle,str(a.output.resolve())],check=True)
 rows=json.loads(a.output.read_text());assert len(rows)==64 and rows[-1]['day']==64
 print('Native platform fixture:',a.output)
+
+
+
+
+

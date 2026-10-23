@@ -4,6 +4,16 @@ Tài liệu giúp người đọc hiểu **cần giải bài toán nào, chia nh
 
 P1–P16 dùng cùng mã với tài liệu kỹ thuật để dễ đối chiếu. Công thức dưới đây mô tả phương pháp và điều cần kiểm tra, không tự xác định tham số chưa được duyệt như tốc độ mệt, điểm thưởng hay cách biểu diễn năng lực. Mỗi mục đi từ vấn đề lớn tới những việc nhỏ có thể kiểm tra riêng.
 
+### Cách đọc mã hạng mục
+
+Mã là địa chỉ để tìm đúng phần trong kế hoạch hoặc cây bài toán; mã không tự cho biết phần đó đã xong hay còn thiếu. Trạng thái phải được ghi bằng lời riêng, chẳng hạn “đã triển khai và kiểm tra”, “đang làm” hoặc “chưa bắt đầu”.
+
+- `P1` là bài toán lớn thứ nhất trong cây: danh tính, quyền sở hữu và quyền hành động. `P1.1` là việc nhỏ thứ nhất thuộc P1; `P1.2` là việc nhỏ thứ hai. Nếu tài liệu chia nhỏ thêm, nó nối thêm một cấp số, chẳng hạn `P1.1.1`.
+- `M5` là milestone sản phẩm về mô phỏng xã hội và quốc gia. `M5.3` và `M5.4` là các phần của roadmap: M5.3 bao gồm tổ chức/chức vụ, hôn nhân/escrow, thừa kế/nợ/claim và giáo hội; M5.4 bao gồm quốc gia, thành thị, quân sự, ngoại thương và giao diện vua. Nhãn M5.4 có thể xuất hiện trên nhiều nhóm công việc, nên cần nêu cả tên nhóm cụ thể và trạng thái.
+- `R1`–`R4` được dùng trong hai ngữ cảnh khác nhau. Trong tài liệu **core refactor**, R1 là tách tính lương, R2 là chuyển đổi việc làm/chức vụ, R3 là điều phối tiến thời gian, R4 là dữ liệu, save/load và thông tin hiển thị. Trong **quality gates của policy RL**, R1–R5 là điều kiện đánh giá policy đã học. Vì vậy, luôn ghi `core refactor R1` hoặc `RL quality gate R1`; không dùng riêng “R1 đã xong”.
+
+Ví dụ: “P1.1 mô tả yêu cầu giữ nguyên ID của một người khi họ đổi hộ hoặc nghề; mục này đang được kiểm trong nhóm M5.0/1” giải thích lần lượt mã bài toán, hành vi cần làm và vị trí roadmap. Kết luận hoàn thành phải dẫn tới CURRENT_TASK hoặc báo cáo có phép kiểm tương ứng.
+
 ## 1. Sáu bài toán lớn và phụ thuộc
 
 | Nhóm | Câu hỏi | Bài toán con | Đọc sâu trong tài liệu kỹ thuật |
@@ -269,6 +279,9 @@ Báo chênh lệch trung bình, khoảng tin cậy và tác dụng ngoài dự k
 | P14.1 Ước lượng tài nguyên | Tính dân số, tần suất quyết định, vùng đệm và quan hệ cần lưu | Phân biệt số bản ghi với số cá thể có tương tác thật |
 | P14.2 Đo toàn vòng xử lý | Đo tìm việc đến hạn, dựng đầu vào, chạy mạng, ghi nhận và cập nhật giao diện | Đo cả lần chậm, việc còn chờ và bộ nhớ lúc lưu; không chỉ thời gian chạy mạng |
 | P14.3 Tối ưu mà giữ đúng luật | Cải thiện tìm kiếm, xử lý theo nhóm và cập nhật đúng mốc trước khi chia luồng | Chạy lại vẫn đúng; nhân vật ngoài màn hình vẫn già đi và chịu nghĩa vụ |
+| P14.4 Chọn truy vấn và bảng tra cứu | Chỉ thêm index/cache khi một câu hỏi lặp lại đủ nhiều; state gốc vẫn là nguồn chính thức | So với quét state; kiểm sau sinh/chết/chuyển vùng/đổi quan hệ/reject/load; đo cả chi phí dựng và cập nhật |
+| P14.5 Chọn thuật toán theo ý nghĩa dữ liệu | Quét, sắp, heap đến hạn, BFS/Dijkstra hay top-k tùy số phần tử và loại chi phí | Cùng seed cho kết quả tái lập; không để container hoặc thread quyết định quyền ưu tiên; test dữ liệu lệch và trường hợp hòa |
+| P14.6 Giữ cache và phân trang đúng | Gắn kết quả tạm với revision, thời điểm và quyền xem; dùng snapshot hoặc khóa tiếp tục khi danh sách đổi | Không lộ thông tin giữa observer; không bỏ/lặp bản ghi khi trang kế tiếp được lấy sau một thay đổi |
 
 Nếu mỗi phần tử bộ nhớ mạng dùng số thực 32 bit, tức bốn byte, dung lượng cho bộ nhớ riêng của các nhân vật là:
 
@@ -283,6 +296,8 @@ $$
 $$
 
 Trong đó $$N$$ là số người, $$v$$ là số ngày game trong một giây thực, $$c$$ là số ngày giữa hai quyết định của một người. Phần 7 phân tích bộ nhớ tạm và công đoạn gây chậm toàn vòng; giới hạn tài nguyên ở phần 9 của kế hoạch sản phẩm. Không tự giảm phạm vi để đạt số đo mong muốn.
+
+Một bảng tra cứu chỉ đáng giữ nếu chi phí cập nhật và bộ nhớ nhỏ hơn phần việc truy vấn lặp lại mà nó tiết kiệm. Đặt $$N$$ là số bản ghi gốc, $$E$$ là số quan hệ thật và $$k$$ là số kết quả trả ra: quét thường tốn O(N), còn index theo khóa có thể đưa lần đọc về O(k) sau khi đã dựng. Đây là phân tích độ phức tạp, không phải benchmark. Index phải được dựng lại từ dữ liệu chính thức và cho cùng kết quả với phép quét; hướng dẫn chọn index, heap, thuật toán đường đi, thứ tự ổn định và oracle nằm ở [DEVELOPER_GUIDE mục 7.3](DEVELOPER_GUIDE.md#73-chon-cach-truy-van-bang-tra-cuu-va-sap-xep).
 
 ### P15. Lưu, tải và giữ đúng ý nghĩa dữ liệu
 

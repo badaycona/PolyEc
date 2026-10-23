@@ -1,0 +1,32 @@
+schema_version = 3
+
+[work]
+ticks_per_unit = 16
+wage_per_unit = 1
+
+[establishment]
+default_capacity = 1
+
+[recipes.cloth]
+fiber_input = 1
+cloth_output = 1
+
+[recipes.tools]
+iron_input = 1
+fuel_input = 1
+tools_output = 1
+
+[recipes.military_supply]
+tools_input = 1
+cloth_input = 1
+military_supply_output = 1
+[market]
+system_version = 1
+response_basis_points = 1000
+maximum_change_basis_points = 1000
+price_floor = 1
+price_ceiling = 1000000
+
+[recipes.salt]
+fuel_input = 1
+salt_output = 1

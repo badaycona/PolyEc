@@ -9,15 +9,34 @@ add_library(polyec_core STATIC
   src/sim.cpp
   src/trade.cpp
   src/realm.cpp
+  src/realm_save.cpp
+  src/realm_lifecycle.cpp
+  src/realm_military.cpp
+  src/realm_military_battle.cpp
+  src/realm_establishment.cpp
+  src/realm_household.cpp
+  src/realm_land.cpp
+  src/realm_market.cpp
+  src/realm_transport.cpp
+  src/realm_foreign_trade.cpp
+  src/realm_military_obligations.cpp
+  src/realm_payroll.cpp
   src/realm_court.cpp
   src/campaign.cpp
+  src/logistics_manager.cpp
+  src/national_transport_manager.cpp
+  src/market_manager.cpp
   src/finance_manager.cpp
   src/employment_manager.cpp
   src/household_index.cpp
   src/project_manager.cpp
   src/activity.cpp
   src/schedule.cpp
+  src/gameplay_config.cpp
+  src/work_credit.cpp
   src/realm_clock.cpp
+  src/realm_view.cpp
+  src/realm_view_projector.cpp
 )
 
 target_include_directories(polyec_core PUBLIC
@@ -26,6 +45,9 @@ target_include_directories(polyec_core PUBLIC
 )
 target_compile_features(polyec_core PUBLIC cxx_std_20)
 target_compile_options(polyec_core PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+if(POLYEC_ENABLE_REALM_PHASE_PROFILE)
+  target_compile_definitions(polyec_core PUBLIC POLYEC_ENABLE_REALM_PHASE_PROFILE=1)
+endif()
 
 enable_testing()
 
@@ -33,6 +55,9 @@ add_executable(polyec_tests tests/test_core.cpp)
 target_link_libraries(polyec_tests PRIVATE polyec_core)
 
 add_test(NAME core_tests COMMAND polyec_tests)
+add_executable(polyec_realm_view_projector_tests tests/test_realm_view_projector.cpp)
+target_link_libraries(polyec_realm_view_projector_tests PRIVATE polyec_core)
+add_test(NAME realm_view_projector_tests COMMAND polyec_realm_view_projector_tests)
 add_executable(polyec_trade_tests tests/test_trade.cpp)
 target_link_libraries(polyec_trade_tests PRIVATE polyec_core)
 add_test(NAME trade_tests COMMAND polyec_trade_tests)
@@ -40,7 +65,24 @@ add_executable(polyec_trade_replay tests/trade_replay.cpp)
 target_link_libraries(polyec_trade_replay PRIVATE polyec_core)
 add_executable(polyec_realm_tests tests/test_realm.cpp)
 target_link_libraries(polyec_realm_tests PRIVATE polyec_core)
+if(MSVC)
+  target_link_options(polyec_realm_tests PRIVATE /STACK:4194304)
+endif()
 add_test(NAME realm_tests COMMAND polyec_realm_tests)
+add_executable(polyec_realm_secondary_recipe_tests tests/test_realm_secondary_recipe.cpp)
+target_link_libraries(polyec_realm_secondary_recipe_tests PRIVATE polyec_core)
+if(MSVC)
+  target_link_options(polyec_realm_secondary_recipe_tests PRIVATE /STACK:16777216)
+endif()
+add_test(NAME realm_secondary_recipe_tests COMMAND polyec_realm_secondary_recipe_tests)
+
+add_executable(polyec_land_title_tests tests/test_land_title.cpp)
+target_link_libraries(polyec_land_title_tests PRIVATE polyec_core)
+add_test(NAME land_title_tests COMMAND polyec_land_title_tests)
+
+add_executable(polyec_decision_snapshot_tests tests/test_decision_snapshot.cpp)
+target_link_libraries(polyec_decision_snapshot_tests PRIVATE polyec_core)
+add_test(NAME decision_snapshot_tests COMMAND polyec_decision_snapshot_tests)
 add_executable(polyec_realm_transition_replay tests/realm_transition_replay.cpp)
 target_link_libraries(polyec_realm_transition_replay PRIVATE polyec_core)
 
@@ -51,6 +93,24 @@ add_test(NAME court_tests COMMAND polyec_court_tests)
 add_executable(polyec_campaign_tests tests/test_campaign.cpp)
 target_link_libraries(polyec_campaign_tests PRIVATE polyec_core)
 add_test(NAME campaign_tests COMMAND polyec_campaign_tests)
+add_executable(polyec_logistics_manager_tests tests/test_logistics_manager.cpp)
+target_link_libraries(polyec_logistics_manager_tests PRIVATE polyec_core)
+add_test(NAME logistics_manager_tests COMMAND polyec_logistics_manager_tests)
+add_executable(polyec_national_transport_tests tests/test_national_transport_manager.cpp)
+target_link_libraries(polyec_national_transport_tests PRIVATE polyec_core)
+add_test(NAME national_transport_tests COMMAND polyec_national_transport_tests)
+add_executable(polyec_realm_profile_tests tests/test_realm_profile.cpp)
+target_link_libraries(polyec_realm_profile_tests PRIVATE polyec_core)
+add_test(NAME realm_profile_tests COMMAND polyec_realm_profile_tests)
+add_executable(polyec_realm_transport_tests tests/test_realm_transport.cpp)
+target_link_libraries(polyec_realm_transport_tests PRIVATE polyec_core)
+add_test(NAME realm_transport_tests COMMAND polyec_realm_transport_tests)
+add_executable(polyec_market_manager_tests tests/test_market_manager.cpp)
+target_link_libraries(polyec_market_manager_tests PRIVATE polyec_core)
+add_test(NAME market_manager_tests COMMAND polyec_market_manager_tests)
+add_executable(polyec_market_order_tests tests/test_market_orders.cpp)
+target_link_libraries(polyec_market_order_tests PRIVATE polyec_core)
+add_test(NAME market_order_tests COMMAND polyec_market_order_tests)
 
 add_executable(polyec_manager_tests tests/test_managers.cpp)
 target_link_libraries(polyec_manager_tests PRIVATE polyec_core)
@@ -62,10 +122,100 @@ add_test(NAME activity_tests COMMAND polyec_activity_tests)
 add_executable(polyec_schedule_tests tests/test_schedule.cpp)
 target_link_libraries(polyec_schedule_tests PRIVATE polyec_core)
 add_test(NAME schedule_tests COMMAND polyec_schedule_tests)
+target_compile_definitions(polyec_schedule_tests PRIVATE POLYEC_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
 
 add_executable(polyec_realm_clock_tests tests/test_realm_clock.cpp)
 target_link_libraries(polyec_realm_clock_tests PRIVATE polyec_core)
 add_test(NAME realm_clock_tests COMMAND polyec_realm_clock_tests)
+
+add_executable(polyec_production_tests tests/test_production.cpp)
+target_link_libraries(polyec_production_tests PRIVATE polyec_core)
+add_test(NAME production_tests COMMAND polyec_production_tests)
+add_executable(polyec_saltworks_tests tests/test_saltworks.cpp)
+target_link_libraries(polyec_saltworks_tests PRIVATE polyec_core)
+add_test(NAME saltworks_tests COMMAND polyec_saltworks_tests)
+add_executable(polyec_timber_forestry_tests tests/test_timber_forestry.cpp)
+target_link_libraries(polyec_timber_forestry_tests PRIVATE polyec_core)
+add_test(NAME timber_forestry_tests COMMAND polyec_timber_forestry_tests)
+add_executable(polyec_copper_mining_tests tests/test_copper_mining.cpp)
+target_link_libraries(polyec_copper_mining_tests PRIVATE polyec_core)
+add_test(NAME copper_mining_tests COMMAND polyec_copper_mining_tests)
+add_executable(polyec_silver_mining_tests tests/test_silver_mining.cpp)
+target_link_libraries(polyec_silver_mining_tests PRIVATE polyec_core)
+add_test(NAME silver_mining_tests COMMAND polyec_silver_mining_tests)
+add_executable(polyec_tea_garden_tests tests/test_tea_garden.cpp)
+target_link_libraries(polyec_tea_garden_tests PRIVATE polyec_core)
+add_test(NAME tea_garden_tests COMMAND polyec_tea_garden_tests)
+add_executable(polyec_incense_works_tests tests/test_incense_works.cpp)
+target_link_libraries(polyec_incense_works_tests PRIVATE polyec_core)
+add_test(NAME incense_works_tests COMMAND polyec_incense_works_tests)
+add_executable(polyec_warhorse_stable_tests tests/test_warhorse_stable.cpp)
+target_link_libraries(polyec_warhorse_stable_tests PRIVATE polyec_core)
+add_test(NAME warhorse_stable_tests COMMAND polyec_warhorse_stable_tests)
+add_executable(polyec_weapon_forge_tests tests/test_weapon_forge.cpp)
+target_link_libraries(polyec_weapon_forge_tests PRIVATE polyec_core)
+add_test(NAME weapon_forge_tests COMMAND polyec_weapon_forge_tests)
+add_executable(polyec_organization_territory_tests tests/test_organization_territories.cpp)
+target_link_libraries(polyec_organization_territory_tests PRIVATE polyec_core)
+add_test(NAME organization_territory_tests COMMAND polyec_organization_territory_tests)
+add_executable(polyec_paper_mill_tests tests/test_paper_mill.cpp)
+target_link_libraries(polyec_paper_mill_tests PRIVATE polyec_core)
+add_test(NAME paper_mill_tests COMMAND polyec_paper_mill_tests)
+add_executable(polyec_production_profile benchmarks/production_attendance_benchmark.cpp)
+target_link_libraries(polyec_production_profile PRIVATE polyec_core)
+add_executable(polyec_realm_core_benchmark benchmarks/realm_core_benchmark.cpp)
+target_link_libraries(polyec_realm_core_benchmark PRIVATE polyec_core)
+
+add_executable(polyec_gameplay_config_tests tests/test_gameplay_config.cpp)
+target_link_libraries(polyec_gameplay_config_tests PRIVATE polyec_core)
+add_test(NAME gameplay_config_tests COMMAND polyec_gameplay_config_tests)
+
+add_executable(polyec_work_credit_tests tests/test_work_credit.cpp)
+target_link_libraries(polyec_work_credit_tests PRIVATE polyec_core)
+add_test(NAME work_credit_tests COMMAND polyec_work_credit_tests)
+add_executable(polyec_worksite_payroll_tests tests/test_worksite_payroll.cpp)
+target_link_libraries(polyec_worksite_payroll_tests PRIVATE polyec_core)
+target_compile_definitions(polyec_worksite_payroll_tests PRIVATE POLYEC_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
+add_test(NAME worksite_payroll_tests COMMAND polyec_worksite_payroll_tests)
+
+add_executable(polyec_establishment_transfer_tests tests/test_establishment_transfers.cpp)
+target_link_libraries(polyec_establishment_transfer_tests PRIVATE polyec_core)
+add_test(NAME establishment_transfer_tests COMMAND polyec_establishment_transfer_tests)
+add_executable(polyec_foreign_trade_tests tests/test_foreign_trade.cpp)
+target_link_libraries(polyec_foreign_trade_tests PRIVATE polyec_core)
+add_test(NAME foreign_trade_tests COMMAND polyec_foreign_trade_tests)
+add_executable(polyec_world_atlas_tests tests/test_world_atlas.cpp)
+target_link_libraries(polyec_world_atlas_tests PRIVATE polyec_core)
+add_test(NAME world_atlas_tests COMMAND polyec_world_atlas_tests)
+add_executable(polyec_atlas_specialty_product_tests tests/test_atlas_specialty_products.cpp)
+target_link_libraries(polyec_atlas_specialty_product_tests PRIVATE polyec_core)
+target_compile_definitions(polyec_atlas_specialty_product_tests PRIVATE POLYEC_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
+add_test(NAME atlas_specialty_product_tests COMMAND polyec_atlas_specialty_product_tests)
+add_executable(polyec_household_fund_tests tests/test_household_fund.cpp)
+target_link_libraries(polyec_household_fund_tests PRIVATE polyec_core)
+add_test(NAME household_fund_tests COMMAND polyec_household_fund_tests)
+
+add_executable(polyec_military_obligation_tests tests/test_military_obligations.cpp)
+target_link_libraries(polyec_military_obligation_tests PRIVATE polyec_core)
+add_test(NAME military_obligation_tests COMMAND polyec_military_obligation_tests)
+add_executable(polyec_military_supply_obligation_tests tests/test_military_supply_obligations.cpp)
+target_link_libraries(polyec_military_supply_obligation_tests PRIVATE polyec_core)
+if(MSVC)
+  target_link_options(polyec_military_supply_obligation_tests PRIVATE /STACK:16777216)
+endif()
+add_test(NAME military_supply_obligation_tests COMMAND polyec_military_supply_obligation_tests)
+add_executable(polyec_military_mobilization_chain_tests tests/test_military_mobilization_chain.cpp)
+target_link_libraries(polyec_military_mobilization_chain_tests PRIVATE polyec_core)
+if(MSVC)
+  target_link_options(polyec_military_mobilization_chain_tests PRIVATE /STACK:16777216)
+endif()
+add_test(NAME military_mobilization_chain_tests COMMAND polyec_military_mobilization_chain_tests)
+add_executable(polyec_military_battle_readiness_tests tests/test_military_battle_readiness.cpp)
+target_link_libraries(polyec_military_battle_readiness_tests PRIVATE polyec_core)
+add_test(NAME military_battle_readiness_tests COMMAND polyec_military_battle_readiness_tests)
+add_executable(polyec_military_battle_tests tests/test_military_battle.cpp)
+target_link_libraries(polyec_military_battle_tests PRIVATE polyec_core)
+add_test(NAME military_battle_tests COMMAND polyec_military_battle_tests)
 
 add_executable(polyec_realm_clock_replay tests/realm_clock_replay.cpp)
 target_link_libraries(polyec_realm_clock_replay PRIVATE polyec_core)

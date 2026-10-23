@@ -1,0 +1,72 @@
+{
+  "record": "M5 v30/v31 RL visual evidence",
+  "date": "2026-10-22",
+  "script": "scripts/plot_m5_v30_v31_evidence.py",
+  "script_sha256": "5f973e6c96853a4d7ccecce67aa4de5911339596399a912996d9bfe557c584e8",
+  "inputs": [
+    {
+      "path": "build/m5-v30-governance-civilian-training/governance/governance/seed-1/history.jsonl",
+      "sha256": "72e806fd08bc81c08f093dd6b229f974656e671e0385bf4952578a47385f145a"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/governance/governance/seed-2/history.jsonl",
+      "sha256": "70abad5928bf818d8eb76c91d086efa07685ffe5660a1f0b9ed5812421c84ca2"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/governance/governance/seed-3/history.jsonl",
+      "sha256": "c78f501f21e986e3f25d8a706d08c8174d2cbb7ba381612ca59b7e5e01c9a3c4"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/governance/validation/selection.json",
+      "sha256": "b21e561bfc70a2f97a126f38acc58f542d88af395b9e719891e96d514a9a4408"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian-fixed/civilian/seed-1/history.jsonl",
+      "sha256": "a8682859c29f0c2e3ad971d8e73225bb57828b04aacca86721c1678382d76419"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian-fixed/civilian/seed-2/history.jsonl",
+      "sha256": "7e281a333cee7d578aa07ffdb4630481f69d5e0b603f1b957e9dbbb4e1b7ca5e"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian-fixed/civilian/seed-3/history.jsonl",
+      "sha256": "cf5c0ba5b92419d67c17ae0894a4160df502b4db275af15d0d48aecafcd0c5b8"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian-fixed/validation/selection.json",
+      "sha256": "358420cd8ad934d86ed665268279d93c6e9ac3fca67d2f28b6390bc79d789e26"
+    },
+    {
+      "path": "build/m5-v31-extended-training/civilian/seed-1/history.jsonl",
+      "sha256": "f9d2370773921b07d72f763f8ddf4af4248a9070ab0afc640a95bf2e41ea8d4a"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "artifacts/m5-v30-v31-plot-data-2026-10-22.json",
+      "sha256": "34cd41e37e7c75eb0e9c725aa6a2f64671e0ab493e766621a6f4f2869bbd351e",
+      "bytes": 5447258
+    },
+    {
+      "path": "artifacts/m5-v30-training-return-by-update-2026-10-22.png",
+      "sha256": "b462fb220fc6adf1b1919e5e6f14428b90b74c55f11d601b1f9e159286c2c8a0",
+      "bytes": 215111
+    },
+    {
+      "path": "artifacts/m5-v30-validation-utility-paired-ci-2026-10-22.png",
+      "sha256": "b0b0bd50b3f1de06f8d377e5941b97664bbd024b8ad9e01ef4cd11c0c317fabd",
+      "bytes": 92159
+    },
+    {
+      "path": "artifacts/m5-v30-validation-outcomes-paired-ci-2026-10-22.png",
+      "sha256": "7974e665ea9173e1f4917645c51c5dbf85a3a1cdbb76fce7c1e42d4e6249e5f9",
+      "bytes": 94984
+    },
+    {
+      "path": "artifacts/m5-v31-partial-training-update-26-43-2026-10-22.png",
+      "sha256": "c6336501835406d79a7652f4125aecc93ebb5a19edc3e87ea36762dc76b3bef8",
+      "bytes": 200665
+    }
+  ],
+  "scope": "plots only; no training, validation rerun, selector, model export, or holdout"
+}

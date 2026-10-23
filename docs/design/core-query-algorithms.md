@@ -2,6 +2,8 @@
 
 Tài liệu thiết kế ngày 2026-10-19. Đọc cùng [hồ sơ từng class](core-class-reference.md) và [hướng tổ chức lại core](core-architecture-refactor.md). Công việc được giao và nghiệm thu vẫn theo [CURRENT_TASK](../CURRENT_TASK.md).
 
+**Ghi chú cập nhật tài liệu:** nguyên tắc dùng truy vấn, index, cache, hàng đợi đến hạn, đồ thị thưa, tìm tuyến, top-k và kiểm hiệu năng đã được hợp nhất vào [DEVELOPER_GUIDE mục 7.3](../DEVELOPER_GUIDE.md#73-chon-cach-truy-van-bang-tra-cuu-va-sap-xep) và [TECHNICAL_PROBLEMS P14](../TECHNICAL_PROBLEMS.md#p14-hieu-nang-va-song-song). Tài liệu này giữ lại ví dụ chi tiết và xuất xứ từ ngày 2026-10-19; các lựa chọn thuật toán cụ thể vẫn phải được kiểm theo source và contract hiện hành.
+
 Đây là hướng kỹ thuật để phát triển từng bước, không phải tuyên bố mọi thuật toán đã được triển khai. Các mục “đề xuất” cần khảo sát và review trong lát tương ứng trước khi sửa code. Không thay luật chọn việc, mức lương, quyền xem dữ liệu hoặc thứ tự phân phối đã duyệt.
 
 ## 1. Nên sửa từng phần hay viết lại core?

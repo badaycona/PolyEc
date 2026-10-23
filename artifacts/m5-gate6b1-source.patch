@@ -1,0 +1,997 @@
+--- gate6a/ai/tests/gameplay_config_binding_checks.py
++++ gate6b1/ai/tests/gameplay_config_binding_checks.py
+@@ -31,7 +31,7 @@
+     assert result[0], result
+     site = result[2]
+     words = world.serialize("config-test").split()
+-    start = words.index("ESTABLISH_3") + 2
++    start = words.index("ESTABLISH_4") + 2
+     words[start + 7 + 9] = "5"
+     words[18 + 9] = str(int(words[18 + 9]) + 5)
+     assert world.deserialize(" ".join(words), "config-test")[0]
+--- gate6a/ai/tests/work_authorization_binding_checks.py
++++ gate6b1/ai/tests/work_authorization_binding_checks.py
+@@ -0,0 +1,48 @@
++"""Command-only replay against the C++ authorization driver."""
++import subprocess
++import sys
++import polyec_env as core
++
++expected = [list(map(int, row.split())) for row in subprocess.check_output(
++    [sys.argv[1], "--authorization-replay"], text=True).splitlines()]
++world = core.Realm(71, 2, 128)
++ok, reason, site = world.establishment_command(1, 1, 1, 2, 2, 1, 1, 10)
++assert ok, reason
++worker = next(i for i in range(2, 129) if world.person(i)["alive"] and world.person(i)["region"] == 2)
++checks = 0
++
++def point(index):
++    global checks
++    assert [index, world.fingerprint(), worker, site] == expected[index], index
++    checks += 1
++
++def grant(operation, begin=0, end=0):
++    return world.work_authorization_command(1, world.person(1)["decisions"] + 1,
++                                             site, worker, operation, begin, end)
++
++point(0)
++assert grant(0, 0, 96)[0]
++point(1)
++assert world.schedule_command(0, worker, world.person(worker)["decisions"] + 1,
++                              0, 16, 64, 0, 1000, 1, 2, site)[0]
++point(2)
++before = world.fingerprint()
++ok, reason, _ = grant(1)
++assert not ok and reason == "Authorization would cut accepted Work" and world.fingerprint() == before
++point(3)
++world.advance_ticks(24)
++point(4)
++saved = world.serialize("authorization-replay")
++loaded = core.Realm(1, 1, 128)
++ok, reason = loaded.deserialize(saved, "authorization-replay")
++assert ok, reason
++world = loaded
++world.advance_ticks(40)
++point(5)
++assert grant(1)[0]
++point(6)
++before = world.fingerprint()
++result = world.schedule_command(0, worker, world.person(worker)["decisions"] + 1,
++                                0, 64, 80, 0, 1000, 1, 2, site)
++assert not result[0] and result[1] == "Work requires owner authorization" and world.fingerprint() == before
++print(f"Work authorization parity: {checks} C++ checkpoints; rejected commands preserve state")
+--- gate6a/bindings/python/realm_binding.cpp
++++ gate6b1/bindings/python/realm_binding.cpp
+@@ -106,6 +106,10 @@
+         EstablishmentTransferCommand command{actor,sequence,site,static_cast<EstablishmentTransferOperation>(operation),good,amount};
+         const auto result=w.execute(command);return py::make_tuple(result.success,result.reason,result.fact);
+     },py::arg("actor"),py::arg("sequence"),py::arg("establishment_id"),py::arg("operation"),py::arg("good"),py::arg("amount"))
++    .def("work_authorization_command",[](Realm&w,uint64_t actor,uint64_t sequence,uint64_t site,uint64_t worker,int operation,int64_t begin,int64_t end){
++        const auto result=w.execute(WorkAuthorizationCommand{actor,sequence,site,worker,static_cast<WorkAuthorizationOperation>(operation),begin,end});
++        return py::make_tuple(result.success,result.reason,result.fact);
++    },py::arg("actor"),py::arg("sequence"),py::arg("establishment_id"),py::arg("worker"),py::arg("operation"),py::arg("begin")=0,py::arg("end")=0)
+     .def("schedule_command",[](Realm&w,int operation,uint64_t actor,uint64_t sequence,uint64_t session,int64_t begin,int64_t end,int32_t priority,int32_t demand_rate,int kind,int region,uint64_t establishment_id){
+         ScheduleCommand cmd;cmd.operation=static_cast<ScheduleCommand::Operation>(operation);cmd.actor=actor;cmd.sequence=sequence;cmd.session=session;cmd.begin=begin;cmd.end=end;cmd.priority=priority;cmd.demand_rate=demand_rate;cmd.kind=static_cast<ActivityKind>(kind);cmd.region=region;cmd.establishment_id=establishment_id;
+         auto r=w.execute(cmd);return py::make_tuple(r.success,r.reason,r.session);
+--- gate6a/core/include/polyec/establishment.hpp
++++ gate6b1/core/include/polyec/establishment.hpp
+@@ -1,9 +1,11 @@
+ #pragma once
+ #include "polyec/good_catalog.hpp"
+ #include <array>
++#include <cstddef>
+ #include <cstdint>
+ #include <map>
+ #include <string>
++#include <vector>
+ 
+ namespace polyec {
+ 
+@@ -29,6 +31,10 @@
+ inline constexpr std::array<int, 16> kGate1EstablishmentSlotToLegacy = {
+     0, -1, -1, -1, 4, 3, -1, 1, 2, 6, 5, -1, -1, -1, -1, -1};
+ 
++struct WorkAuthorizationWindow {
++    int64_t begin=0,end=0;
++    bool operator==(const WorkAuthorizationWindow&) const = default;
++};
+ struct Establishment {
+     uint64_t id = 0;
+     int region = 0;
+@@ -46,6 +52,8 @@
+     // sorted by actor ID and never above that actor/site's eligible attendance.
+     int64_t last_production_day = 0;
+     std::map<uint64_t, int64_t> processed_work_units{};
++    std::map<uint64_t,std::vector<WorkAuthorizationWindow>> work_authorizations{};
++    std::size_t authorization_window_count=0; // derived sparse index; rebuilt on load
+ };
+ 
+ struct EstablishmentCommand {
+@@ -69,4 +77,11 @@
+     int64_t amount=0;
+ };
+ 
++enum class WorkAuthorizationOperation : int { Set=0, Revoke=1 };
++struct WorkAuthorizationCommand {
++    uint64_t actor=0,sequence=0,establishment_id=0,worker=0;
++    WorkAuthorizationOperation operation=WorkAuthorizationOperation::Set;
++    int64_t begin=0,end=0;
++};
++
+ } // namespace polyec
+--- gate6a/core/include/polyec/establishment_section_codec.hpp
++++ gate6b1/core/include/polyec/establishment_section_codec.hpp
+@@ -19,7 +19,7 @@
+     std::vector<Establishment> sorted = establishments;
+     std::sort(sorted.begin(), sorted.end(),
+               [](const Establishment& a, const Establishment& b) { return a.id < b.id; });
+-    out << " ESTABLISH_3 " << sorted.size() << ' ';
++    out << " ESTABLISH_4 " << sorted.size() << ' ';
+     for (const auto& e : sorted) {
+         out << e.id << ' ' << e.region << ' ' << static_cast<int>(e.owner_kind) << ' '
+             << e.owner_id << ' ' << static_cast<int>(e.industry) << ' ' << e.capacity << ' '
+@@ -28,6 +28,11 @@
+         out << e.last_production_day << ' ' << e.processed_work_units.size() << ' ';
+         for (const auto& [actor, units] : e.processed_work_units)
+             out << actor << ' ' << units << ' ';
++        out << e.work_authorizations.size() << ' ';
++        for(const auto& [worker,windows]:e.work_authorizations){
++            out << worker << ' ' << windows.size() << ' ';
++            for(const auto& window:windows)out << window.begin << ' ' << window.end << ' ';
++        }
+     }
+ }
+ 
+@@ -37,7 +42,7 @@
+     std::string tag;
+     size_t count = 0;
+     in >> tag >> count;
+-    const std::string expected = realm_schema >= 14 ? "ESTABLISH_3"
++    const std::string expected = realm_schema >= 16 ? "ESTABLISH_4" : realm_schema >= 14 ? "ESTABLISH_3"
+                                  : realm_schema == 13 ? "ESTABLISH_2" : "ESTABLISH_1";
+     if (!in || tag != expected) {
+         error = "Save establishment header";
+@@ -131,6 +136,29 @@
+                 e.processed_work_units.emplace(actor, units);
+             }
+         }
++        if(realm_schema>=16){
++            size_t workers=0,totalWindows=0;uint64_t previous=0;
++            in>>workers;
++            if(!in||workers>people_count){error="Save authorization count";return false;}
++            for(size_t row=0;row<workers;++row){
++                uint64_t worker=0;size_t windows=0;in>>worker>>windows;
++                if(!in||worker<=previous||worker>people_count||windows==0||windows>1000000-totalWindows){
++                    error="Save authorization worker";return false;
++                }
++                previous=worker;totalWindows+=windows;
++                std::vector<WorkAuthorizationWindow> ranges;ranges.reserve(windows);
++                for(size_t n=0;n<windows;++n){
++                    WorkAuthorizationWindow range;in>>range.begin>>range.end;
++                    if(!in||range.begin<0||range.end<=range.begin||range.end>365000LL*64||
++                       (!ranges.empty()&&range.begin<=ranges.back().end)){
++                        error="Save authorization range";return false;
++                    }
++                    ranges.push_back(range);
++                }
++                e.work_authorizations.emplace(worker,std::move(ranges));
++            }
++            e.authorization_window_count=totalWindows;
++        }
+         // basic range checks
+         if (e.id == 0) {
+             error = "Save establishment id";
+--- gate6a/core/include/polyec/realm.hpp
++++ gate6b1/core/include/polyec/realm.hpp
+@@ -97,6 +97,7 @@
+     RealmResult execute(const RealmClockCommand& command);
+ RealmResult execute(const EstablishmentCommand& command);
+     RealmResult execute(const EstablishmentTransferCommand& command);
++    RealmResult execute(const WorkAuthorizationCommand& command);
+     void advance(int days=1);
+     void advance_ticks(int64_t ticks);
+     RealmView view(uint64_t observer=1) const;
+@@ -176,6 +177,7 @@
+     bool paused_ = false;
+     uint64_t pause_revision_ = 0;
+     Person& mutable_person(uint64_t id);
++    bool manages_establishment(const Person& actor,const Establishment& site) const;
+     uint64_t guardian_of(const Person& person)const;
+     void index_household(uint64_t household,uint64_t person);
+     void reindex_households();
+--- gate6a/core/include/polyec/schedule_section_codec.hpp
++++ gate6b1/core/include/polyec/schedule_section_codec.hpp
+@@ -86,7 +86,7 @@
+ bool read_schedule_section(std::istream& in, int realm_schema,
+                           size_t people_count, int regions, int realm_day,
+                           ScheduleBook& out, std::string& error, int64_t ticks_per_unit=16) {
+-    if (realm_schema < 7 || realm_schema > 15 || ticks_per_unit<1 || ticks_per_unit>64) {
++    if (realm_schema < 7 || realm_schema > 16 || ticks_per_unit<1 || ticks_per_unit>64) {
+         error = "Save schedule header";
+         return false;
+     }
+--- gate6a/core/src/realm.cpp
++++ gate6b1/core/src/realm.cpp
+@@ -306,6 +306,7 @@
+ RealmResult Realm::execute(const ScheduleCommand&cmd){
+     if(cmd.actor==0||cmd.actor>people_.size())return {false,"Unknown actor"};
+     auto&p=mutable_person(cmd.actor);
++    if(p.decisions==UINT64_MAX||p.sampling==UINT64_MAX)return {false,"Decision counter overflow"};
+     if(cmd.sequence!=p.decisions+1)return {false,"Stale or duplicate decision ID"};
+     if(!p.alive)return {false,"Actor deceased"};
+     if(next_fact_==UINT64_MAX)return {false,"Fact counter overflow"};
+@@ -329,6 +330,17 @@
+         if(cmd.begin>=cmd.end)return {false,"Invalid session range"};
+         if(cmd.begin>maxTick||cmd.end>maxTick)return {false,"Session outside world horizon"};
+         if(cmd.demand_rate<activity::kMinDemandRate||cmd.demand_rate>activity::kMaxDemandRate)return {false,"Invalid demand rate"};
++        if(cmd.kind==ActivityKind::Work){
++            const auto site=std::lower_bound(establishments_.begin(),establishments_.end(),cmd.establishment_id,
++                [](const Establishment& e,uint64_t id){return e.id<id;});
++            if(!manages_establishment(p,*site)){
++                const auto authorization=site->work_authorizations.find(cmd.actor);
++                if(authorization==site->work_authorizations.end()||
++                   std::none_of(authorization->second.begin(),authorization->second.end(),[&](const WorkAuthorizationWindow& window){
++                       return window.begin<=cmd.begin&&cmd.end<=window.end;
++                   }))return {false,"Work requires owner authorization"};
++            }
++        }
+         if(p.decisions==UINT64_MAX||book.next_session_id==UINT64_MAX||p.sampling==UINT64_MAX)return {false,"Decision counter overflow"};
+         uint64_t newId=book.next_session_id;
+         std::vector<ActivitySession> staged;
+@@ -351,13 +363,14 @@
+         if(!probe.ok){
+             return {false,"Schedule arithmetic overflow"};
+         }
++        RealmResult result{true,"Committed",next_fact_,newId};
++        if(facts_.size()==facts_.capacity())facts_.reserve(std::min<size_t>(8193,std::max<size_t>(8,facts_.capacity()*2)));
++        if(found==book.sessions.end())book.sessions.emplace(cmd.actor,std::move(staged));else found->second.swap(staged);
+         book.next_session_id=newId+1;
+-        if(found==book.sessions.end())book.sessions.emplace(cmd.actor,std::move(staged));else found->second=std::move(staged);
+         book.timeline_contract=true;
+         p.last_decision_day=day_;++p.decisions;++p.sampling;
+         event(cmd.actor,p.region,200,0,0,false,0);
+-        uint64_t factId=next_fact_==0?0:next_fact_-1;
+-        return {true,"Committed",factId,newId};
++        return result;
+     }
+     auto it=book.sessions.find(cmd.actor);
+     if(it==book.sessions.end())return {false,"Unknown session"};
+@@ -371,12 +384,13 @@
+         std::vector<activity::SessionView> views;
+         for(auto const&s:staged)views.push_back({s.id,s.actor,s.begin,s.end,s.priority,s.demand_rate});
+         if(!staged.empty()){auto probe=activity::evaluateActivity(cmd.actor,activity::Horizon{sit->begin,sit->end},views);if(!probe.ok)return {false,"Schedule arithmetic overflow"};}
+-        it->second=std::move(staged);
++        RealmResult result{true,"Committed",next_fact_,cmd.session};
++        if(facts_.size()==facts_.capacity())facts_.reserve(std::min<size_t>(8193,std::max<size_t>(8,facts_.capacity()*2)));
++        it->second.swap(staged);
+         if(it->second.empty())book.sessions.erase(cmd.actor);
+         p.last_decision_day=day_;++p.decisions;++p.sampling;
+         event(cmd.actor,p.region,201,0,cmd.session,false,0);
+-        uint64_t factId=next_fact_==0?0:next_fact_-1;
+-        return {true,"Committed",factId,cmd.session};
++        return result;
+     }
+     if(cmd.operation==ScheduleCommand::Operation::Reprioritize){
+         if(p.decisions==UINT64_MAX||p.sampling==UINT64_MAX)return {false,"Decision counter overflow"};
+@@ -386,11 +400,12 @@
+         for(auto const&s:staged)views.push_back({s.id,s.actor,s.begin,s.end,s.priority,s.demand_rate});
+         auto probe=activity::evaluateActivity(cmd.actor,activity::Horizon{sit->begin,sit->end},views);
+         if(!probe.ok)return {false,"Schedule arithmetic overflow"};
+-        it->second=std::move(staged);
++        RealmResult result{true,"Committed",next_fact_,cmd.session};
++        if(facts_.size()==facts_.capacity())facts_.reserve(std::min<size_t>(8193,std::max<size_t>(8,facts_.capacity()*2)));
++        it->second.swap(staged);
+         p.last_decision_day=day_;++p.decisions;++p.sampling;
+         event(cmd.actor,p.region,202,0,cmd.session,false,0);
+-        uint64_t factId=next_fact_==0?0:next_fact_-1;
+-        return {true,"Committed",factId,cmd.session};
++        return result;
+     }
+     return {false,"Unsupported schedule operation"};
+ }
+@@ -974,6 +989,18 @@
+             e.industry != EstablishmentIndustry::MilitarySupplyWorkshop) return false;
+         if (e.capacity < 1 || e.capacity > kEstablishmentCapacityMax) return false;
+         if (e.cash < 0) return false;
++        size_t authorizationWindows=0;
++        if(e.work_authorizations.size()>people_.size())return false;
++        for(const auto& [worker,windows]:e.work_authorizations){
++            if(worker==0||worker>people_.size()||windows.empty()||windows.size()>1000000-authorizationWindows)return false;
++            authorizationWindows+=windows.size();
++            int64_t previousEnd=-1;
++            for(const auto& window:windows){
++                if(window.begin<0||window.begin<=previousEnd||window.end<=window.begin||window.end>365000LL*kSubdayUnitsPerDay)return false;
++                previousEnd=window.end;
++            }
++        }
++        if(authorizationWindows!=e.authorization_window_count)return false;
+         for (int g = 0; g < kEstablishmentStockSlots; ++g) if (e.stock[g] < 0) return false;
+         // Gate 4 production bookkeeping invariants: the day marker stays inside
+         // [0, day], the sparse processed-work units are positive, actor-keyed,
+@@ -1078,7 +1105,7 @@
+ 
+ // Text format uses explicit scalar fields, not compiler-dependent struct bytes.
+ std::string Realm::serialize(const std::string&bundle)const{
+-    std::ostringstream s;s<<"POLYEC_REALM_15 "<<std::quoted(bundle)<<' ';
++    std::ostringstream s;s<<"POLYEC_REALM_16 "<<std::quoted(bundle)<<' ';
+     detail::RealmPrimaryHeader header{};
+     header.day=day_;header.regions=regions_;header.seed=seed_;header.next_id=next_id_;header.next_fact=next_fact_;
+     header.opening_money=opening_money_;header.carrier=carrier_;header.estate=estate_;header.endowment=endowment_;
+@@ -1106,7 +1133,7 @@
+     if(data.size()>256*1024*1024)throw std::runtime_error("Save size limit");
+     Realm w(1,1,128);std::istringstream s(data);std::string magic,b;s>>magic>>std::quoted(b);
+     int schema=0;
+-    if(magic=="POLYEC_REALM_15")schema=15;else if(magic=="POLYEC_REALM_14")schema=14;else if(magic=="POLYEC_REALM_13")schema=13;else if(magic=="POLYEC_REALM_12")schema=12;else if(magic=="POLYEC_REALM_11")schema=11;else if(magic=="POLYEC_REALM_10")schema=10;else if(magic=="POLYEC_REALM_9")schema=9;else if(magic=="POLYEC_REALM_8")schema=8;else if(magic=="POLYEC_REALM_7")schema=7;
++    if(magic=="POLYEC_REALM_16")schema=16;else if(magic=="POLYEC_REALM_15")schema=15;else if(magic=="POLYEC_REALM_14")schema=14;else if(magic=="POLYEC_REALM_13")schema=13;else if(magic=="POLYEC_REALM_12")schema=12;else if(magic=="POLYEC_REALM_11")schema=11;else if(magic=="POLYEC_REALM_10")schema=10;else if(magic=="POLYEC_REALM_9")schema=9;else if(magic=="POLYEC_REALM_8")schema=8;else if(magic=="POLYEC_REALM_7")schema=7;
+     const bool legacy=schema==7;
+     if(schema==0||b!=bundle)throw std::runtime_error("Save schema/model bundle mismatch");
+     detail::RealmPrimaryHeader header{};
+@@ -1153,6 +1180,26 @@
+         throw std::runtime_error(error);
+     if(schema>=11&&!detail::read_establishment_section(s,w.people_.size(),w.regions_,schema,w.establishments_,error))
+         throw std::runtime_error(error);
++    if(schema<16){
++        for(const auto& [actor,sessions]:w.schedule_book_.sessions)for(const auto& session:sessions){
++            if(session.retired||session.kind!=ActivityKind::Work||session.establishment_id==0||session.end<=w.schedule_book_.cursor)continue;
++            auto site=std::lower_bound(w.establishments_.begin(),w.establishments_.end(),session.establishment_id,
++                [](const Establishment& e,uint64_t id){return e.id<id;});
++            if(site==w.establishments_.end()||site->id!=session.establishment_id)continue; // invariant rejects bad references
++            site->work_authorizations[actor].push_back({std::max(session.begin,w.schedule_book_.cursor),session.end});
++        }
++        for(auto& site:w.establishments_)for(auto& [worker,windows]:site.work_authorizations){
++            (void)worker;
++            std::sort(windows.begin(),windows.end(),[](const auto& a,const auto& b){return a.begin<b.begin;});
++            size_t count=0;
++            for(const auto window:windows){
++                if(count&&window.begin<=windows[count-1].end)windows[count-1].end=std::max(windows[count-1].end,window.end);
++                else windows[count++]=window;
++            }
++            windows.resize(count);
++            site.authorization_window_count+=count;
++        }
++    }
+     // Gate 4 production bookkeeping. Schema 14 records carry the processed-work
+     // watermarks directly and are validated against the just-loaded site
+     // attendance. Schema 13 and 12 saves contain no production fields, so the
+--- gate6a/core/src/realm_establishment.cpp
++++ gate6b1/core/src/realm_establishment.cpp
+@@ -13,6 +13,17 @@
+         records.reserve(std::min(limit,grown));
+     }
+ }
++}
++bool Realm::manages_establishment(const Person& actor,const Establishment& site)const{
++    if(!actor.alive||actor.destination!=-1||actor.region!=site.region)return false;
++    switch(site.owner_kind){
++    case EstablishmentOwnerKind::Person:return site.owner_id==actor.id;
++    case EstablishmentOwnerKind::Public:return actor.family==Family::Governance&&actor.taxing_authority&&
++        provinces_[site.region].charter&&site.owner_id==uint64_t(site.region);
++    case EstablishmentOwnerKind::Organization:return site.owner_id>=1&&site.owner_id<=28&&
++        actor.organization==int(site.owner_id)&&site.region==int((site.owner_id-1)/4);
++    default:return false;
++    }
+ }
+ RealmResult Realm::execute(const EstablishmentCommand& cmd){
+     if (cmd.actor == 0 || cmd.actor > people_.size()) return {false, "Unknown actor"};
+@@ -95,6 +106,7 @@
+     if(found==establishments_.end()||found->id!=cmd.establishment_id)return {false,"Unknown establishment"};
+     auto& site=*found;
+     if(actor.destination!=-1||actor.region!=site.region)return {false,"Actor not present at establishment"};
++    if(!manages_establishment(actor,site))return {false,"Actor cannot manage establishment"};
+     const int operation=static_cast<int>(cmd.operation);
+     if(operation<0||operation>3)return {false,"Invalid transfer operation"};
+     const bool cash=operation<2;
+@@ -105,19 +117,13 @@
+     int64_t* external=nullptr;
+     switch(site.owner_kind){
+     case EstablishmentOwnerKind::Person:
+-        if(site.owner_id!=actor.id)return {false,"Person owner must be actor"};
+         external=cash?&actor.cash:&actor.inventory[size_t(cmd.good)];
+         break;
+     case EstablishmentOwnerKind::Public:{
+-        const auto& province=provinces_[site.region];
+-        if(actor.family!=Family::Governance||!actor.taxing_authority||!province.charter||site.owner_id!=uint64_t(site.region))
+-            return {false,"Public owner requires local authority"};
+         external=cash?&provinces_[site.region].treasury:&provinces_[site.region].stock[size_t(cmd.good)];
+         break;
+     }
+     case EstablishmentOwnerKind::Organization:
+-        if(site.owner_id<1||site.owner_id>28||actor.organization!=int(site.owner_id)||site.region!=int((site.owner_id-1)/4))
+-            return {false,"Organization transfer requires member in home region"};
+         if(!cash)return {false,"Organization inventory is not available"};
+         external=&organization_funds_[site.owner_id-1];
+         break;
+@@ -144,4 +150,54 @@
+     event(actor.id,site.region,204+operation,cmd.amount,site.id);
+     return result;
+ }
++RealmResult Realm::execute(const WorkAuthorizationCommand& cmd){
++    if(cmd.actor==0||cmd.actor>people_.size())return {false,"Unknown actor"};
++    auto& actor=mutable_person(cmd.actor);
++    if(actor.decisions==UINT64_MAX||actor.sampling==UINT64_MAX)return {false,"Decision counter overflow"};
++    if(cmd.sequence!=actor.decisions+1)return {false,"Stale or duplicate decision ID"};
++    if(!actor.alive)return {false,"Actor deceased"};
++    auto found=std::lower_bound(establishments_.begin(),establishments_.end(),cmd.establishment_id,
++        [](const Establishment& site,uint64_t id){return site.id<id;});
++    if(found==establishments_.end()||found->id!=cmd.establishment_id)return {false,"Unknown establishment"};
++    auto& site=*found;
++    if(!manages_establishment(actor,site))return {false,"Actor cannot manage establishment"};
++    if(cmd.worker==0||cmd.worker>people_.size())return {false,"Unknown worker"};
++    const bool revoke=cmd.operation==WorkAuthorizationOperation::Revoke;
++    if(!revoke&&cmd.operation!=WorkAuthorizationOperation::Set)return {false,"Invalid authorization operation"};
++    if(revoke){if(cmd.begin!=0||cmd.end!=0)return {false,"Invalid revoke range"};}
++    else{
++        const auto& worker=person(cmd.worker);
++        if(!worker.alive||worker.destination!=-1||worker.region!=site.region)return {false,"Worker not present at establishment"};
++        if(cmd.begin<schedule_book_.cursor||cmd.end<=cmd.begin||cmd.end>365000LL*kSubdayUnitsPerDay)
++            return {false,"Invalid authorization range"};
++    }
++    auto previous=site.work_authorizations.find(cmd.worker);
++    if(revoke&&previous==site.work_authorizations.end())return {false,"Authorization absent"};
++    if(!revoke&&previous!=site.work_authorizations.end()&&previous->second.size()==1&&
++       previous->second.front()==WorkAuthorizationWindow{cmd.begin,cmd.end})return {false,"Authorization unchanged"};
++    const size_t oldWindows=previous==site.work_authorizations.end()?0:previous->second.size();
++    const size_t newWindowCount=site.authorization_window_count-oldWindows+(revoke?0:1);
++    if(newWindowCount>1000000)return {false,"Authorization window limit"};
++    const auto sessions=schedule_book_.sessions.find(cmd.worker);
++    if(sessions!=schedule_book_.sessions.end())for(const auto& session:sessions->second){
++        if(session.retired||session.kind!=ActivityKind::Work||session.establishment_id!=site.id||session.end<=schedule_book_.cursor)continue;
++        if(revoke||cmd.begin>std::max(session.begin,schedule_book_.cursor)||cmd.end<session.end)
++            return {false,"Authorization would cut accepted Work"};
++    }
++    if(next_fact_==UINT64_MAX)return {false,"Fact counter overflow"};
++    RealmResult result{true,"Committed",next_fact_};
++    std::vector<WorkAuthorizationWindow> staged;
++    if(!revoke)staged.push_back({cmd.begin,cmd.end});
++    // Preallocate a node for new workers; existing windows use noexcept swap.
++    decltype(site.work_authorizations) node_source;
++    if(!revoke&&previous==site.work_authorizations.end())node_source.emplace(cmd.worker,std::move(staged));
++    reserve_append(facts_,8193);
++    if(revoke)site.work_authorizations.erase(previous);
++    else if(previous!=site.work_authorizations.end())previous->second.swap(staged);
++    else site.work_authorizations.insert(node_source.extract(cmd.worker));
++    site.authorization_window_count=newWindowCount;
++    actor.last_decision_day=day_;++actor.decisions;++actor.sampling;
++    event(actor.id,site.region,revoke?209:208,revoke?0:cmd.end-cmd.begin,cmd.worker,true,0);
++    return result;
++}
+ } // namespace polyec
+--- gate6a/core/tests/test_campaign.cpp
++++ gate6b1/core/tests/test_campaign.cpp
+@@ -122,7 +122,7 @@
+         std::vector<std::string> tokens;{
+             std::istringstream in(world.serialize("m4-controller-v1"));std::string token;while(in>>token)tokens.push_back(token);
+         }
+-        const size_t section=std::find(tokens.begin(),tokens.end(),"ESTABLISH_3")-tokens.begin();
++        const size_t section=std::find(tokens.begin(),tokens.end(),"ESTABLISH_4")-tokens.begin();
+         check(section<tokens.size(),"production bond fixture save section");
+         const size_t stock=section+2+7+size_t(GoodId::Fiber);
+         tokens[stock]="1";tokens[18+size_t(GoodId::Fiber)]=std::to_string(std::stoll(tokens[18+size_t(GoodId::Fiber)])+1);
+@@ -172,8 +172,8 @@
+         check(slice==gold,"parser-selected payload slice matches golden bytes");
+         const std::string realm_tail=full.substr(payload_end);
+         std::istringstream ts(realm_tail);std::string realm_tok;ts>>std::quoted(realm_tok);ts>>std::ws;
+-        size_t realm_tokens=0;for(size_t p=realm_tok.find("POLYEC_REALM_15");p!=std::string::npos;p=realm_tok.find("POLYEC_REALM_15",p+1))++realm_tokens;
+-        check(bool(ts)&&ts.eof()&&realm_tokens==1&&realm_tok.compare(0,15,"POLYEC_REALM_15")==0,"payload tail holds exactly one Realm token");
++        size_t realm_tokens=0;for(size_t p=realm_tok.find("POLYEC_REALM_16");p!=std::string::npos;p=realm_tok.find("POLYEC_REALM_16",p+1))++realm_tokens;
++        check(bool(ts)&&ts.eof()&&realm_tokens==1&&realm_tok.compare(0,15,"POLYEC_REALM_16")==0,"payload tail holds exactly one Realm token");
+         {std::istringstream tok(gold);uint64_t seed=0,rev=0,seq=0,nxt=0;int insp=0;int64_t cloth=0;bool surveyed=false;
+          tok>>seed>>rev>>seq>>nxt>>insp>>surveyed>>cloth;
+          check(staged.seed==seed&&staged.revision==rev&&staged.sequence==seq&&staged.next_record==nxt&&staged.inspecting_until==insp&&staged.surveyed==surveyed&&staged.workshop_output==cloth,"staged payload scalars match golden tokens");}
+--- gate6a/core/tests/test_establishment_transfers.cpp
++++ gate6b1/core/tests/test_establishment_transfers.cpp
+@@ -23,7 +23,9 @@
+     // debugger bookkeeping terminates the process rather than testing a
+     // recoverable command allocation. Keep iterator checks enabled; exclude
+     // only this size from injected failures. Site/fact buffers and tree nodes
+-    // on the tested paths are larger and remain covered in both builds.
++    // on the transfer paths are larger and remain covered in both builds.
++    // A single authorization window is also this size: its buffer failure is
++    // covered by Release injection; Debug cannot distinguish it from a proxy.
+     static_assert(sizeof(polyec::Establishment)>sizeof(std::_Container_proxy));
+     static_assert(sizeof(polyec::Fact)>sizeof(std::_Container_proxy));
+     domainAllocation=bytes!=sizeof(std::_Container_proxy);
+@@ -86,7 +88,9 @@
+     }
+ }
+ }
++#include "work_authorization_checks.hpp"
+ int main(int argc,char** argv){try{
++    if(argc==2&&std::string(argv[1])=="--authorization-replay"){authorization_replay();return 0;}
+     std::set_terminate([]{
+         allocations_until_failure=-1;
+         std::fprintf(stderr,"Unhandled failure in transfer test: phase=%s index=%d bytes=%zu checks=%d\n",fault_phase,fault_index,failing_allocation_bytes,checks);
+@@ -153,6 +157,7 @@
+     reject(organization,{worker,organization.person(worker).decisions+1,orgSite,Operation::DepositGoods,9,1},"unmodeled organization inventory rejects");
+     reject(organization,{66,organization.person(66).decisions+1,orgSite,Operation::WithdrawCash,-1,1},"nonmember cannot withdraw organization cash");
+ 
++    authorization_checks();
+     int allocationFailures=0;bool creationSucceeded=false;
+     for(int failedAllocation=0;failedAllocation<16;++failedAllocation){
+         Realm allocationWorld(71,2,128);const auto before=allocationWorld.fingerprint();bool failed=false;
+--- gate6a/core/tests/test_gameplay_config.cpp
++++ gate6b1/core/tests/test_gameplay_config.cpp
+@@ -29,7 +29,7 @@
+     create.owner_id=worker;create.region=region;create.funding=1;
+     const auto result=world.execute(create);if(!result.success)throw std::runtime_error(result.reason);
+     auto words=tokens(world.serialize("config-test"));
+-    const size_t site=std::find(words.begin(),words.end(),"ESTABLISH_3")-words.begin()+2;
++    const size_t site=std::find(words.begin(),words.end(),"ESTABLISH_4")-words.begin()+2;
+     words.at(site+7+9)="5";words.at(18+9)=std::to_string(std::stoll(words.at(18+9))+5);
+     world=restored(world,words);
+     const auto work=world.execute(ScheduleCommand{worker,world.person(worker).decisions+1,ScheduleCommand::Operation::Submit,
+@@ -144,7 +144,7 @@
+     auto corrupt=tokens(saved);const auto configAt=std::find(corrupt.begin(),corrupt.end(),"CONFIG_1")-corrupt.begin();
+     corrupt.at(size_t(configAt)+2)="9";const auto before=resumed.fingerprint();
+     check(!resumed.deserialize(joined(corrupt),"config-test",error)&&resumed.fingerprint()==before,"mismatched snapshot fingerprint rejects without replacing world");
+-    Realm historical(71,2,128);auto old=historical.serialize("config-test");old.erase(old.find(" CONFIG_1 "));old.replace(0,15,"POLYEC_REALM_14");
++    Realm historical(71,2,128);auto old=historical.serialize("config-test");old.erase(old.find(" CONFIG_1 "));old.replace(0,15,"POLYEC_REALM_14");old.replace(old.find("ESTABLISH_4"),11,"ESTABLISH_3");
+     check(resumed.deserialize(old,"config-test",error)&&resumed.gameplay_config().historical_defaults()&&resumed.fingerprint()==historical.fingerprint(),"v14 migration restores frozen defaults rather than destination config");
+     const auto file=std::filesystem::temp_directory_path()/("polyec-config-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count())+".toml");
+     struct Cleanup{std::filesystem::path path;~Cleanup(){std::error_code ignored;std::filesystem::remove(path,ignored);}} cleanup{file};
+--- gate6a/core/tests/test_realm.cpp
++++ gate6b1/core/tests/test_realm.cpp
+@@ -1,3 +1,4 @@
++#include "work_authorization_fixture.hpp"
+ #include "polyec/realm.hpp"
+ #include "polyec/loan_section_codec.hpp"
+ #include "polyec/project_section_codec.hpp"
+@@ -14,16 +15,17 @@
+ using namespace polyec;
+ int checks=0;
+ void check(bool ok,const char* label){++checks;if(!ok)throw std::runtime_error(label);}
+-uint64_t work_site(Realm& world,int region){
+-    for(const auto&e:world.establishments())if(e.region==region)return e.id;
++uint64_t work_site(Realm& world,int region,uint64_t worker=129){
++    for(const auto&e:world.establishments())if(e.region==region){test::authorize_work(world,e.id,worker);return e.id;}
+     const uint64_t governor=region==world.regions()?1:uint64_t(region+2);
+     auto result=world.execute(EstablishmentCommand{governor,world.person(governor).decisions+1,
+         EstablishmentOwnerKind::Public,uint64_t(region),region,EstablishmentIndustry::ClothWorkshop,1,1});
+     if(!result.success)throw std::runtime_error("test work establishment: "+result.reason);
++    test::authorize_work(world,result.session,worker);
+     return result.session;
+ }
+ std::string downgrade_save_to_v13(const std::string& data){
+-    std::istringstream input(data);std::vector<std::string> tokens;std::string token;while(input>>token)tokens.push_back(token);
++    std::istringstream input(test::save_as_v15(data));std::vector<std::string> tokens;std::string token;while(input>>token)tokens.push_back(token);
+     if(tokens.empty()||(tokens[0]!="POLYEC_REALM_15"&&tokens[0]!="POLYEC_REALM_14"))throw std::runtime_error("current fixture magic");
+     const auto config=std::find(tokens.begin(),tokens.end(),"CONFIG_1");
+     tokens.erase(config,tokens.end());
+@@ -62,6 +64,7 @@
+     Realm appointment_save_oracle(7,2,128);
+     auto historicalOracle=appointment_save_oracle.serialize("fingerprint");
+     historicalOracle.erase(historicalOracle.find(" CONFIG_1 "));
++    historicalOracle.replace(historicalOracle.find("ESTABLISH_4"),11,"ESTABLISH_3");
+     historicalOracle.replace(0,15,"POLYEC_REALM_14");
+     uint64_t historicalHash=1469598103934665603ull;
+     for(unsigned char c:historicalOracle){historicalHash^=c;historicalHash*=1099511628211ull;}
+@@ -110,6 +113,7 @@
+         for(uint64_t id=8;id<=256;++id){const auto&p=office_world.person(id);
+             if(p.alive&&p.family!=Family::Governance&&p.region==officer_region&&p.age_days>=18*365&&p.skill>=20){teacher=id;break;}}
+         check(teacher>0,"T2.3 salary fixture teacher candidate");
++        test::authorize_work(office_world,officeSite,teacher);
+         check(office_world.execute({teacher,office_world.person(teacher).decisions+1,{Intent::Work,officer_region,0,0,30}}).success,"T2.3 salary fixture teacher assignment");
+         check(office_world.execute(ScheduleCommand{teacher,office_world.person(teacher).decisions+1,
+             ScheduleCommand::Operation::Submit,0,1856,1872,0,1000,ActivityKind::Work,officer_region,officeSite}).success,
+@@ -166,7 +170,7 @@
+     auto rejects=[&](Realm& world,uint64_t actor,const Candidate& action,const char* label){auto before=world.fingerprint();auto sequence=world.person(actor).decisions+1;auto result=world.execute({actor,sequence,action});check(!result.success&&world.fingerprint()==before&&result.reason!="Stale or duplicate decision ID",label);};
+     // T2.3 pays completed physical work per actor/region at a 16-tick unit floor.
+     auto submit_work=[&](Realm& world,uint64_t actor,int region,int64_t begin,int64_t end){
+-        const uint64_t site=work_site(world,region);
++        const uint64_t site=work_site(world,region,actor);
+         auto result=world.execute(ScheduleCommand{actor,world.person(actor).decisions+1,
+             ScheduleCommand::Operation::Submit,0,begin,end,0,1000,
+             ActivityKind::Work,region,site});
+@@ -863,8 +867,8 @@
+     {
+         Realm empty(37,2,128);
+         const std::string emptySave=empty.serialize("establishment-gate");
+-        const size_t emptyTag=emptySave.find(" ESTABLISH_3 0 ");
+-        check(emptyTag!=std::string::npos&&emptySave.substr(emptyTag,emptySave.find(" CONFIG_1 ")-emptyTag)==" ESTABLISH_3 0 ","establishment empty section exact bytes");
++        const size_t emptyTag=emptySave.find(" ESTABLISH_4 0 ");
++        check(emptyTag!=std::string::npos&&emptySave.substr(emptyTag,emptySave.find(" CONFIG_1 ")-emptyTag)==" ESTABLISH_4 0 ","establishment empty section exact bytes");
+ 
+         Realm owned(37,2,128);
+         const uint64_t owner=65;
+@@ -880,17 +884,17 @@
+ 
+         const auto serializeTokens=[](const std::string& text){std::vector<std::string> out;std::istringstream in(text);std::string token;while(in>>token)out.push_back(token);return out;};
+         const auto joinTokens=[](const std::vector<std::string>& tokens){std::ostringstream out;for(size_t i=0;i<tokens.size();++i){if(i)out<<' ';out<<tokens[i];}return out.str();};
+-        const auto findSection=[](const std::vector<std::string>& tokens){for(size_t i=0;i<tokens.size();++i)if(tokens[i]=="ESTABLISH_3")return i;return tokens.size();};
++        const auto findSection=[](const std::vector<std::string>& tokens){for(size_t i=0;i<tokens.size();++i)if(tokens[i]=="ESTABLISH_4")return i;return tokens.size();};
+         auto tokens=serializeTokens(owned.serialize("establishment-gate"));
+         const size_t section=findSection(tokens);
+-        check(section+38==size_t(std::find(tokens.begin(),tokens.end(),"CONFIG_1")-tokens.begin()),"establishment record has 27 canonical product stock slots and production fields");
++        check(section+39==size_t(std::find(tokens.begin(),tokens.end(),"CONFIG_1")-tokens.begin()),"establishment record has 27 canonical product stock slots and production fields");
+         check(tokens[section+1]=="1"&&tokens[section+8]=="1","establishment scalar field order");
+         const std::string validSaved=owned.serialize("establishment-gate");
+-        std::ostringstream expectedSection;expectedSection<<" ESTABLISH_3 1 "<<owned.establishments()[0].id<<' '
++        std::ostringstream expectedSection;expectedSection<<" ESTABLISH_4 1 "<<owned.establishments()[0].id<<' '
+             <<owned.establishments()[0].region<<" 0 "<<owner<<" 1 1 1 ";
+         for(int i=0;i<kEstablishmentStockSlots;++i)expectedSection<<"0 ";
+-        expectedSection<<"0 0 ";
+-        const auto establishAt=validSaved.find(" ESTABLISH_3 ");
++        expectedSection<<"0 0 0 ";
++        const auto establishAt=validSaved.find(" ESTABLISH_4 ");
+         check(validSaved.substr(establishAt,validSaved.find(" CONFIG_1 ")-establishAt)==expectedSection.str(),"establishment nonempty section exact bytes");
+         Realm loaded(2,1,128);std::string saveError;
+         check(loaded.deserialize(validSaved,"establishment-gate",saveError),"establishment save roundtrip");
+@@ -1030,7 +1034,7 @@
+         check(collision.execute(cmd).success,"establishment after loan");
+         const auto serializeTokens=[](const std::string& text){std::vector<std::string> out;std::istringstream in(text);std::string token;while(in>>token)out.push_back(token);return out;};
+         const auto joinTokens=[](const std::vector<std::string>& tokens){std::ostringstream out;for(size_t i=0;i<tokens.size();++i){if(i)out<<' ';out<<tokens[i];}return out.str();};
+-        const auto findSection=[](const std::vector<std::string>& tokens){for(size_t i=0;i<tokens.size();++i)if(tokens[i]=="ESTABLISH_3")return i;return tokens.size();};
++        const auto findSection=[](const std::vector<std::string>& tokens){for(size_t i=0;i<tokens.size();++i)if(tokens[i]=="ESTABLISH_4")return i;return tokens.size();};
+         auto tokens=serializeTokens(collision.serialize("establishment-collision"));const size_t section=findSection(tokens);
+         tokens[section+2]=std::to_string(collision.loans().front().id);
+         Realm badSharedId(2,1,128);std::string err;
+@@ -1045,7 +1049,7 @@
+         Realm base(51,2,128);
+         const uint64_t worker=65;
+         const int region=base.person(worker).region;
+-        const uint64_t site=work_site(base,region);
++        const uint64_t site=work_site(base,region,worker);
+         check(base.execute(ScheduleCommand{worker,base.person(worker).decisions+1,
+             ScheduleCommand::Operation::Submit,0,0,32,0,1000,ActivityKind::Work,region,site}).success,
+             "production integration Work schedule");
+@@ -1053,7 +1057,7 @@
+             std::istringstream in(base.serialize("production-integration"));
+             std::string token;while(in>>token)seededTokens.push_back(token);
+         }
+-        const size_t section=std::find(seededTokens.begin(),seededTokens.end(),"ESTABLISH_3")-seededTokens.begin();
++        const size_t section=std::find(seededTokens.begin(),seededTokens.end(),"ESTABLISH_4")-seededTokens.begin();
+         check(section<seededTokens.size(),"production integration establishment section");
+         const size_t good=size_t(GoodId::Fiber);
+         const size_t record=section+2;
+@@ -1095,6 +1099,7 @@
+         for(uint64_t candidate=1;candidate<=uint64_t(coworkers.count());++candidate)
+             if(candidate!=worker&&coworkers.person(candidate).alive&&coworkers.person(candidate).region==region){secondWorker=candidate;break;}
+         check(secondWorker!=0,"production fixture has a second coworker");
++        test::authorize_work(coworkers,site,secondWorker);
+         check(coworkers.execute(ScheduleCommand{secondWorker,coworkers.person(secondWorker).decisions+1,
+             ScheduleCommand::Operation::Submit,0,0,16,0,1000,ActivityKind::Work,region,site}).success,
+             "coworker submits a shorter shift");
+@@ -1129,7 +1134,7 @@
+         std::vector<std::string> corruptTokens;{
+             std::istringstream in(afterProduction);std::string token;while(in>>token)corruptTokens.push_back(token);
+         }
+-        const size_t savedTag=std::find(corruptTokens.begin(),corruptTokens.end(),"ESTABLISH_3")-corruptTokens.begin();
++        const size_t savedTag=std::find(corruptTokens.begin(),corruptTokens.end(),"ESTABLISH_4")-corruptTokens.begin();
+         const size_t savedRecord=savedTag+2;
+         check(corruptTokens[savedRecord+35]=="1","production save contains one actor watermark");
+         corruptTokens[savedRecord+37]="3";
+--- gate6a/core/tests/test_schedule.cpp
++++ gate6b1/core/tests/test_schedule.cpp
+@@ -1,3 +1,4 @@
++#include "work_authorization_fixture.hpp"
+ #include "polyec/realm.hpp"
+ #include "polyec/schedule.hpp"
+ #include <iostream>
+@@ -9,16 +10,17 @@
+ using namespace polyec;
+ int checks=0;
+ void check(bool ok,const char* label){++checks;if(!ok)throw std::runtime_error(label);}
+-uint64_t work_site(Realm& world,int region){
+-    for(const auto&e:world.establishments())if(e.region==region)return e.id;
++uint64_t work_site(Realm& world,int region,uint64_t worker=129){
++    for(const auto&e:world.establishments())if(e.region==region){test::authorize_work(world,e.id,worker);return e.id;}
+     const uint64_t governor=region==world.regions()?1:uint64_t(region+2);
+     auto result=world.execute(EstablishmentCommand{governor,world.person(governor).decisions+1,
+         EstablishmentOwnerKind::Public,uint64_t(region),region,EstablishmentIndustry::ClothWorkshop,1,1});
+     if(!result.success)throw std::runtime_error("test work establishment: "+result.reason);
++    test::authorize_work(world,result.session,worker);
+     return result.session;
+ }
+ std::string downgrade_goods_to_v12(const std::string& data){
+-    std::istringstream latest(data);std::vector<std::string> tokens;std::string token;
++    std::istringstream latest(test::save_as_v15(data));std::vector<std::string> tokens;std::string token;
+     while(latest>>token)tokens.push_back(token);
+     if(tokens.empty()||tokens[0]!="POLYEC_REALM_15"||tokens.size()<178)throw std::runtime_error("v15 goods fixture header");
+     tokens.erase(std::find(tokens.begin(),tokens.end(),"CONFIG_1"),tokens.end());
+@@ -79,7 +81,7 @@
+         Realm golden(7,2,128);
+         const int region=golden.person(1).region;
+         check(region==2,"codec golden work region");
+-        const auto goldenSite=work_site(golden,region);
++        const auto goldenSite=work_site(golden,region,1);
+         check(golden.execute(ScheduleCommand{1,golden.person(1).decisions+1,ScheduleCommand::Operation::Submit,
+             0,0,64,0,5,ActivityKind::Work,region,goldenSite}).success,"codec golden Work submit");
+         check(golden.execute(ScheduleCommand{2,1,ScheduleCommand::Operation::Submit,
+@@ -89,7 +91,7 @@
+         const size_t section_at=serialized.find(" SCHEDULE_5 ");
+         check(section_at!=std::string::npos,"codec golden section exists");
+         const std::string expected=
+-            " SCHEDULE_5 1 64 3 1 2 1 1 1 1 1 1 1 0 64 0 5 320 320 0 0 0 0 0 0 1 2 129 2 2 0 32 0 3 96 96 0 0 0 0 0 0 0 -1 0 1 64 1 4 1 2 64 1 2 4 1 129 64  ESTABLISH_3 1 129 2 1 2 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 4 ";
++            " SCHEDULE_5 1 64 3 1 2 1 1 1 1 1 1 1 0 64 0 5 320 320 0 0 0 0 0 0 1 2 129 2 2 0 32 0 3 96 96 0 0 0 0 0 0 0 -1 0 1 64 1 4 1 2 64 1 2 4 1 129 64  ESTABLISH_4 1 129 2 1 2 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 4 0 ";
+         check(serialized.substr(section_at,serialized.find(" CONFIG_1 ")-section_at)==expected,"codec golden SCHEDULE_5 bytes");
+     }
+     check(w.game_tick()==0,"initial cursor");
+@@ -367,6 +369,7 @@
+     auto secondCreate=crossSite.execute(EstablishmentCommand{governor,crossSite.person(governor).decisions+1,
+         EstablishmentOwnerKind::Public,uint64_t(crossRegion),crossRegion,EstablishmentIndustry::ToolWorkshop,1,1});
+     check(secondCreate.success&&secondCreate.session!=firstSite,"second work establishment created");
++    test::authorize_work(crossSite,secondCreate.session,A);
+     check(crossSite.execute(ScheduleCommand{A,1,ScheduleCommand::Operation::Submit,0,0,32,0,1000,
+         ActivityKind::Work,crossRegion,firstSite}).success,"first site session submitted");
+     const auto crossBefore=crossSite.fingerprint();
+@@ -463,7 +466,7 @@
+     check(mid.execute(ScheduleCommand{A,1,ScheduleCommand::Operation::Submit,0,0,128,0,1000,ActivityKind::Work,midRegion,work_site(mid,midRegion)}).success,"mid typed submit");
+     mid.advance_ticks(20);
+     std::string midData=mid.serialize("test");
+-    check(midData.rfind("POLYEC_REALM_15",0)==0,"v14 save magic");
++    check(midData.rfind("POLYEC_REALM_16",0)==0,"v14 save magic");
+     check(midData.find(" SCHEDULE_5 ")!=std::string::npos,"v13 schedule tag");
+     check(mid.serialize("test")==midData,"v14 deterministic save");
+     Realm midRestored(2,1,128); std::string midError;
+@@ -654,7 +657,7 @@
+     Realm migrated9(2,1,128); std::string migrate9Error;
+     const bool migrated9Ok=migrated9.deserialize(typed9Data,"test",migrate9Error);
+     check(migrated9Ok,migrated9Ok?"v9 migration load":migrate9Error.c_str());
+-    check(migrated9.serialize("test").rfind("POLYEC_REALM_15",0)==0,"v9 re-serializes v14");
++    check(migrated9.serialize("test").rfind("POLYEC_REALM_16",0)==0,"v9 re-serializes v14");
+     check(migrated9.schedule_book().work_present_ticks.at(A)==64,"v9 attendance preserved");
+     check(migrated9.schedule_book().settled_day==1&&migrated9.schedule_book().settled_work_units.at(A)==4,"v9 settlement preserved");
+     check(migrated9.schedule_book().work_present_ticks_by_region.empty()&&migrated9.schedule_book().paid_work_units_by_region.empty(),"v9 regional maps start empty");
+@@ -679,7 +682,7 @@
+     check(typed8Data.rfind("POLYEC_REALM_8",0)==0&&typed8Data.find(" SCHEDULE_2 ")!=std::string::npos,"v8 fixture tag");
+     Realm migrated8(2,1,128); std::string migrate8Error;
+     check(migrated8.deserialize(typed8Data,"test",migrate8Error),"v8 migration load");
+-    check(migrated8.serialize("test").rfind("POLYEC_REALM_15",0)==0,"v8 re-serializes v14");
++    check(migrated8.serialize("test").rfind("POLYEC_REALM_16",0)==0,"v8 re-serializes v14");
+     check(migrated8.schedule_book().sessions.at(A).size()==2,"v8 sessions restored");
+     check(migrated8.schedule_book().work_present_ticks.at(A)==32,"v8 attendance restored");
+     check(migrated8.schedule_book().work_present_ticks_by_region.empty()&&migrated8.schedule_book().paid_work_units_by_region.empty(),"v8 regional maps start empty");
+@@ -702,7 +705,7 @@
+     check(legacyData.find(" SCHEDULE_1 ")!=std::string::npos&&legacyData.find(" SCHEDULE_5 ")==std::string::npos,"v7 fixture tag");
+     Realm migrated(2,1,128); std::string migrateError;
+     check(migrated.deserialize(legacyData,"test",migrateError),"v7 migration load");
+-    check(migrated.serialize("test").rfind("POLYEC_REALM_15",0)==0,"v7 re-serializes v14");
++    check(migrated.serialize("test").rfind("POLYEC_REALM_16",0)==0,"v7 re-serializes v14");
+     auto const&migratedSession=migrated.schedule_book().sessions.at(A).front();
+     check(migratedSession.kind==ActivityKind::Generic&&migratedSession.region==-1,"v7 session defaults");
+     check(migrated.schedule_book().work_present_ticks.empty()&&migrated.schedule_book().work_present_ticks_by_region.empty(),"v7 attendance empty");
+@@ -714,7 +717,7 @@
+     int csRegion=cs.person(A).region,csRegionB=cs.person(A+1).region;
+     check(cs.execute(ScheduleCommand{A,1,ScheduleCommand::Operation::Submit,0,0,64,0,1000,ActivityKind::Work,csRegion,work_site(cs,csRegion)}).success,"corrupt submit");
+     check(cs.execute(ScheduleCommand{A,2,ScheduleCommand::Operation::Submit,0,0,64,0,500}).success,"corrupt submit 2");
+-    check(cs.execute(ScheduleCommand{A+1,1,ScheduleCommand::Operation::Submit,0,0,64,0,500,ActivityKind::Work,csRegionB,work_site(cs,csRegionB)}).success,"corrupt submit 3");
++    check(cs.execute(ScheduleCommand{A+1,1,ScheduleCommand::Operation::Submit,0,0,64,0,500,ActivityKind::Work,csRegionB,work_site(cs,csRegionB,A+1)}).success,"corrupt submit 3");
+     cs.advance_ticks(64);
+     std::string csd=cs.serialize("test");
+     size_t tagPos=csd.find(" SCHEDULE_5 ");
+@@ -725,7 +728,7 @@
+     std::istringstream tss(suffix);
+     std::string tok; while(tss>>tok) toks.push_back(tok);
+     const size_t sessionAt=10,attendanceAt=61,settlementAt=65,regionalTickAt=69,regionalPaidAt=75,siteTicksAt=81;
+-    check(toks.size()==129+16,"schedule, production and config section token count");
++    check(toks.size()==129+9+16,"schedule, production and config section token count");
+     check(toks[0]=="1","base timeline flag");
+     check(toks[1]=="64","base cursor");
+     check(toks[3]=="1","base settled day");
+@@ -808,7 +811,7 @@
+         reject(prefix+j.str(),"duplicate settled actor","Save schedule settled actor");
+     }
+     {
+-        std::string custom=prefix+"0 64 "+toks[2]+" 0 0 0 0 1 0 0 "+std::to_string(A)+" 0 1 ESTABLISH_3 0 ";
++        std::string custom=prefix+"0 64 "+toks[2]+" 0 0 0 0 1 0 0 "+std::to_string(A)+" 0 1 ESTABLISH_4 0 ";
+         const auto saved=cs.serialize("test");custom+=saved.substr(saved.find(" CONFIG_1 "));
+         reject(custom,"timeline false nonzero regional attendance","Save schedule timeline flag");
+     }
+@@ -826,7 +829,7 @@
+         Realm zs(37,6,256);
+         int zsRegion=zs.person(A).region,zsRegionB=zs.person(A+1).region;
+         check(zs.execute(ScheduleCommand{A,1,ScheduleCommand::Operation::Submit,0,0,64,0,1000,ActivityKind::Work,zsRegion,work_site(zs,zsRegion)}).success,"zs submit 1");
+-        check(zs.execute(ScheduleCommand{A+1,1,ScheduleCommand::Operation::Submit,0,0,64,0,500,ActivityKind::Work,zsRegionB,work_site(zs,zsRegionB)}).success,"zs submit 2");
++        check(zs.execute(ScheduleCommand{A+1,1,ScheduleCommand::Operation::Submit,0,0,64,0,500,ActivityKind::Work,zsRegionB,work_site(zs,zsRegionB,A+1)}).success,"zs submit 2");
+         zs.advance_ticks(10);
+         std::string zsd=zs.serialize("test");
+         size_t zTag=zsd.find(" SCHEDULE_5 ");
+@@ -834,7 +837,7 @@
+         std::string zPrefix=zsd.substr(0,zTag+12),zSuffix=zsd.substr(zTag+12);
+         std::vector<std::string> zt; std::istringstream zin(zSuffix); std::string ztoke; while(zin>>ztoke)zt.push_back(ztoke);
+         const size_t zAttendanceAt=10+2*17,zRegionalAt=zAttendanceAt+4;
+-        check(zt.size()==zRegionalAt+12+38+16,"zs schedule, site production and config token count");
++        check(zt.size()==zRegionalAt+12+38+9+16,"zs schedule, site production and config token count");
+         std::vector<std::string> ztoks=zt;
+         ztoks[zAttendanceAt+1]="0";
+         ztoks[7]="1";
+@@ -869,7 +872,7 @@
+         std::string sPrefix=sd2d.substr(0,sTag+12),sSuffix=sd2d.substr(sTag+12);
+         std::vector<std::string> st; std::istringstream sin(sSuffix); std::string stoke; while(sin>>stoke)st.push_back(stoke);
+         const size_t sSettlementAt=10+17+2;
+-        check(st.size()==sSettlementAt+51+16,"sd2 schedule, site production and config token count");
++        check(st.size()==sSettlementAt+51+5+16,"sd2 schedule, site production and config token count");
+         std::vector<std::string> stoks=st; stoks[sSettlementAt+1]="5";
+         std::ostringstream sj; for(size_t i=0;i<stoks.size();++i){ if(i)sj<<' '; sj<<stoks[i]; }
+         reject(sPrefix+sj.str(),"settled units beyond attendance","Save schedule settled attendance");
+--- gate6a/core/tests/work_authorization_checks.hpp
++++ gate6b1/core/tests/work_authorization_checks.hpp
+@@ -0,0 +1,142 @@
++#pragma once
++#include "work_authorization_fixture.hpp"
++#include "polyec/establishment_section_codec.hpp"
++
++void authorization_replay(){
++    Realm world(71,2,128);const auto site=create(world,1,EstablishmentOwnerKind::Public,2);
++    uint64_t worker=0;for(uint64_t id=2;id<=uint64_t(world.count());++id)
++        if(world.person(id).alive&&world.person(id).region==2){worker=id;break;}
++    auto point=[&](int index){std::cout<<index<<' '<<world.fingerprint()<<' '<<worker<<' '<<site<<'\n';};
++    point(0);
++    if(!world.execute(WorkAuthorizationCommand{1,world.person(1).decisions+1,site,worker,WorkAuthorizationOperation::Set,0,96}).success)throw std::runtime_error("replay grant");
++    point(1);
++    if(!world.execute(ScheduleCommand{worker,world.person(worker).decisions+1,ScheduleCommand::Operation::Submit,0,16,64,0,1000,ActivityKind::Work,2,site}).success)throw std::runtime_error("replay Work");
++    point(2);
++    if(world.execute(WorkAuthorizationCommand{1,world.person(1).decisions+1,site,worker,WorkAuthorizationOperation::Revoke}).success)throw std::runtime_error("replay revoke should reject");
++    point(3);world.advance_ticks(24);point(4);
++    Realm loaded(1,1,128);std::string error;if(!loaded.deserialize(world.serialize("authorization-replay"),"authorization-replay",error))throw std::runtime_error(error);
++    world=std::move(loaded);world.advance_ticks(40);point(5);
++    if(!world.execute(WorkAuthorizationCommand{1,world.person(1).decisions+1,site,worker,WorkAuthorizationOperation::Revoke}).success)throw std::runtime_error("replay revoke after shift");
++    point(6);
++}
++
++// Included by the transfer executable to reuse its allocation-failure harness.
++void authorization_checks(){
++    Realm world(71,2,256);const uint64_t owner=1;
++    const auto site=create(world,owner,EstablishmentOwnerKind::Public,2);
++    uint64_t worker=0;for(uint64_t id=2;id<=uint64_t(world.count());++id)
++        if(world.person(id).alive&&world.person(id).region==2){worker=id;break;}
++    check(worker!=0,"authorization fixture worker present");
++    auto grant=[&](WorkAuthorizationOperation operation,int64_t begin=0,int64_t end=0){
++        return world.execute(WorkAuthorizationCommand{owner,world.person(owner).decisions+1,site,worker,operation,begin,end});
++    };
++    auto work=[&](int64_t begin,int64_t end){return world.execute(ScheduleCommand{worker,world.person(worker).decisions+1,
++        ScheduleCommand::Operation::Submit,0,begin,end,0,1000,ActivityKind::Work,2,site});};
++    auto rejectWork=[&](int64_t begin,int64_t end){const auto before=world.fingerprint();const auto result=work(begin,end);
++        check(!result.success&&result.reason=="Work requires owner authorization"&&world.fingerprint()==before,"unauthorized Work rejects before mutation");};
++    rejectWork(0,16);
++    check(grant(WorkAuthorizationOperation::Set,16,96).success,"owner grants exact window");
++    {
++        const auto ownerFacts=world.view(owner).facts;
++        const auto fact=ownerFacts.back();const auto workerFacts=world.view(worker).facts;
++        const auto outsiderFacts=world.view(2).facts;
++        check(fact.kind==208&&fact.target==worker&&fact.secret,"grant fact targets worker Person and is private");
++        check(std::any_of(workerFacts.begin(),workerFacts.end(),[&](const auto& f){return f.id==fact.id;})&&
++              std::none_of(outsiderFacts.begin(),outsiderFacts.end(),[&](const auto& f){return f.id==fact.id;}),"grant visible to worker without leaking to outsider");
++    }
++    rejectWork(0,16);rejectWork(80,112);
++    auto before=world.fingerprint();check(!grant(WorkAuthorizationOperation::Set,16,96).success&&world.fingerprint()==before,"no-op grant rejects without fact spam");
++    const auto accepted=work(16,96);check(accepted.success,"worker consents with exact-boundary Work");
++    before=world.fingerprint();check(!grant(WorkAuthorizationOperation::Revoke).success&&world.fingerprint()==before,"revoke cannot cut accepted Work");
++    check(!grant(WorkAuthorizationOperation::Set,32,96).success&&world.fingerprint()==before,"replacement cannot cut accepted beginning");
++    check(!grant(WorkAuthorizationOperation::Set,16,64).success&&world.fingerprint()==before,"replacement cannot cut accepted end");
++    check(grant(WorkAuthorizationOperation::Set,0,128).success,"owner can extend accepted window");
++    check(world.execute(ScheduleCommand{worker,world.person(worker).decisions+1,ScheduleCommand::Operation::Cancel,accepted.session}).success,"worker cancels before Work starts");
++    check(grant(WorkAuthorizationOperation::Revoke).success,"owner revokes after cancellation");
++    rejectWork(16,32);
++    before=world.fingerprint();check(!grant(WorkAuthorizationOperation::Revoke).success&&world.fingerprint()==before,"absent revoke atomic");
++    const auto malformed=WorkAuthorizationCommand{owner,world.person(owner).decisions+1,site,worker,WorkAuthorizationOperation::Set,0,128};
++    for(int variant=0;variant<7;++variant){
++        auto command=malformed;
++        switch(variant){case 0:command.worker=0;break;case 1:command.establishment_id=0;break;
++        case 2:command.sequence=0;break;case 3:command.end=365000LL*64+1;break;
++        case 4:command.operation=static_cast<WorkAuthorizationOperation>(99);break;
++        case 5:command.begin=-1;break;case 6:command.actor=worker;command.sequence=world.person(worker).decisions+1;break;}
++        before=world.fingerprint();const auto result=world.execute(command);
++        check(!result.success&&world.fingerprint()==before,"invalid authorization atomic");
++    }
++    auto deceased=dead_owner(world,worker);before=deceased.fingerprint();
++    check(!deceased.execute(malformed).success&&deceased.fingerprint()==before,"deceased worker cannot receive grant");
++    check(grant(WorkAuthorizationOperation::Set,0,96).success,"migration fixture grant");
++    check(work(0,16).success&&work(32,64).success,"migration fixture separated shifts");
++    world.advance_ticks(8);
++    Realm migrated(1,1,128);std::string error;
++    check(migrated.deserialize(polyec::test::save_as_v15(world.serialize("authorization")),"authorization",error),error.c_str());
++    const auto windows=migrated.establishments()[0].work_authorizations.at(worker);
++    check(windows==std::vector<WorkAuthorizationWindow>{{8,16},{32,64}},"legacy migration clips consumed ticks and preserves gaps");
++    before=migrated.fingerprint();
++    check(!migrated.execute(ScheduleCommand{worker,migrated.person(worker).decisions+1,ScheduleCommand::Operation::Submit,
++        0,16,32,0,1000,ActivityKind::Work,2,site}).success&&migrated.fingerprint()==before,"legacy gap grants no Work right");
++    const auto saved=migrated.serialize("authorization");Realm loaded(1,1,128);
++    check(loaded.deserialize(saved,"authorization",error)&&loaded.serialize("authorization")==saved,"authorization roundtrip exact");
++    {
++        // Independent literal grammar oracle, including a deliberate gap.
++        std::string prefix=" ESTABLISH_4 1 129 2 1 2 1 1 10 ";
++        for(int n=0;n<27;++n)prefix+="0 ";
++        prefix+="0 0 ";
++        const std::string literal=prefix+"1 6 2 8 16 32 64 ";
++        std::istringstream input(literal);std::vector<Establishment> decoded;
++        check(detail::read_establishment_section(input,128,2,16,decoded,error),"literal authorization grammar accepted");
++        std::ostringstream output;detail::write_establishment_section(output,decoded);
++        check(output.str()==literal,"authorization codec exact literal bytes");
++        for(const auto tail:{"1 0 1 8 16 ","1 6 0 ","1 6 2 8 16 16 64 ","1 6 2 8 16 12 64 ",
++                             "1 6 1 -1 16 ","1 6 1 8 23360001 ","1 6 1000001 ","129 "}){
++            const auto prior=decoded.front().work_authorizations;
++            std::istringstream corrupt(prefix+tail);
++            check(!detail::read_establishment_section(corrupt,128,2,16,decoded,error)&&decoded.front().work_authorizations==prior,
++                "corrupt authorization grammar leaves previous records intact");
++        }
++    }
++    check(loaded.execute(RealmClockCommand{RealmClockCommand::Operation::Pause}).success,"authorization pause");
++    before=loaded.fingerprint();bool pausedRejected=false;
++    try{loaded.advance_ticks(128);}catch(const std::runtime_error&){pausedRejected=true;}
++    check(pausedRejected&&loaded.fingerprint()==before,"pause does not expire authorization");
++    migrated.advance_ticks(120);auto uninterrupted=world;uninterrupted.advance_ticks(120);
++    check(migrated.schedule_book().work_present_ticks.at(worker)==uninterrupted.schedule_book().work_present_ticks.at(worker)&&migrated.invariant(),"legacy accepted shifts keep attendance");
++    for(int variant=0;variant<3;++variant){
++        const auto operation=variant==2?WorkAuthorizationOperation::Revoke:WorkAuthorizationOperation::Set;
++        bool committed=false;int failures=0;
++        for(int allocation=0;allocation<64;++allocation){
++            Realm probe(71,2,256);const auto probeSite=create(probe,owner,EstablishmentOwnerKind::Public,2);
++            if(variant>0)polyec::test::authorize_work(probe,probeSite,worker,128);
++            const auto original=probe.fingerprint();RealmResult result;bool failed=false;
++            fault_phase="work authorization";fault_index=allocation;allocations_until_failure=allocation;
++            try{result=probe.execute(WorkAuthorizationCommand{owner,probe.person(owner).decisions+1,probeSite,worker,operation,0,
++                operation==WorkAuthorizationOperation::Set?(variant==1?256:128):0});}catch(const std::bad_alloc&){failed=true;}
++            allocations_until_failure=-1;fault_phase="none";
++            if(failed){++failures;check(probe.fingerprint()==original,"authorization allocation failure preserves state");}
++            else{committed=result.success;break;}
++        }
++        check(committed&&(variant!=0||failures>=2),"authorization allocation sweep reaches commit");
++    }
++    for(const auto operation:{ScheduleCommand::Operation::Submit,ScheduleCommand::Operation::Cancel,ScheduleCommand::Operation::Reprioritize}){
++        bool committed=false;int failures=0;
++        for(int allocation=0;allocation<128;++allocation){
++            Realm probe(71,2,256);const auto probeSite=create(probe,owner,EstablishmentOwnerKind::Public,2);
++            polyec::test::authorize_work(probe,probeSite,worker,128);
++            if(operation!=ScheduleCommand::Operation::Submit){
++                const auto accepted=probe.execute(ScheduleCommand{worker,probe.person(worker).decisions+1,ScheduleCommand::Operation::Submit,
++                    0,16,64,0,1000,ActivityKind::Work,2,probeSite});
++                check(accepted.success,"schedule fault fixture accepted Work");
++            }
++            const auto original=probe.fingerprint();RealmResult result;bool failed=false;
++            fault_phase="authorized schedule";fault_index=allocation;allocations_until_failure=allocation;
++            try{result=probe.execute(ScheduleCommand{worker,probe.person(worker).decisions+1,operation,
++                1,16,64,3,1000,ActivityKind::Work,2,probeSite});}catch(const std::bad_alloc&){failed=true;}
++            allocations_until_failure=-1;fault_phase="none";
++            if(failed){++failures;check(probe.fingerprint()==original,"schedule allocation failure preserves IDs, sessions, facts and decisions");}
++            else{committed=result.success;break;}
++        }
++        check(committed&&failures>0,"schedule allocation sweep reaches successful commit");
++    }
++}
+--- gate6a/core/tests/work_authorization_fixture.hpp
++++ gate6b1/core/tests/work_authorization_fixture.hpp
+@@ -0,0 +1,43 @@
++#pragma once
++#include "polyec/realm.hpp"
++#include <algorithm>
++#include <sstream>
++#include <stdexcept>
++
++namespace polyec::test {
++// Explicit fixture setup through the same owner command used by players.
++inline void authorize_work(Realm& world,uint64_t siteId,uint64_t worker,int64_t end=365000LL*64){
++    const auto sites=world.establishments();
++    const auto found=std::find_if(sites.begin(),sites.end(),[&](const auto& site){return site.id==siteId;});
++    if(found==sites.end())throw std::runtime_error("fixture missing worksite");
++    const auto& person=world.person(worker);
++    if(!person.alive||person.destination!=-1||person.region!=found->region)return;
++    const uint64_t owner=found->owner_kind==EstablishmentOwnerKind::Person?found->owner_id:
++        (found->region==world.regions()?1:uint64_t(found->region+2));
++    if(owner==worker)return;
++    const auto existing=found->work_authorizations.find(worker);
++    if(existing!=found->work_authorizations.end())for(const auto& window:existing->second)
++        if(window.begin<=world.game_tick()&&window.end>=end)return;
++    const auto result=world.execute(WorkAuthorizationCommand{owner,world.person(owner).decisions+1,siteId,worker,
++        WorkAuthorizationOperation::Set,world.game_tick(),end});
++    if(!result.success)throw std::runtime_error("fixture work authorization: "+result.reason);
++}
++// Test-only historical grammar conversion; old reader never sees v16 fields.
++inline std::string save_as_v15(const std::string& source){
++    std::istringstream input(source);std::vector<std::string> words;std::string word;
++    while(input>>word)words.push_back(word);
++    if(words.empty()||words.front()!="POLYEC_REALM_16")return source;
++    words.front()="POLYEC_REALM_15";
++    const auto section=std::find(words.begin(),words.end(),"ESTABLISH_4");
++    if(section==words.end())throw std::runtime_error("fixture missing establishment section");
++    size_t at=size_t(section-words.begin());words[at]="ESTABLISH_3";
++    const size_t count=std::stoull(words.at(at+1));at+=2;
++    for(size_t row=0;row<count;++row){
++        at+=36+2*std::stoull(words.at(at+35));
++        const size_t first=at,workers=std::stoull(words.at(at++));
++        for(size_t n=0;n<workers;++n){const size_t ranges=std::stoull(words.at(at+1));at+=2+2*ranges;}
++        words.erase(words.begin()+std::ptrdiff_t(first),words.begin()+std::ptrdiff_t(at));at=first;
++    }
++    std::ostringstream out;for(const auto& value:words)out<<value<<' ';return out.str();
++}
++}

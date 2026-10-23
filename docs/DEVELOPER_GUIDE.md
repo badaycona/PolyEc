@@ -1,6 +1,6 @@
 # PolyEc — mô hình bài toán, phương pháp và hệ thống thực nghiệm
 
-Cập nhật đối chiếu: 2026-10-18. Tài liệu giải thích bài toán, cách giải, công thức và giới hạn cho người phát triển. [Kế hoạch sản phẩm](IMPLEMENTATION_PLAN.md) quy định game cần đạt gì; [CURRENT_TASK](CURRENT_TASK.md) ghi công việc đang làm. Công thức thiết kế không phải bằng chứng rằng tính năng đã chạy.
+Cập nhật nội dung: 2026-10-22. Tài liệu giải thích bài toán, cách giải, công thức và giới hạn cho người phát triển. [Kế hoạch sản phẩm](IMPLEMENTATION_PLAN.md) quy định game cần đạt gì; [CURRENT_TASK](CURRENT_TASK.md) ghi công việc đang làm. Công thức thiết kế không phải bằng chứng rằng tính năng đã chạy. Các kế hoạch theo lát trong `docs/design/` chỉ bổ trợ khi `CURRENT_TASK` dẫn tới; chúng không thay thế bài giải và phương pháp tổng quát trong tài liệu này.
 
 Các công thức mô tả bản thử nghiệm dựa trên realm-v6 và lần sửa lõi b8160f8. Bộ tính khả năng chú ý có đặc tả riêng; T1a/T1b đang nối nó với lịch hoạt động, bản lưu v7 và đồng hồ game. Kết quả T1a đã được ghi trong lịch sử; tình trạng từng phần T1b đọc ở CURRENT_TASK. Mô tả bản thử không tự áp dụng cho toàn bộ mã đang sửa.
 
@@ -403,7 +403,7 @@ Phải kiểm cả trước/sau save/load, session bị cancel, người chết 
 
 ## 5. Từ sự việc đến thông tin và diễn biến phát sinh
 
-Thế giới mô phỏng tạo fact có ID, participants, location/time và parent cause. KnowledgeRecord xác định ai nhận được fact khi nào. Case/obligation tổng hợp các facts đang liên quan, không tự bịa thủ phạm hoặc nguồn lực để khớp câu chuyện.
+Thế giới mô phỏng tạo fact có ID, participants, location/time và parent cause. KnowledgeRecord xác định ai nhận được fact khi nào. Từ save schema31, knowledge do điều tra tạo còn lưu ID cuộc điều tra đã cấp tin để lần theo nguồn; record chuyển từ save cũ được đánh dấu nguồn chưa xác định thay vì đoán ngược. ID Investigation chỉ chứng minh đường ghi dữ liệu trong core, không tự chứng minh độ tin cậy của nội dung. Case/obligation tổng hợp các facts đang liên quan, không tự bịa thủ phạm hoặc nguồn lực để khớp câu chuyện.
 
 Một chuỗi thử: chủ xưởng chết → di sản còn nợ → thiếu nguồn trả lương → người làm có thể tìm việc/đòi quyền → guild hoặc chính quyền nhận hồ sơ. Test luật có thể phát lệnh định sẵn để chứng minh chain; test chính sách chọn hành động phải đánh giá riêng các quyết định đã học. Không đòi mỗi seed lặp đúng một câu chuyện.
 
@@ -470,7 +470,7 @@ GRU (Gated Recurrent Unit) là lớp mạng cập nhật bộ nhớ qua từng q
 action_i ~ Categorical(masked_logits_i)
 ```
 
-Mạng thử nghiệm mã hóa trạng thái, cập nhật 64 phần tử bộ nhớ bằng GRU rồi chấm điểm hành động. Mỗi quan sát có 128 giá trị trạng thái và 32 hành động ứng viên với 12 đặc trưng mỗi hành động. Ba họ Governance, Economic, Civilian dùng trọng số chung trong từng họ; bộ nhớ và quá trình lấy mẫu riêng theo người. Đổi họ đặt lại bộ nhớ vai trò, không xóa danh tính hay tài sản.
+Mạng thử nghiệm mã hóa trạng thái, cập nhật 64 phần tử bộ nhớ bằng GRU rồi chấm điểm hành động. Mỗi quan sát hiện có 128 giá trị trạng thái và 129 hành động ứng viên với 12 đặc trưng mỗi hành động. Trong state vector, slot 108 là nợ ngủ quy đổi 0–1 (`sleep_debt/100`) và slot 109 là gắng sức 0–1 (`exertion/100`), lấy từ đúng cá thể đang được hỏi; không có dữ liệu cơ thể người khác ở hai slot này. Tổng 1.676 giá trị và action shape giữ nguyên. Ba họ Governance, Economic, Civilian dùng trọng số chung trong từng họ; bộ nhớ và quá trình lấy mẫu riêng theo người. Đổi họ đặt lại bộ nhớ vai trò, không xóa danh tính hay tài sản. Vì model cũ từng coi hai slot này là số 0, runtime dùng `model_contract` mới để không nạp nhầm checkpoint đã học theo nghĩa cũ.
 
 #### 6.1.1. Đề bài học quyết định
 
@@ -779,6 +779,28 @@ Runtime hiện tập hợp chủ thể hành động đến lượt, dựng obse
 
 Lưu trạng thái O(N) và relations O(E) khác chi phí quyết định, dựng các hành động ứng viên, validation và history. Một triệu record đứng yên không là đo hiệu năng agency. Không giảm fidelity ngoài camera; không bỏ aging/deadline để đạt tốc độ. Cache thông tin quan sát chỉ hợp lệ khi chứng minh điều kiện tương đương và không gộp danh tính/sampling.
 
+### 7.3. Chọn cách truy vấn, bảng tra cứu và sắp xếp
+
+Truy vấn là thao tác đọc trả lời một câu hỏi cụ thể; nó không được âm thầm sửa thế giới. Bảng tra cứu (index) giúp tìm nhanh nhưng chỉ là dữ liệu dẫn xuất: hồ sơ gốc vẫn là nguồn chính thức, và index phải dựng lại được sau khi tải save. Cache là kết quả tính tạm, có thể bỏ và tính lại; nó không phải bản ghi nghiệp vụ thứ hai. Những phân biệt này quan trọng vì một con số bị nhân đôi hoặc index cũ có thể làm lệnh hợp lệ đi sai đường dù dữ liệu gốc vẫn đúng.
+
+Chọn cách tìm theo số lượng và tần suất thật, không theo độ mới của cấu trúc dữ liệu:
+
+| Câu hỏi | Cách đơn giản thường đủ | Khi cần tăng tốc | Điều kiện phải giữ |
+|---|---|---|---|
+| Tìm Person theo ID liền với vị trí | Kiểm miền ID rồi tra vector O(1) | Bảng ID → vị trí khi ID thưa hoặc có xóa vật lý | Không sắp lại vector gốc; không giữ con trỏ qua lần vector có thể cấp phát lại; kiểm ID bản ghi khi contract yêu cầu |
+| Lấy người trong một vùng/hộ | Quét state hoặc dựng danh sách ID theo khóa | Danh sách theo vùng/hộ khi cùng câu hỏi được gọi thường xuyên | Nêu rõ có gồm người chết không; index phải khớp phép quét và cập nhật khi sinh, chết, chuyển vùng, đổi hộ, load |
+| Ghép hai tập hồ sơ | Quét lồng nhau khi cả hai tập nhỏ | Bảng tra cứu hoặc hai con trỏ trên hai danh sách đã sắp | Không làm mất nhiều claim hợp lệ cùng người; giữ thứ tự nếu nó quyết định phần dư hoặc quyền ưu tiên |
+| Lấy các phiên giao một khoảng | Quét lịch ngắn của từng người | Tìm nhị phân để giới hạn phần đầu khoảng; cân nhắc cấu trúc phức tạp hơn chỉ sau khi đo | Khoảng dùng dạng [begin,end); chỉ sắp theo begin chưa loại hết phiên cũ kéo dài; không đổi luật phân bổ khi hòa |
+| Tìm việc đến hạn | Quét nếu số hồ sơ nhỏ hoặc công việc cần xét đều mỗi ngày | Min-heap khi ít việc đến hạn trong số lượng hồ sơ lớn | Khóa sắp xếp phải gồm thời điểm và thứ tự nghiệp vụ đã duyệt; mục hủy/dời hạn phải đối chiếu record chính thức; không xử lý nghĩa vụ hai lần |
+| Tìm quan hệ nhiều bước | Danh sách kề thưa và tập đã thăm | BFS cho số cạnh ít nhất trên đồ thị không trọng số | Chỉ lưu quan hệ có thật; đường đi ngắn nhất không có nghĩa là quan hệ tốt nhất hoặc hành động chiến lược phù hợp |
+| Tìm tuyến | BFS nếu mọi cạnh có cùng chi phí; Dijkstra nếu chi phí không âm | A* chỉ khi heuristic không vượt chi phí thực; thuật toán theo thời điểm đến khi có lịch/sức chứa | Preview chỉ đọc; lệnh thật kiểm lại và đặt tất cả chặng cùng giao dịch; tính cả hàng đang trên đường |
+| Hiển thị toàn bộ hay top-k | Sắp cả danh sách O(n log n) | Heap cỡ k O(n log k), hoặc `nth_element` rồi sắp phần kết quả | Thứ tự phải có khóa hòa ổn định; danh sách UI không quyết định ai được thuê/nhận hàng; phân trang cần snapshot hoặc revision/khóa cuối |
+| Tổng hợp, ví dụ tổng tiền theo vùng | Quét một lượt O(N) | Bộ đếm dẫn xuất hoặc cache khi cùng câu hỏi lặp nhiều | Cập nhật mọi đường thay đổi liên quan; cache phải xét vùng, thời điểm, quyền xem và revision dữ liệu |
+
+Đối với quan hệ trong một nhóm, một index có thể đổi phép quét toàn bộ O(N) thành công việc theo số kết quả O(k), nhưng chỉ khi xây và duy trì index không tốn hơn phần công tiết kiệm được. Với các phiên chồng nhau, quét mốc sự kiện có thể giảm việc tìm lại phiên hoạt động; tổng thời gian vẫn phụ thuộc số phiên cần so sánh trên từng đoạn, không mặc nhiên là O(s log s). Với đặt chỗ vận tải, đường ít cạnh nhất không đủ nếu thời gian chờ và sức chứa thay đổi theo ngày.
+
+Mọi index/cache đều cần một phép đối chiếu độc lập: quét state gốc, tính lại từ đầu hoặc oracle nhỏ có thể tính tay. Kiểm tập kết quả, thứ tự khi thứ tự có ý nghĩa, trường hợp rỗng/ID sai/trùng khóa, cập nhật và reject, rồi save/load và dựng lại. Đo riêng chi phí dựng, đọc, cập nhật, bộ nhớ và độ trễ xấu trên workload lệch thực tế (một hộ rất đông, vùng tập trung, nhiều phiên chồng lấp, nhiều lịch hẹn cũ); không chỉ dùng dữ liệu phân bố đều. Không thêm cây khoảng, heap, cache phân mảnh hay thread chỉ vì chúng có độ phức tạp đẹp trên giấy.
+
 ## 8. Lưu, tải, chạy lại và tương thích dữ liệu
 
 ### 8.1. Những phiên bản khác nhau giải quyết những vấn đề khác nhau
@@ -901,6 +923,9 @@ Nghiệm thu cập nhật CURRENT_TASK; lịch sử vào DEVELOPMENT_HISTORY; s�
 
 - [Plan toàn dự án](IMPLEMENTATION_PLAN.md): các lựa chọn sản phẩm đã chốt và gates.
 - [Tác vụ hiện tại](CURRENT_TASK.md): phần đang làm, bằng chứng và bước kế tiếp.
+- [Cây bài toán kỹ thuật](TECHNICAL_PROBLEMS.md): chia câu hỏi triển khai và phép kiểm thành P1–P16.
+- [Bản đồ tài liệu](README.md): phân biệt tài liệu hiện hành, kế hoạch theo lát, bằng chứng và archive.
+- [Ghi chú thiết kế thuật toán tra cứu cũ](design/core-query-algorithms.md): bản chi tiết ngày 2026-10-19; kiến thức tổng quát đã được hợp nhất ở mục 7.3 của guide này, nội dung còn lại chỉ dùng truy nguyên.
 - [Paper 15/10 được lưu](archive/developer/polyec-technical-paper.md): truy nguyên cách giải thích tại ảnh chụp trạng thái cũ; các công thức và phương pháp còn dùng đã được đưa vào guide chuẩn này.
 - [Cho et al., 2014 — GRU](https://aclanthology.org/D14-1179/): nền tảng gated recurrent unit.
 - [Schulman et al. — GAE](https://arxiv.org/abs/1506.02438), [PPO](https://arxiv.org/abs/1707.06347): cơ sở ước lượng/cập nhật chính sách chọn hành động; không chứng nhận chất lượng PolyEc.

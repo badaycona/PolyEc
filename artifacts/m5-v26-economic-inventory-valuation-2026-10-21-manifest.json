@@ -1,0 +1,37 @@
+{
+  "schema": "m5-v26-economic-inventory-valuation-audit-v1",
+  "date": "2026-10-21",
+  "scope": "Immediate C++ Buy utility and paired 7-day reward audit; diagnostic only",
+  "validation_seeds": [193000, 193001, 193002, 193003, 193004, 193005, 193006, 193007, 193008, 193009, 193010, 193011, 193012, 193013, 193014, 193015, 193016, 193017, 193018, 193019],
+  "training_seeds": [1, 2, 3],
+  "regions": 6,
+  "immediate_buy_samples": 140,
+  "paired_7_day_buy_samples": 321,
+  "paired_contexts": ["natural", "worksite_no_input", "worksite_with_fiber", "authorized_work_at_site"],
+  "positive_immediate_utility_samples": 0,
+  "household_funded_immediate_samples": 0,
+  "paired_buy_beats_hold_samples": 0,
+  "all_invariants": true,
+  "max_utility_accounting_residual": 1.3322676295501878e-15,
+  "audit_output": "build/m5-v26-economic-inventory-valuation-training-seeds/audit.json",
+  "audit_sha256": "B49F00A7D6E7A7AA8EEC1660CADC71205E0271719D740A8890969A116B97EF63",
+  "source_sha256": {
+    "ai/evaluation/realm_economic_inventory_valuation_audit_v11.py": "481BEA80FA6FE18EF599A4240F584B7C0C34D60E0A85DEA2C95E417E1F0ED2DE",
+    "ai/evaluation/realm_coplay_v11.py": "C69F61DB25C6701C3C9A26EA90782115FF42548F92B62BB7DACA260B1B3C5482",
+    "ai/training/realm_coplay_env_v11.py": "E5F5EAC75F2E9D04E284B3F934B84E6EE14D4E487AD31580B12EE4C026F21AA0"
+  },
+  "checks": {
+    "python_compile": "pass",
+    "realm_coplay_v11_checks": "28 passed"
+  },
+  "review": {
+    "self_review": true,
+    "independent_review": false,
+    "reward_changed": false,
+    "model_promoted": false
+  },
+  "limits": [
+    "The 7-day pairs start at curriculum reset states; they do not represent all evolved rollout states.",
+    "Positive Buy reward averages in the v23 full rollout remain unexplained by this reset-state audit."
+  ]
+}

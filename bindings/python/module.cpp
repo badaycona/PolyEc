@@ -1,4 +1,5 @@
 #include "polyec/trade.hpp"
+#include "polyec/realm.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
@@ -80,6 +81,16 @@ PYBIND11_MODULE(polyec_env,m) {
 #endif
     m.attr("OBS")=kObservation;m.attr("ACTIONS")=kActions;m.attr("STATE")=kState;
     m.attr("SCHEMA")="trade-v1";m.attr("REWARD")="reference-wealth-gamma1-terminal-cash-v1";
+    py::list capabilityCatalog;
+    for(const auto& definition:kCapabilityCatalog){
+        py::dict row;row["id"]=static_cast<unsigned>(definition.id);row["key"]=definition.key;
+        row["unit"]=definition.unit;row["minimum"]=definition.minimum;row["maximum"]=definition.maximum;
+        row["owner"]=definition.owner;row["scenario_configurable"]=definition.scenario_configurable;
+        row["always_active"]=definition.always_active;
+        row["disabled_value"]=definition.disabled_value;
+        capabilityCatalog.append(std::move(row));
+    }
+    m.attr("CAPABILITY_CATALOG")=std::move(capabilityCatalog);
     py::class_<TradeWorld>(m,"TradeWorld")
         .def(py::init<uint64_t,int,int>(),py::arg("seed")=1,py::arg("regions")=6,py::arg("horizon")=64)
         .def("reset",&TradeWorld::reset,py::arg("seed"),py::arg("regions")=6,py::arg("horizon")=64)

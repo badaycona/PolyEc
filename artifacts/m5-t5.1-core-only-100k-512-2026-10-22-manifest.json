@@ -1,0 +1,46 @@
+{
+  "baseline_head": "working-tree",
+  "build": "Windows MSVC Release; POLYEC_ENABLE_REALM_PHASE_PROFILE=ON",
+  "workload": {
+    "population": 100000,
+    "complex_actors": 512,
+    "seed": 37,
+    "days": 31,
+    "regions": 7
+  },
+  "result": "core-only diagnostic; no AI inference, renderer, save/load",
+  "files": [
+    {
+      "path": "core/benchmarks/realm_core_benchmark.cpp",
+      "sha256": "789198c9dd99e9d63ddcb1ce094e6c9f9ea2ba650bf4ad57fa845f93d13fba1f"
+    },
+    {
+      "path": "core/CMakeLists.txt",
+      "sha256": "d1179f8dbc7484c2185a583cea53b431f4e08ea1e65ca9ba37ff604db535490a"
+    },
+    {
+      "path": "docs/design/M5-T5.1-core-only-profile-plan.md",
+      "sha256": "7e5252b4c77f4502944f36513b881ae6d4fd4ead1d4f3ce0656dec46a2a6ec17"
+    },
+    {
+      "path": "docs/reports/M5-T5.1-core-only-100k-512-evidence-2026-10-22.md",
+      "sha256": "486027ca80bbb7677508b94eec41cc25a084f38308bdf5b9d1db7fd49b4ebbdf"
+    },
+    {
+      "path": "docs/CURRENT_TASK.md",
+      "sha256": "e5ce810ecf88f304294f92870c687484179a7ec00ed0031b11c72c58817b943c"
+    },
+    {
+      "path": "docs/DEVELOPMENT_HISTORY.md",
+      "sha256": "07926ffcb89350b906b5cd606d0552e3fa503bc05f4db4f3d11e3abeac3c3d8f"
+    },
+    {
+      "path": "build/m5-phase-runtime/core/Release/polyec_realm_core_benchmark.exe",
+      "sha256": "a48797ca0b1ea5d738d7b452ef62408486a470ff2f5f56f6450ab90966504bd3"
+    },
+    {
+      "path": "artifacts/m5-t5.1-core-only-100k-512-2026-10-22.json",
+      "sha256": "5468b1c334e5ff284344c046f3c20fb88ef2cbaf3d0e642027243ba7b11634b4"
+    }
+  ]
+}

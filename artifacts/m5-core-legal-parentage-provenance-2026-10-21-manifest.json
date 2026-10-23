@@ -1,0 +1,34 @@
+{
+  "task": "M5 core legal parentage provenance",
+  "date": "2026-10-21",
+  "status": "current in-progress feature completed; handoff prepared; M5 remains open",
+  "checks": {
+    "build": "Release manager and Realm targets built successfully",
+    "manager": "polyec_manager_tests.exe passed",
+    "realm": "polyec_realm_tests.exe passed: 20634 checks; profile A 10000 persons, 19743 sparse edges, 90 days",
+    "full_ctest": "not run",
+    "python": "not run on schema25",
+    "gdext": "not run on schema25",
+    "godot": "not run on schema25",
+    "review": "Codex self-review only"
+  },
+  "limitations": [
+    "schema24 parentage migration directly tested; no per-schema parentage fixtures for schema7-23",
+    "realm-v11 Godot model bundle missing per prior CURRENT_TASK status",
+    "shared working tree contains unrelated modified and untracked work; hashes below cover whole files and do not attribute all file changes to this feature"
+  ],
+  "sha256": {
+    "docs/handoff/M5-session-handoff-2026-10-21.md": "bf16af085cf85989d66d61e6faa483f4a074291558fd8226ac26933b381dec4f",
+    "core/include/polyec/managers/estate_manager.hpp": "4d9010f58145f14272b8ced89eaab36a23ae5d79d62f0e037ee929da51a8f789",
+    "docs/reports/M5-core-legal-parentage-provenance-evidence-2026-10-21.md": "aaa7f347e9c1995230c70b94eddc842cc61b2213c383369415a510ee6c28d97d",
+    "docs/DEVELOPMENT_HISTORY.md": "8ea3e190a8cebed90c37b47717577bce639bd5abeecbfbc3f6b24205cc786a86",
+    "core/src/realm.cpp": "1a17fbffb28d800069fc0e8324c78bc63d298c295fcbec7758b15d00bd5ac621",
+    "docs/CURRENT_TASK.md": "f50dfcb9eeb569f0ebd3db8e118642ba6ad8cc765b3f6e59eb11b40c0cc6f07c",
+    "core/tests/test_managers.cpp": "90b847e18475fd7fd931d1c3716d1322cd0a546f5a70cb4f04dc5622ef8aecac",
+    "core/include/polyec/schedule_section_codec.hpp": "ed2a78986d715e90f74d2078036c629cd40a3d9abbc7df0fb4c999103f902927",
+    "core/include/polyec/realm.hpp": "85a39db1eb050d7cb11cee6880f631b15008e10a054bea0c9d75e88261b55970",
+    "docs/design/M5-core-legal-parentage-provenance-plan.md": "771512f6e506f5fd8d51e12032d012bca794c66c9fdafdaaef4d7d6bde03096d",
+    "core/include/polyec/parentage_section_codec.hpp": "91288d0c79af070e7eec8cf263ba7a7ed9045c0245ec2e4bab218af693b7690a",
+    "core/tests/test_realm.cpp": "89a8d93ed8f35aa014868068891f0b3abaec695e16ad3a516e6318d3ce0b233b"
+  }
+}

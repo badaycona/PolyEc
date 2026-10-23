@@ -1,0 +1,55 @@
+{
+  "warm_start": null,
+  "imitation": false,
+  "family": "civilian",
+  "schema": "realm-v7",
+  "model_contract": "realm-household-fund-goods27-v1",
+  "reward": "normalized-utility-potential-v6",
+  "partners": "civilian Work/Study; governance/economic uniform legal, training-only",
+  "algorithm": "recurrent PPO gamma1 GAE.95",
+  "lr": 0.0003,
+  "optimizer": "Adam eps1e-5 reset on warm start",
+  "clip": 0.2,
+  "epochs": 3,
+  "entropy_coef": 0.01,
+  "rollout_steps": 64,
+  "bptt_steps": 16,
+  "envs": 32,
+  "torch": "2.5.1+cpu",
+  "metric": "(terminal utility-opening utility)/max(1,abs(opening utility))",
+  "death_terminal": true,
+  "critic_reset_on_warm_start": true,
+  "horizon_decisions": 128,
+  "world_workers": 4,
+  "noninferiority_margin": 0.05,
+  "seeds": [
+    1,
+    2,
+    3
+  ],
+  "train_seed_min": 4294967296,
+  "validation": [
+    14000,
+    14031
+  ],
+  "test": [
+    160000,
+    160099
+  ],
+  "budget_seconds_per_seed": 120,
+  "updates": 80,
+  "decision_days": 30,
+  "gate": "baseline noninferiority margin0.05 normalized utility; initial improvement lowerCI>0; full R2/R3 separate",
+  "sha256": "c0f34f6c21857f8b313dd2f7cdcd2e9060d88638b1286e7cfda945ce2b31bbac",
+  "selected_seed": 1,
+  "trained_with_rl": true,
+  "observation": 992,
+  "actions": 72,
+  "hidden": 64,
+  "normalizer": "clamp[-10,10]",
+  "full_R1_pass": false,
+  "quality": {
+    "initial_improvement": true,
+    "baseline_noninferiority": true
+  }
+}

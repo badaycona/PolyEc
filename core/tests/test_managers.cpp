@@ -4,8 +4,11 @@
 // production payroll — Realm::payroll delegates to FinanceManager::payroll and
 // the full-realm behavior is covered by realm_tests.
 #include "polyec/managers/employment_manager.hpp"
+#include "polyec/managers/estate_manager.hpp"
+#include "polyec/estate_section_codec.hpp"
 #include "polyec/managers/finance_manager.hpp"
 #include "polyec/managers/household_index.hpp"
+#include "polyec/managers/peerage_succession_manager.hpp"
 #include "polyec/managers/project_manager.hpp"
 
 #include <cstdint>
@@ -13,19 +16,33 @@
 #include <cstdlib>
 #include <limits>
 #include <stdexcept>
+#include <sstream>
 #include <string>
 #include <type_traits>
 #include <vector>
 
 using polyec::EmploymentManager;
+using polyec::EstateManager;
+using polyec::EstateDeathPlan;
+using polyec::EstateBeneficiaryTier;
+using polyec::EstateCase;
+using polyec::Edge;
 using polyec::Family;
+using polyec::Establishment;
+using polyec::EstablishmentOwnerKind;
+using polyec::LandHolding;
+using polyec::LandUseRight;
+using polyec::Loan;
 using polyec::FinanceManager;
 using polyec::HouseholdIndex;
+using polyec::PayrollBatchGroup;
+using polyec::PayrollBatchPlan;
 using polyec::PayrollPlan;
 using polyec::Person;
 using polyec::Project;
 using polyec::ProjectManager;
 using polyec::Province;
+using polyec::RelationKind;
 
 namespace {
 
@@ -33,6 +50,10 @@ namespace {
 // FinanceManager::prepare (friend) can construct a plan.
 static_assert(!std::is_default_constructible_v<PayrollPlan>,
               "PayrollPlan must not be default constructible by callers");
+static_assert(!std::is_default_constructible_v<PayrollBatchPlan>,
+              "PayrollBatchPlan must not be default constructible by callers");
+static_assert(!std::is_default_constructible_v<EstateDeathPlan>,
+              "EstateDeathPlan must not be default constructible by callers");
 
 int failures = 0;
 
@@ -79,6 +100,15 @@ void test_transfer() {
     threw = false;
     try { FinanceManager::transfer(a, b, -1); } catch (const std::logic_error &) { threw = true; }
     check(threw && a == 6 && b == 4, "negative transfer throws without mutation");
+    a=5;b=std::numeric_limits<int64_t>::max()-1;threw=false;
+    try{FinanceManager::transfer(a,b,2);}catch(const std::overflow_error&){threw=true;}
+    check(threw&&a==5&&b==std::numeric_limits<int64_t>::max()-1,"destination overflow rejects before debiting source");
+    b=-1;threw=false;
+    try{FinanceManager::transfer(a,b,1);}catch(const std::logic_error&){threw=true;}
+    check(threw&&a==5&&b==-1,"negative destination rejects without mutation");
+    a=std::numeric_limits<int64_t>::max();
+    FinanceManager::transfer(a,a,1);
+    check(a==std::numeric_limits<int64_t>::max(),"self-transfer at maximum balance is a no-op");
 }
 
 void test_payroll_private_firm() {
@@ -641,6 +671,109 @@ void test_payroll_wrapper_matches_prepare_apply() {
           "mixed-claim wrapper accounts firm/treasury/receipts");
 }
 
+// A staged batch must simulate every group against one overlay, in order.
+void test_batch_matches_sequential_groups() {
+    World staged, sequential;
+    std::vector<PayrollBatchGroup> groups{
+        {0, true, {{1, 120}, {2, 80}}},
+        {0, true, {{1, 60}, {3, 40}}},
+        {1, false, {{4, 30}}},
+    };
+    auto plan = FinanceManager::prepare_batch(3, groups, staged.people, staged.provinces);
+    check(plan.claim_count() == 5, "batch claim count matches concatenated groups");
+    check(plan.claim_id(0) == 1 && plan.claim_region(0) == 0 && plan.claim_public(0),
+          "batch claim accessors preserve group order");
+    check(plan.claim_id(4) == 4 && plan.claim_region(4) == 1 && !plan.claim_public(4),
+          "batch final claim accessors");
+    FinanceManager::apply_batch(plan, 3, staged.people, staged.provinces);
+    for (const auto &group : groups)
+        FinanceManager::payroll(3, group.region, group.public_employer, group.claims,
+                                sequential.people, sequential.provinces);
+    bool same = staged.money() == sequential.money();
+    for (size_t i = 0; i < staged.people.size(); ++i)
+        same = same && staged.people[i].cash == sequential.people[i].cash &&
+               staged.people[i].tax_remainder == sequential.people[i].tax_remainder;
+    for (size_t i = 0; i < staged.provinces.size(); ++i)
+        same = same && staged.provinces[i].firm == sequential.provinces[i].firm &&
+               staged.provinces[i].treasury == sequential.provinces[i].treasury &&
+               staged.provinces[i].tax_receipts == sequential.provinces[i].tax_receipts;
+    check(same, "batch overlay equals sequential prepare+apply exactly");
+    check(staged.money() == 2000, "batch conserves total money");
+}
+
+void test_batch_shared_underfunding_pro_rata() {
+    World staged;
+    staged.provinces[0].firm = 30;
+    std::vector<PayrollBatchGroup> groups{
+        {0, false, {{1, 20}}},
+        {0, false, {{2, 20}}},
+    };
+    auto plan = FinanceManager::prepare_batch(0, groups, staged.people, staged.provinces);
+    check(plan.paid(0) == 20 && plan.paid(1) == 10,
+          "later underfunded group sees the running overlay balance");
+    FinanceManager::apply_batch(plan, 0, staged.people, staged.provinces);
+    check(staged.people[0].cash == 18 && staged.people[1].cash == 9 &&
+          staged.provinces[0].firm == 0,
+          "batch underfunding is a successful net payment");
+    check(staged.money() == 1030, "batch underfunding conserves money");
+}
+
+void test_batch_apply_is_atomic_after_stale_read() {
+    World w;
+    std::vector<PayrollBatchGroup> groups{
+        {0, true, {{1, 20}}},
+        {0, true, {{2, 20}}},
+    };
+    auto plan = FinanceManager::prepare_batch(0, groups, w.people, w.provinces);
+    const auto people_before = w.people;
+    const auto provinces_before = w.provinces;
+    w.people[1].cash = 7; // stale second recipient
+    const auto stale_people = w.people;
+    const auto stale_provinces = w.provinces;
+    bool threw = false;
+    try {
+        FinanceManager::apply_batch(plan, 0, w.people, w.provinces);
+    } catch (const std::logic_error &) {
+        threw = true;
+    }
+    bool unchanged = threw && w.people.size() == stale_people.size() &&
+                     w.provinces.size() == stale_provinces.size();
+    for (size_t i = 0; unchanged && i < w.people.size(); ++i)
+        unchanged = w.people[i].cash == stale_people[i].cash &&
+                    w.people[i].tax_remainder == stale_people[i].tax_remainder;
+    for (size_t i = 0; unchanged && i < w.provinces.size(); ++i)
+        unchanged = w.provinces[i].firm == stale_provinces[i].firm &&
+                    w.provinces[i].treasury == stale_provinces[i].treasury &&
+                    w.provinces[i].tax_receipts == stale_provinces[i].tax_receipts;
+    check(unchanged, "stale batch read rejects without writing any group");
+    check(people_before[0].cash == 0 && provinces_before[0].treasury == 1000,
+          "batch prepare itself mutated nothing");
+}
+
+void test_batch_prepare_failure_leaves_inputs_unchanged() {
+    World w;
+    const auto people_before = w.people;
+    const auto provinces_before = w.provinces;
+    std::vector<PayrollBatchGroup> groups{
+        {0, false, {{1, 20}}},
+        {0, false, {{9999, 20}}},
+    };
+    bool threw = false;
+    try {
+        FinanceManager::prepare_batch(0, groups, w.people, w.provinces);
+    } catch (const std::out_of_range &) {
+        threw = true;
+    }
+    bool unchanged = threw && w.people.size() == people_before.size() &&
+                     w.provinces.size() == provinces_before.size();
+    for (size_t i = 0; unchanged && i < w.people.size(); ++i)
+        unchanged = w.people[i].cash == people_before[i].cash;
+    for (size_t i = 0; unchanged && i < w.provinces.size(); ++i)
+        unchanged = w.provinces[i].firm == provinces_before[i].firm &&
+                    w.provinces[i].treasury == provinces_before[i].treasury;
+    check(unchanged, "second-group prepare failure leaves every live input unchanged");
+}
+
 void test_employment_boundaries() {
     World w;
     auto &v = w.provinces[0];
@@ -712,12 +845,12 @@ void test_employment_boundaries() {
     v.school = 40;
     v.treasury = 1000;
     EmploymentManager::start_work(worker, w.provinces, 0, 0, 30);
-    check(worker.job == 0 && worker.job_kind == 0 && worker.busy_until == 30,
+    check(worker.work_assignment.job == 0 && worker.work_assignment.job_kind == 0 && worker.busy_until == 30,
           "worker assignment fields");
     check(v.employed == 1 && v.teachers == 0, "worker counters");
 
     EmploymentManager::start_work(teacher, w.provinces, 0, 0, 30);
-    check(teacher.job == 0 && teacher.job_kind == 1 && teacher.busy_until == 30,
+    check(teacher.work_assignment.job == 0 && teacher.work_assignment.job_kind == 1 && teacher.busy_until == 30,
           "teacher assignment fields");
     check(v.employed == 2 && v.teachers == 1, "teacher counters");
     check(EmploymentManager::has_active_work(teacher, 30) &&
@@ -727,29 +860,29 @@ void test_employment_boundaries() {
     Person switcher = worker;
     switcher.age_days = 18 * 365;
     switcher.skill = 20;
-    switcher.job = 0;
-    switcher.job_kind = 0;
+    switcher.work_assignment.job = 0;
+    switcher.work_assignment.job_kind = 0;
     switcher.busy_until = 5;
     v.employed = 1;
     v.teachers = 0;
     EmploymentManager::start_work(switcher, w.provinces, 6, 0, 30);
-    check(switcher.job_kind == 1 && v.employed == 1 && v.teachers == 1,
+    check(switcher.work_assignment.job_kind == 1 && v.employed == 1 && v.teachers == 1,
           "worker-to-teacher switch clears and reaccounts counters");
 
     v.employed = 3;
     v.teachers = 2;
     Person expired;
-    expired.job = 0;
-    expired.job_kind = 1;
+    expired.work_assignment.job = 0;
+    expired.work_assignment.job_kind = 1;
     expired.busy_until = 5;
     EmploymentManager::clear_work(expired, v);
-    check(expired.job == -1 && v.employed == 2 && v.teachers == 1,
+    check(expired.work_assignment.job == -1 && v.employed == 2 && v.teachers == 1,
           "expired assignment still decrements legacy counters");
     v.employed = 0;
     v.teachers = 0;
     Person expired_again;
-    expired_again.job = 0;
-    expired_again.job_kind = 1;
+    expired_again.work_assignment.job = 0;
+    expired_again.work_assignment.job_kind = 1;
     EmploymentManager::clear_work(expired_again, v);
     check(v.employed == 0 && v.teachers == 0,
           "legacy counter clear clamps at zero");
@@ -761,7 +894,7 @@ void test_employment_boundaries() {
     full.skill = 10;
     check(!EmploymentManager::can_start_work(full, v, 0, 30),
           "full worker capacity rejects a new worker");
-    full.job = 0;
+    full.work_assignment.job = 0;
     check(EmploymentManager::can_start_work(full, v, 0, 30),
           "an assigned worker may renew at full capacity");
 
@@ -775,7 +908,7 @@ void test_employment_boundaries() {
         EmploymentManager::start_work(overflow, w.provinces,
                                       std::numeric_limits<int>::max(), 0, 1);
     } catch (const std::overflow_error &) { threw = true; }
-    check(threw && overflow.job == overflow_before.job &&
+    check(threw && overflow.work_assignment.job == overflow_before.work_assignment.job &&
           overflow.busy_until == overflow_before.busy_until &&
           v.employed == 0 && v.teachers == 0,
           "work day overflow rejects without mutation");
@@ -785,21 +918,21 @@ void test_employment_daily_helpers() {
     World w;
     auto &v = w.provinces[0];
     Person worker;
-    worker.job = 0;
-    worker.job_kind = 0;
+    worker.work_assignment.job = 0;
+    worker.work_assignment.job_kind = 0;
     worker.busy_until = 10;
     worker.skill = 50;
     check(EmploymentManager::account_day(worker, v, 10) == 0 &&
           v.employed == 1 && v.teachers == 0,
           "day accounting counts an inclusive active worker");
-    worker.job_kind = 1;
+    worker.work_assignment.job_kind = 1;
     worker.busy_until = 20;
     check(EmploymentManager::account_day(worker, v, 11) == 1 &&
           v.employed == 2 && v.teachers == 1 &&
           v.teacher_skill_sum == 50,
           "day accounting counts teacher skill");
     check(EmploymentManager::account_day(worker, v, 21) == -1 &&
-          worker.job == -1 && v.employed == 2 && v.teachers == 1,
+          worker.work_assignment.job == -1 && v.employed == 2 && v.teachers == 1,
           "expired work is cleared without touching today's counters");
     v.employed = 9;
     v.teachers = 8;
@@ -818,8 +951,8 @@ void test_employment_appointment_and_office() {
     auto &p = w.people[0];
     p.region = 0;
     p.cash = 0;
-    p.job = 0;
-    p.job_kind = 1;
+    p.work_assignment.job = 0;
+    p.work_assignment.job_kind = 1;
     p.busy_until = 10;
     p.school_days = 4;
     p.candidate = true;
@@ -828,13 +961,13 @@ void test_employment_appointment_and_office() {
     EmploymentManager::appoint(p, w.provinces, v.treasury, 1, 0);
     check(v.treasury == 980 && p.cash == 20 && w.money() == total,
           "appointment fee is conserved and paid");
-    check(p.office && p.hired_by == 1 && p.family == Family::Governance &&
-          !p.taxing_authority,
+    check(p.office_appointment.office && p.office_appointment.hired_by == 1 && p.family == Family::Governance &&
+           !p.taxing_authority,
           "appointment installs a restricted office");
-    check(p.job == -1 && p.busy_until == 0 && p.school_days == 0 &&
+    check(p.work_assignment.job == -1 && p.busy_until == 0 && p.school_days == 0 &&
           !p.candidate,
           "appointment clears prior work and candidacy");
-    check(p.salary_due == 30 && p.office_notice == 30,
+    check(p.office_appointment.salary_due == 30 && p.office_appointment.office_notice == 30,
           "appointment timers use day 0");
     check(v.employed == 2 && v.teachers == 1,
           "appointment clears the selected worker counters");
@@ -843,23 +976,23 @@ void test_employment_appointment_and_office() {
           "resignation opens on the notice day");
 
     EmploymentManager::resign(p);
-    check(!p.office && p.hired_by == 0 && p.family == Family::Civilian,
+    check(!p.office_appointment.office && p.office_appointment.hired_by == 0 && p.family == Family::Civilian,
           "resignation ends the office");
-    check(p.salary_due == 30 && p.office_notice == 30,
+    check(p.office_appointment.salary_due == 30 && p.office_appointment.office_notice == 30,
           "resignation leaves timers stale");
 
-    p.office = true;
-    p.hired_by = 1;
+    p.office_appointment.office = true;
+    p.office_appointment.hired_by = 1;
     p.family = Family::Governance;
     EmploymentManager::end_office(p);
-    check(!p.office && p.hired_by == 0 && p.family == Family::Civilian,
+    check(!p.office_appointment.office && p.office_appointment.hired_by == 0 && p.family == Family::Civilian,
           "failed salary uses the same office exit");
-    check(p.salary_due == 30 && p.office_notice == 30,
+    check(p.office_appointment.salary_due == 30 && p.office_appointment.office_notice == 30,
           "failed salary leaves timers stale");
 
     Person q;
     q.region = 0;
-    q.job = -1;
+    q.work_assignment.job = -1;
     const auto q_before = q;
     int64_t low = 19;
     const int employed_before = v.employed;
@@ -867,8 +1000,8 @@ void test_employment_appointment_and_office() {
     bool threw = false;
     try { EmploymentManager::appoint(q, w.provinces, low, 1, 0); }
     catch (const std::logic_error &) { threw = true; }
-    check(threw && q.cash == q_before.cash && !q.office &&
-          q.hired_by == 0 && low == 19 &&
+    check(threw && q.cash == q_before.cash && !q.office_appointment.office &&
+          q.office_appointment.hired_by == 0 && low == 19 &&
           v.employed == employed_before && v.teachers == teachers_before,
           "unfunded appointment rejects before mutation");
 
@@ -880,8 +1013,8 @@ void test_employment_appointment_and_office() {
     threw = false;
     try { EmploymentManager::appoint(rich, w.provinces, funded, 1, 0); }
     catch (const std::overflow_error &) { threw = true; }
-    check(threw && rich.cash == rich_before.cash && !rich.office &&
-          rich.hired_by == 0 && funded == 1000,
+    check(threw && rich.cash == rich_before.cash && !rich.office_appointment.office &&
+          rich.office_appointment.hired_by == 0 && funded == 1000,
           "appointment cash overflow rejects before mutation");
 
     Person late;
@@ -893,8 +1026,8 @@ void test_employment_appointment_and_office() {
         EmploymentManager::appoint(late, w.provinces, day_funded, 1,
                                    std::numeric_limits<int>::max());
     } catch (const std::overflow_error &) { threw = true; }
-    check(threw && late.cash == late_before.cash && !late.office &&
-          late.hired_by == 0 && day_funded == 1000,
+    check(threw && late.cash == late_before.cash && !late.office_appointment.office &&
+          late.office_appointment.hired_by == 0 && day_funded == 1000,
           "appointment day overflow rejects before mutation");
 
     Person idle;
@@ -902,8 +1035,8 @@ void test_employment_appointment_and_office() {
     threw = false;
     try { EmploymentManager::resign(idle); }
     catch (const std::logic_error &) { threw = true; }
-    check(threw && idle.cash == idle_before.cash && !idle.office &&
-          idle.hired_by == 0,
+    check(threw && idle.cash == idle_before.cash && !idle.office_appointment.office &&
+          idle.office_appointment.hired_by == 0,
           "resignation without office rejects without mutation");
 }
 
@@ -958,19 +1091,49 @@ void test_employment_appointment_preflight() {
 
 void test_household_index() {
     std::vector<Person> people(4);
-    people[0].id = 1; people[0].household = 1;
-    people[1].id = 2; people[1].household = 1;
-    people[2].id = 3; people[2].household = 7;
-    people[3].id = 4; people[3].household = 1;
+    people[0].id = 1; people[0].household_membership.household_id = 1;
+    people[1].id = 2; people[1].household_membership.household_id = 1;
+    people[2].id = 3; people[2].household_membership.household_id = 7;
+    people[3].id = 4; people[3].household_membership.household_id = 1;
     auto idx = HouseholdIndex::build(people);
     check(idx.size() == 2, "household index has two labels");
     check(idx[1] == std::vector<uint64_t>({1, 2, 4}), "members sorted ascending");
     check(idx[7] == std::vector<uint64_t>({3}), "single-member household");
     // Zero label must throw, never silently skip (parity with index_household).
-    people[2].household = 0;
+    people[2].household_membership.household_id = 0;
     bool threw = false;
     try { HouseholdIndex::build(people); } catch (const std::logic_error &) { threw = true; }
     check(threw, "zero household label throws (no silent skip)");
+
+    std::vector<Person> family(52);
+    for (size_t i = 0; i < family.size(); ++i) {
+        family[i].id = i + 1;
+        family[i].household_membership.household_id = 15;
+    }
+    family[14].age_days = 17 * 365; // Household head is not yet an adult.
+    family[15].age_days = 5 * 365;  // Minor whose derived guardian is queried.
+    family[16].age_days = 40 * 365;
+    family[51].age_days = 40 * 365;
+    const std::unordered_map<uint64_t, std::vector<uint64_t>> family_index{{15, {15, 16, 17, 52}}};
+    check(HouseholdIndex::guardian(family, family_index, family[15]) == 17,
+          "equal-age guardian tie selects the lowest member ID");
+    check(HouseholdIndex::authority(family, family_index, 15) == 17,
+          "equal-age authority tie selects the lowest member ID");
+    family[16].alive = false;
+    check(HouseholdIndex::guardian(family, family_index, family[15]) == 52 &&
+              HouseholdIndex::authority(family, family_index, 15) == 52,
+          "guardian and authority reselect the next living adult");
+    family[51].alive = false;
+    check(HouseholdIndex::guardian(family, family_index, family[15]) == 0 &&
+              HouseholdIndex::authority(family, family_index, 15) == 0,
+          "household with no living adult has no derived guardian or authority");
+    family[14].age_days = 18 * 365;
+    check(HouseholdIndex::guardian(family, family_index, family[15]) == 15 &&
+              HouseholdIndex::authority(family, family_index, 15) == 15,
+          "adult household head becomes authority and can guard a minor");
+    family[15].age_days = 18 * 365;
+    check(HouseholdIndex::guardian(family, family_index, family[15]) == 0,
+          "adult does not have a derived guardian");
 }
 
 void test_project_manager() {
@@ -987,7 +1150,707 @@ void test_project_manager() {
     check(ProjectManager::active_projects_count({}, 1, 2) == 0, "empty projects is zero");
 }
 
+std::vector<Establishment> payroll_sites(int64_t first=100,int64_t second=50){
+    std::vector<Establishment> sites(2);
+    sites[0].id=10;sites[0].owner_id=1;sites[0].cash=first;
+    sites[1].id=20;sites[1].owner_id=2;sites[1].cash=second;
+    return sites;
+}
+
+void test_site_payroll_hand_calculated(){
+    World w;w.provinces[0].treasury=100;auto sites=payroll_sites();
+    const int64_t opening=w.money()+150;
+    const std::vector<PayrollBatchGroup> groups{{0,false,{{1,80},{2,80}},10},{0,false,{{2,60},{3,40}},20}};
+    const auto plan=FinanceManager::prepare_batch(1,groups,w.people,w.provinces,sites);
+    check(sites[0].cash==100&&sites[1].cash==50&&w.people[0].cash==0&&w.provinces[0].treasury==100,"site payroll prepare is pure");
+    check(plan.establishment_count()==2&&plan.claim_establishment(0)==10&&plan.claim_establishment(3)==20,"opaque payroll plan retains stable site source IDs");
+    check(plan.paid(0)==50&&plan.paid(1)==50&&plan.paid(2)==30&&plan.paid(3)==20,"site budgets allocate 50/50 then 30/20 gross");
+    check(plan.tax(0)==5&&plan.tax(1)==5&&plan.tax(2)==3&&plan.tax(3)==2,"site payroll shares the exact tax calculation");
+    FinanceManager::apply_batch(plan,1,w.people,w.provinces,sites);
+    check(sites[0].cash==0&&sites[1].cash==0&&w.provinces[0].firm==1000,"site payroll debits its accounts without spending Province firm");
+    check(w.people[0].cash==45&&w.people[1].cash==72&&w.people[2].cash==18,"multiple sites sharing a recipient accumulate exact net pay");
+    check(w.provinces[0].treasury==115&&w.provinces[0].tax_receipts==15,"site taxes reach Province once");
+    check(w.money()+sites[0].cash+sites[1].cash==opening,"site payroll conserves money across every source");
+    bool threw=false;try{FinanceManager::apply_batch(plan,1,w.people,w.provinces,sites);}catch(const std::logic_error&){threw=true;}
+    check(threw&&w.people[1].cash==72,"applying the same site plan twice rejects before mutation");
+}
+
+void test_site_payroll_shared_sources_and_tax_remainder(){
+    {
+        World w;auto sites=payroll_sites(100,0);
+        const std::vector<PayrollBatchGroup> groups{{0,false,{{1,80}},10},{0,false,{{2,40}},10}};
+        const auto plan=FinanceManager::prepare_batch(1,groups,w.people,w.provinces,sites);
+        check(plan.establishment_count()==1&&plan.paid(0)==80&&plan.paid(1)==20,"repeated site groups cannot spend the same budget twice");
+        FinanceManager::apply_batch(plan,1,w.people,w.provinces,sites);
+        check(sites[0].cash==0&&w.people[0].cash==72&&w.people[1].cash==18,"shared underfunded source pays exactly its initial cash");
+    }
+    {
+        World w;auto sites=payroll_sites(6,6);
+        const std::vector<PayrollBatchGroup> groups{{0,false,{{1,6}},10},{0,false,{{1,6}},20}};
+        const auto plan=FinanceManager::prepare_batch(1,groups,w.people,w.provinces,sites);
+        FinanceManager::apply_batch(plan,1,w.people,w.provinces,sites);
+        check(w.people[0].cash==11&&w.people[0].tax_remainder==20&&w.provinces[0].tax_receipts==1,"recipient tax remainder carries across employers");
+    }
+    {
+        World w;w.provinces[0].treasury=100;auto sites=payroll_sites(50,0);
+        const std::vector<PayrollBatchGroup> groups{{0,false,{{1,100}}},{0,false,{{1,80}},10},{0,true,{{2,200}}}};
+        const auto plan=FinanceManager::prepare_batch(1,groups,w.people,w.provinces,sites);
+        check(plan.paid(0)==100&&plan.paid(1)==50&&plan.paid(2)==115,"mixed sources preserve explicit ordering and earlier tax availability");
+        FinanceManager::apply_batch(plan,1,w.people,w.provinces,sites);
+        check(w.provinces[0].firm==900&&w.provinces[0].treasury==11&&sites[0].cash==0,"mixed Province and site accounts commit exact final balances");
+        check(w.people[0].cash==135&&w.people[1].cash==104&&w.people[1].tax_remainder==50,"mixed payroll gives hand-calculated net pay and tax remainder");
+        check(w.money()+sites[0].cash+sites[1].cash==1150,"mixed-source payroll conserves every monetary account");
+    }
+}
+
+void test_site_payroll_stale_read_set_atomicity(){
+    for(int mutation=0;mutation<5;++mutation){
+        World w;auto sites=payroll_sites();
+        const std::vector<PayrollBatchGroup> groups{{0,false,{{1,80}},10},{0,false,{{2,40}},20}};
+        const auto plan=FinanceManager::prepare_batch(1,groups,w.people,w.provinces,sites);
+        switch(mutation){
+        case 0:++sites[1].cash;break;
+        case 1:sites[1].region=1;break;
+        case 2:sites[1].id=21;break;
+        case 3:std::swap(sites[0],sites[1]);break;
+        case 4:sites.pop_back();break;
+        }
+        const auto expected=sites;const auto money=w.money();bool threw=false;
+        try{FinanceManager::apply_batch(plan,1,w.people,w.provinces,sites);}catch(const std::logic_error&){threw=true;}
+        bool unchanged=sites.size()==expected.size();
+        for(size_t i=0;i<sites.size();++i)unchanged=unchanged&&sites[i].id==expected[i].id&&sites[i].region==expected[i].region&&sites[i].cash==expected[i].cash;
+        check(threw&&unchanged&&w.money()==money&&w.people[0].cash==0&&w.people[1].cash==0&&w.provinces[0].tax_receipts==0,"late stale site read rejects the complete batch before any payout");
+    }
+    World w;auto sites=payroll_sites();
+    const auto plan=FinanceManager::prepare_batch(1,{{0,false,{{1,1}},10}},w.people,w.provinces,sites);
+    bool threw=false;try{FinanceManager::apply_batch(plan,1,w.people,w.provinces);}catch(const std::out_of_range&){threw=true;}
+    check(threw&&w.people[0].cash==0&&sites[0].cash==100,"legacy apply overload cannot silently omit site accounts");
+}
+
+void test_site_payroll_prepare_failure_is_pure(){
+    {
+        World w;auto sites=payroll_sites(-1,0);
+        const auto zero=FinanceManager::prepare_batch(1,{{0,false,{{1,0}},10}},w.people,w.provinces,sites);
+        check(zero.paid(0)==0&&zero.claim_establishment(0)==10&&zero.establishment_count()==0,"zero-due site claims validate identity without reading an unused account balance");
+        bool threw=false;
+        try{FinanceManager::prepare_batch(1,{{0,false,{{1,0}},999}},w.people,w.provinces,sites);}catch(const std::out_of_range&){threw=true;}
+        check(threw,"zero-due site claims still reject an unknown source ID");
+    }
+    for(int bad=0;bad<4;++bad){
+        World w;auto sites=payroll_sites();
+        std::vector<PayrollBatchGroup> groups{{0,false,{{1,80}},10},{0,false,{{2,40}},20}};
+        if(bad==0)sites[1].cash=-1;
+        if(bad==1)groups[1].establishment_id=999;
+        if(bad==2)groups[1].region=1;
+        if(bad==3)groups[1].public_employer=true;
+        const auto before=sites;const auto money=w.money();bool threw=false;
+        try{FinanceManager::prepare_batch(1,groups,w.people,w.provinces,sites);}catch(const std::logic_error&){threw=true;}
+        check(threw&&sites[0].cash==before[0].cash&&sites[1].cash==before[1].cash&&w.money()==money&&w.people[0].cash==0,"invalid later site group leaves all live inputs unchanged");
+    }
+    {
+        World w;auto sites=payroll_sites(std::numeric_limits<int64_t>::max(),0);bool threw=false;
+        try{FinanceManager::prepare_batch(1,{{0,false,{{1,std::numeric_limits<int64_t>::max()}},10}},w.people,w.provinces,sites);}catch(const std::overflow_error&){threw=true;}
+        check(threw&&sites[0].cash==std::numeric_limits<int64_t>::max()&&w.people[0].cash==0,"site pro-rata multiplication overflow rejects without mutation");
+    }
+    {
+        World w;w.people[0].cash=std::numeric_limits<int64_t>::max();auto sites=payroll_sites(1,0);bool threw=false;
+        try{FinanceManager::prepare_batch(1,{{0,false,{{1,1}},10}},w.people,w.provinces,sites);}catch(const std::overflow_error&){threw=true;}
+        check(threw&&sites[0].cash==1&&w.people[0].cash==std::numeric_limits<int64_t>::max(),"site recipient cash overflow rejects without mutation");
+    }
+}
+
 } // namespace
+
+void test_estate_death_settlement() {
+    Person person;
+    person.id = 7;
+    person.region = 1;
+    person.alive = true;
+    person.cash = 100;
+    person.inventory[0] = 4;
+    person.inventory[3] = 6;
+    int64_t estate = 500;
+    int64_t legacy_unassigned = 500;
+    std::vector<EstateCase> cases;
+    std::vector<Establishment> sites;
+    Establishment ownSite; ownSite.id = 20; ownSite.owner_kind = EstablishmentOwnerKind::Person; ownSite.owner_id = 7; sites.push_back(ownSite);
+    Establishment publicSite; publicSite.id = 21; publicSite.owner_kind = EstablishmentOwnerKind::Public; publicSite.owner_id = 7; sites.push_back(publicSite);
+    std::vector<LandHolding> holdings{{30, 1, 2, 7}, {31, 1, 1, 8}};
+    std::vector<LandUseRight> rights{{40, 30, 8, 7}, {41, 31, 7, 8}};
+    std::vector<Loan> loans{{50, 7, 0, 1, 10, 2, 0, false, false, 0}, {51, 8, 0, 1, 10, 0, 10, false, false, 0}};
+
+    const auto initialPerson = person;
+    const auto plan = EstateManager::prepare_death(person, 12, estate, legacy_unassigned, cases, sites, holdings, rights, loans);
+    check(person.alive == initialPerson.alive && person.cash == initialPerson.cash &&
+          person.inventory == initialPerson.inventory && cases.empty() && estate == 500,
+          "estate prepare is pure");
+    EstateManager::apply_death(plan, person, estate, cases);
+    check(!person.alive && person.cash == 0 &&
+          std::all_of(person.inventory.begin(), person.inventory.end(), [](int64_t value) { return value == 0; }),
+          "estate apply retires person-owned cash and goods");
+    check(estate == 600 && cases.size() == 1 && cases[0].decedent == 7 && cases[0].opened_day == 12 &&
+          cases[0].cash == 100 && cases[0].inventory == initialPerson.inventory &&
+          cases[0].establishments == std::vector<uint64_t>{20} && cases[0].land_holdings == std::vector<uint64_t>{30} &&
+          cases[0].land_use_rights == std::vector<uint64_t>{40} && cases[0].loans == std::vector<uint64_t>{50},
+          "estate case captures liquid assets and owned record references");
+    check(initialPerson.cash + 500 == estate + person.cash && cases[0].inventory == initialPerson.inventory,
+          "estate death preserves cash accounting and each good in its case");
+    {
+        std::stringstream encoded;
+        polyec::detail::write_estate_section(encoded, legacy_unassigned, cases);
+        int64_t decodedLegacy = 0;
+        const auto decoded = polyec::detail::read_estate_section(encoded, 10, 3, 100, decodedLegacy);
+        check(decodedLegacy == legacy_unassigned && decoded == cases,
+              "estate case and legacy balance roundtrip through schema section");
+    }
+    bool threw = false;
+    try { EstateManager::apply_death(plan, person, estate, cases); }
+    catch (const std::logic_error&) { threw = true; }
+    check(threw && !person.alive && estate == 600 && cases.size() == 1,
+          "estate death plan cannot apply twice");
+
+    Person stalePerson = initialPerson;
+    int64_t staleEstate = 500;
+    std::vector<EstateCase> staleCases;
+    const auto stalePlan = EstateManager::prepare_death(stalePerson, 12, staleEstate, 500, staleCases, sites, holdings, rights, loans);
+    staleCases.push_back(EstateCase{.decedent=2});
+    threw = false;
+    try { EstateManager::apply_death(stalePlan, stalePerson, staleEstate, staleCases); }
+    catch (const std::logic_error&) { threw = true; }
+    check(threw && stalePerson.alive && stalePerson.cash == initialPerson.cash && staleEstate == 500 && staleCases.size() == 1,
+          "stale estate case read set rejects before any settlement write");
+
+    stalePerson = initialPerson;
+    staleEstate = 500;
+    staleCases.clear();
+    const auto personPlan = EstateManager::prepare_death(stalePerson, 12, staleEstate, 500, staleCases, sites, holdings, rights, loans);
+    stalePerson.cash -= 1;
+    threw = false;
+    try { EstateManager::apply_death(personPlan, stalePerson, staleEstate, staleCases); }
+    catch (const std::logic_error&) { threw = true; }
+    check(threw && stalePerson.alive && stalePerson.cash == initialPerson.cash - 1 &&
+          staleEstate == 500 && staleCases.empty(),
+          "stale Person read set rejects before any settlement write");
+
+    stalePerson = initialPerson;
+    staleEstate = 500;
+    const auto estatePlan = EstateManager::prepare_death(stalePerson, 12, staleEstate, 500, staleCases, sites, holdings, rights, loans);
+    staleEstate += 1;
+    threw = false;
+    try { EstateManager::apply_death(estatePlan, stalePerson, staleEstate, staleCases); }
+    catch (const std::logic_error&) { threw = true; }
+    check(threw && stalePerson.alive && stalePerson.cash == initialPerson.cash &&
+          staleEstate == 501 && staleCases.empty(),
+          "stale estate balance rejects before any settlement write");
+
+    Person overflowPerson = initialPerson;
+    int64_t overflowEstate = std::numeric_limits<int64_t>::max();
+    threw = false;
+    try { (void)EstateManager::prepare_death(overflowPerson, 12, overflowEstate, overflowEstate, {}, sites, holdings, rights, loans); }
+    catch (const std::overflow_error&) { threw = true; }
+    check(threw && overflowPerson.alive && overflowPerson.cash == initialPerson.cash &&
+          overflowPerson.inventory == initialPerson.inventory && overflowEstate == std::numeric_limits<int64_t>::max(),
+          "estate balance overflow rejects pure preparation");
+
+    Person invalidPerson = initialPerson;
+    invalidPerson.inventory[2] = -1;
+    threw = false;
+    try { (void)EstateManager::prepare_death(invalidPerson, 12, 500, 500, {}, sites, holdings, rights, loans); }
+    catch (const std::logic_error&) { threw = true; }
+    check(threw && invalidPerson.alive && invalidPerson.cash == initialPerson.cash,
+          "invalid estate goods reject pure preparation");
+
+    {
+        std::vector<Person> people(4);
+        for (size_t i=0;i<people.size();++i) { people[i].id=i+1; people[i].cash=2; people[i].alive=true; }
+        people[2].alive=false;
+        std::vector<Edge> relations{{1,3,RelationKind::ParentChild,true},
+                                    {2,3,RelationKind::ParentChild,true}};
+        std::vector<EstateCase> distributionCases{{.decedent=3,.cash=11}};
+        distributionCases[0].inventory[1]=5;distributionCases[0].inventory[2]=2;
+        std::vector<Province> distributionProvinces(1);
+        int64_t distributionEstate=11, publicFund=0;
+        const auto distribution=EstateManager::prepare_distribution(3,distributionEstate,publicFund,
+            distributionCases,people,relations,distributionProvinces);
+        check(distributionEstate==11&&people[0].cash==2&&people[1].cash==2&&distributionCases[0].cash==11,
+              "estate distribution preparation is pure");
+        EstateManager::apply_distribution(distribution,distributionEstate,publicFund,distributionCases,people,distributionProvinces);
+        check(people[0].cash==8&&people[1].cash==7&&people[2].cash==2&&distributionCases[0].cash==0&&
+              people[0].inventory[1]==3&&people[1].inventory[1]==2&&people[0].inventory[2]==1&&
+              people[1].inventory[2]==1&&distributionCases[0].inventory[1]==0&&distributionCases[0].inventory[2]==0&&
+              distributionEstate==0&&publicFund==0,
+              "cash and each estate good split evenly with indivisible units going to the lowest ID");
+        check(people[0].cash+people[1].cash+people[2].cash+distributionEstate==17,
+              "beneficiary cash transfer conserves money");
+        check(people[0].inventory[1]+people[1].inventory[1]+distributionCases[0].inventory[1]==5&&
+              people[0].inventory[2]+people[1].inventory[2]+distributionCases[0].inventory[2]==2,
+              "beneficiary goods transfer conserves each product quantity");
+    }
+    {
+        std::vector<Person> people(3);
+        for (size_t i = 0; i < people.size(); ++i) { people[i].id = i + 1; people[i].alive = i != 1; }
+        people[0].age_days = 10 * 365;
+        std::vector<Edge> relations{{1, 2, RelationKind::Spouse, false}};
+        std::vector<EstateCase> cases{{.decedent = 2, .land_holdings = {4}, .land_use_rights = {5}}};
+        std::vector<Loan> loans;
+        std::vector<LandHolding> holdings{{4, 0, 3, 2}};
+        std::vector<LandUseRight> rights{{5, 4, 3, 2}};
+        std::vector<Province> provinces(1);
+        int64_t estate = 0, public_fund = 0;
+        const auto plan = EstateManager::prepare_distribution(2, estate, public_fund, cases, people,
+            relations, provinces, loans, holdings, rights);
+        check(holdings[0].title_holder == 2 && rights[0].grantor == 2 && cases[0].land_holdings.size() == 1,
+              "estate title preparation leaves live ownership unchanged");
+        EstateManager::apply_distribution(plan, estate, public_fund, cases, people, provinces, loans, holdings, rights);
+        check(holdings[0].title_holder == 1 && rights[0].grantor == 1 && rights[0].grantee == 3 &&
+              cases[0].land_holdings.empty() && cases[0].land_use_rights.empty() && people[0].age_days < 18 * 365,
+              "sole minor heir receives the title while its existing use permission continues");
+    }
+    {
+        std::vector<Person> people(4);
+        for (size_t i = 0; i < people.size(); ++i) { people[i].id = i + 1; people[i].alive = i != 2; }
+        std::vector<Edge> relations{{1, 3, RelationKind::ParentChild, true}, {2, 3, RelationKind::ParentChild, true}};
+        std::vector<EstateCase> cases{{.decedent = 3, .establishments = {9}, .land_holdings = {4}}};
+        Establishment site; site.id = 9; site.owner_kind = EstablishmentOwnerKind::Person; site.owner_id = 3;
+        std::vector<Establishment> establishments{site};
+        std::vector<LandHolding> holdings{{4, 0, 1, 3}};
+        std::vector<Loan> loans;
+        std::vector<LandUseRight> rights;
+        std::vector<Province> provinces(1);
+        int64_t estate = 0, public_fund = 0;
+        const auto plan = EstateManager::prepare_distribution(3, estate, public_fund, cases, people,
+            relations, provinces, loans, establishments, holdings, rights);
+        EstateManager::apply_distribution(plan, estate, public_fund, cases, people, provinces, loans, establishments, holdings, rights);
+        check(holdings[0].title_holder == 3 && cases[0].land_holdings == std::vector<uint64_t>{4}&&
+              establishments[0].owner_id == 3 && cases[0].establishments == std::vector<uint64_t>{9},
+              "land and workshop remain in the estate when several children would need an ownership split");
+    }
+    {
+        std::vector<Person> people(2); people[0].id = 1; people[0].alive = false; people[1].id = 2; people[1].alive = false;
+        std::vector<EstateCase> cases{{.decedent = 2, .establishments = {9}, .land_holdings = {4}}};
+        Establishment site; site.id = 9; site.owner_kind = EstablishmentOwnerKind::Person; site.owner_id = 2;
+        std::vector<Establishment> establishments{site};
+        std::vector<Loan> loans;
+        std::vector<LandHolding> holdings{{4, 0, 1, 2}};
+        std::vector<LandUseRight> rights;
+        std::vector<Province> provinces(1);
+        int64_t estate = 0, public_fund = 0;
+        const auto plan = EstateManager::prepare_distribution(2, estate, public_fund, cases, people,
+            {}, provinces, loans, establishments, holdings, rights);
+        EstateManager::apply_distribution(plan, estate, public_fund, cases, people, provinces, loans, establishments, holdings, rights);
+        check(holdings[0].title_holder == 2 && cases[0].land_holdings == std::vector<uint64_t>{4}&&
+              establishments[0].owner_id == 2 && cases[0].establishments == std::vector<uint64_t>{9},
+              "land and workshop remain in the estate when no heir is alive");
+    }
+    {
+        std::vector<Person> people(2); people[0].id = 1; people[0].alive = true; people[1].id = 2; people[1].alive = false;
+        std::vector<Edge> relations{{1, 2, RelationKind::Spouse, false}};
+        std::vector<EstateCase> cases{{.decedent = 2, .establishments = {9}, .land_holdings = {4}, .loans = {6}}};
+        std::vector<Loan> loans{{6, 2, 0, 10, 5, 0, 0, false, false, 0}};
+        Establishment site; site.id = 9; site.owner_kind = EstablishmentOwnerKind::Person; site.owner_id = 2;
+        std::vector<Establishment> establishments{site};
+        std::vector<LandHolding> holdings{{4, 0, 1, 2}};
+        std::vector<LandUseRight> rights;
+        std::vector<Province> provinces(1);
+        int64_t estate = 0, public_fund = 0;
+        const auto plan = EstateManager::prepare_distribution(2, estate, public_fund, cases, people,
+            relations, provinces, loans, establishments, holdings, rights);
+        EstateManager::apply_distribution(plan, estate, public_fund, cases, people, provinces, loans, establishments, holdings, rights);
+        check(holdings[0].title_holder == 2 && cases[0].land_holdings == std::vector<uint64_t>{4}&&
+              establishments[0].owner_id == 2 && cases[0].establishments == std::vector<uint64_t>{9},
+              "land and workshop remain in the estate while an unpaid claim remains");
+    }
+    {
+        std::vector<Person> people(2); people[0].id = 1; people[0].alive = true; people[0].cash = 10;
+        people[1].id = 2; people[1].alive = false;
+        std::vector<Edge> relations{{1, 2, RelationKind::Spouse, false}};
+        std::vector<EstateCase> cases{{.decedent = 2, .cash = 5, .land_holdings = {4}}};
+        std::vector<Loan> loans;
+        std::vector<LandHolding> holdings{{4, 0, 1, 2}};
+        std::vector<LandUseRight> rights;
+        std::vector<Province> provinces(1);
+        int64_t estate = 5, public_fund = 0;
+        const auto plan = EstateManager::prepare_distribution(2, estate, public_fund, cases, people,
+            relations, provinces, loans, holdings, rights);
+        holdings[0].area_units++;
+        bool rejected = false;
+        try { EstateManager::apply_distribution(plan, estate, public_fund, cases, people, provinces, loans, holdings, rights); }
+        catch (const std::logic_error&) { rejected = true; }
+        check(rejected && people[0].cash == 10 && estate == 5 && cases[0].cash == 5 &&
+              holdings[0].title_holder == 2,
+              "stale land title rejects the full estate transfer before cash or inventory changes");
+    }
+    {
+        std::vector<Person> people(3); people[0].id = 1; people[0].alive = true; people[0].age_days = 30 * 365;
+        people[1].id = 2; people[1].alive = false; people[2].id = 3; people[2].alive = true;
+        std::vector<Edge> relations{{1, 2, RelationKind::Spouse, false}};
+        std::vector<EstateCase> cases{{.decedent = 2, .establishments = {8}}};
+        Establishment site; site.id = 8; site.region = 0; site.owner_kind = EstablishmentOwnerKind::Person;
+        site.owner_id = 2; site.industry = polyec::EstablishmentIndustry::ClothWorkshop; site.capacity = 9; site.cash = 17;
+        site.stock[static_cast<size_t>(polyec::GoodId::Fiber)] = 6; site.last_production_day = 12;
+        site.processed_work_units.emplace(3, 7); site.work_authorizations[3].push_back({160, 960});
+        site.authorization_window_count = 1; site.work_pay.legacy_credit[3] = 5; site.work_pay.paid_units[3] = 2;
+        site.work_pay.remainders[3] = 1;
+        const auto original = site;
+        std::vector<Establishment> establishments{site};
+        std::vector<Loan> loans;
+        std::vector<LandHolding> holdings;
+        std::vector<LandUseRight> rights;
+        std::vector<Province> provinces(1);
+        int64_t estate = 0, public_fund = 0;
+        const auto plan = EstateManager::prepare_distribution(2, estate, public_fund, cases, people,
+            relations, provinces, loans, establishments, holdings, rights);
+        EstateManager::apply_distribution(plan, estate, public_fund, cases, people, provinces,
+            loans, establishments, holdings, rights);
+        const auto& transferred = establishments.front();
+        check(transferred.owner_kind == original.owner_kind && transferred.owner_id == 1 && transferred.region == original.region &&
+              transferred.industry == original.industry && transferred.capacity == original.capacity && transferred.cash == original.cash &&
+              transferred.stock == original.stock && transferred.last_production_day == original.last_production_day &&
+              transferred.processed_work_units == original.processed_work_units &&
+              transferred.work_authorizations == original.work_authorizations &&
+              transferred.authorization_window_count == original.authorization_window_count &&
+              transferred.work_pay.legacy_credit == original.work_pay.legacy_credit &&
+              transferred.work_pay.paid_units == original.work_pay.paid_units &&
+              transferred.work_pay.remainders == original.work_pay.remainders && cases[0].establishments.empty(),
+              "sole adult heir receives the personal workshop without changing its funds, goods, workers or production record");
+    }
+    {
+        std::vector<Person> people(2); people[0].id = 1; people[0].alive = true; people[0].age_days = 17 * 365;
+        people[1].id = 2; people[1].alive = false;
+        std::vector<Edge> relations{{1, 2, RelationKind::Spouse, false}};
+        std::vector<EstateCase> cases{{.decedent = 2, .establishments = {8}}};
+        Establishment site; site.id = 8; site.owner_kind = EstablishmentOwnerKind::Person; site.owner_id = 2;
+        std::vector<Establishment> establishments{site};
+        std::vector<Loan> loans; std::vector<LandHolding> holdings; std::vector<LandUseRight> rights;
+        std::vector<Province> provinces(1); int64_t estate = 0, public_fund = 0;
+        const auto plan = EstateManager::prepare_distribution(2, estate, public_fund, cases, people,
+            relations, provinces, loans, establishments, holdings, rights);
+        EstateManager::apply_distribution(plan, estate, public_fund, cases, people, provinces,
+            loans, establishments, holdings, rights);
+        check(establishments[0].owner_id == 2 && cases[0].establishments == std::vector<uint64_t>{8},
+              "personal workshop stays in the estate until a minor's management authority is defined");
+    }
+    {
+        std::vector<Person> people(2); people[0].id = 1; people[0].alive = true; people[0].age_days = 30 * 365;
+        people[0].cash = 10; people[1].id = 2; people[1].alive = false;
+        std::vector<Edge> relations{{1, 2, RelationKind::Spouse, false}};
+        std::vector<EstateCase> cases{{.decedent = 2, .cash = 5, .establishments = {8}}};
+        Establishment site; site.id = 8; site.owner_kind = EstablishmentOwnerKind::Person; site.owner_id = 2;
+        std::vector<Establishment> establishments{site};
+        std::vector<Loan> loans; std::vector<LandHolding> holdings; std::vector<LandUseRight> rights;
+        std::vector<Province> provinces(1); int64_t estate = 5, public_fund = 0;
+        const auto plan = EstateManager::prepare_distribution(2, estate, public_fund, cases, people,
+            relations, provinces, loans, establishments, holdings, rights);
+        establishments[0].owner_id = 3;
+        bool rejected = false;
+        try { EstateManager::apply_distribution(plan, estate, public_fund, cases, people, provinces,
+            loans, establishments, holdings, rights); }
+        catch (const std::logic_error&) { rejected = true; }
+        check(rejected && people[0].cash == 10 && estate == 5 && cases[0].cash == 5 &&
+              establishments[0].owner_id == 3,
+              "stale workshop owner rejects the full estate transfer before cash changes");
+    }
+    {
+        std::vector<Person> people(2); people[0].id=1; people[0].alive=true; people[1].id=2; people[1].alive=false;
+        std::vector<EstateCase> distributionCases{{.decedent=2,.cash=9}};
+        distributionCases[0].inventory[1]=7;
+        std::vector<Province> distributionProvinces(1);distributionProvinces[0].stock[1]=2;
+        int64_t distributionEstate=13, publicFund=4;
+        const auto distribution=EstateManager::prepare_distribution(2,distributionEstate,publicFund,
+            distributionCases,people,{},distributionProvinces);
+        EstateManager::apply_distribution(distribution,distributionEstate,publicFund,distributionCases,people,distributionProvinces);
+        check(distributionEstate==13&&publicFund==13&&distributionCases[0].cash==0&&distributionCases[0].inventory[1]==0&&
+              people[0].cash==100&&distributionProvinces[0].stock[1]==9,
+              "unclaimed estate cash and goods enter the public ledgers without changing totals");
+    }
+    {
+        std::vector<Person> people(2); people[0].id=1; people[0].alive=true; people[1].id=2; people[1].alive=false;
+        people[0].cash=std::numeric_limits<int64_t>::max();
+        std::vector<EstateCase> distributionCases{{.decedent=2,.cash=1}};
+        std::vector<Province> distributionProvinces(1);
+        int64_t distributionEstate=1, publicFund=0;
+        bool distributionThrew=false;
+        try { (void)EstateManager::prepare_distribution(2,distributionEstate,publicFund,
+            distributionCases,people,{{1,2,RelationKind::Spouse,false}},distributionProvinces); }
+        catch (const std::overflow_error&) { distributionThrew=true; }
+        check(distributionThrew&&distributionEstate==1&&distributionCases[0].cash==1&&publicFund==0,
+              "recipient balance overflow rejects before estate mutation");
+    }
+    {
+        std::vector<Person> people(2); people[0].id=1; people[0].alive=true; people[1].id=2; people[1].alive=false;
+        people[0].inventory[1]=std::numeric_limits<int64_t>::max();
+        std::vector<EstateCase> distributionCases{{.decedent=2}};distributionCases[0].inventory[1]=1;
+        std::vector<Province> distributionProvinces(1);
+        int64_t distributionEstate=0, publicFund=0;
+        bool distributionThrew=false;
+        try { (void)EstateManager::prepare_distribution(2,distributionEstate,publicFund,
+            distributionCases,people,{{1,2,RelationKind::Spouse,false}},distributionProvinces); }
+        catch (const std::overflow_error&) { distributionThrew=true; }
+        check(distributionThrew&&distributionCases[0].inventory[1]==1&&
+              people[0].inventory[1]==std::numeric_limits<int64_t>::max(),
+              "recipient goods overflow rejects before estate mutation");
+    }
+    {
+        std::vector<Person> people(2); people[0].id=1; people[0].alive=true; people[0].cash=10;
+        people[1].id=2; people[1].alive=false;
+        std::vector<Edge> relations{{1,2,RelationKind::Spouse,false}};
+        std::vector<EstateCase> distributionCases{{.decedent=2,.cash=5}};
+        std::vector<Province> distributionProvinces(1);
+        int64_t distributionEstate=5, publicFund=0;
+        const auto distribution=EstateManager::prepare_distribution(2,distributionEstate,publicFund,
+            distributionCases,people,relations,distributionProvinces);
+        people[0].cash++;
+        bool distributionThrew=false;
+        try { EstateManager::apply_distribution(distribution,distributionEstate,publicFund,distributionCases,people,distributionProvinces); }
+        catch (const std::logic_error&) { distributionThrew=true; }
+        check(distributionThrew&&people[0].cash==11&&distributionEstate==5&&distributionCases[0].cash==5,
+              "stale beneficiary balance rejects before any estate distribution write");
+    }
+    {
+        std::vector<Person> people(2);people[0].id=1;people[0].alive=true;people[0].cash=10;
+        people[1].id=2;people[1].alive=false;
+        std::vector<EstateCase> distributionCases{{.decedent=2}};distributionCases[0].inventory[1]=5;
+        std::vector<Province> distributionProvinces(1);
+        const auto distribution=EstateManager::prepare_distribution(2,0,0,distributionCases,people,
+            {{1,2,RelationKind::Spouse,false}},distributionProvinces);
+        people[0].inventory[1]=1;
+        int64_t distributionEstate=0,publicFund=0;
+        bool distributionThrew=false;
+        try { EstateManager::apply_distribution(distribution,distributionEstate,publicFund,distributionCases,people,distributionProvinces); }
+        catch (const std::logic_error&) { distributionThrew=true; }
+        check(distributionThrew&&people[0].inventory[1]==1&&distributionCases[0].inventory[1]==5,
+              "stale beneficiary goods reject before any estate distribution write");
+    }
+    {
+        std::vector<Person> people(2);people[0].id=1;people[0].alive=true;people[1].id=2;people[1].alive=false;
+        std::vector<EstateCase> distributionCases{{.decedent=2}};distributionCases[0].inventory[1]=5;
+        std::vector<Province> distributionProvinces(1);distributionProvinces[0].stock[1]=4;
+        int64_t distributionEstate=0,publicFund=0;
+        const auto distribution=EstateManager::prepare_distribution(2,0,0,distributionCases,people,{},distributionProvinces);
+        distributionProvinces[0].stock[1]=5;
+        bool distributionThrew=false;
+        try { EstateManager::apply_distribution(distribution,distributionEstate,publicFund,distributionCases,people,distributionProvinces); }
+        catch (const std::logic_error&) { distributionThrew=true; }
+        check(distributionThrew&&distributionProvinces[0].stock[1]==5&&distributionCases[0].inventory[1]==5&&publicFund==0,
+              "stale public goods stock rejects before any estate distribution write");
+    }
+
+    {
+        std::vector<EstateCase> claimCases{{.decedent=7,.cash=100,.loans={50,51}}};
+        std::vector<Loan> claimLoans{{50,7,0,40,10,2,2,false,false,0},
+                                     {51,7,1,50,20,5,0,false,true,0}};
+        std::vector<Province> claimProvinces(2);
+        claimProvinces[0].firm=100;claimProvinces[1].firm=200;
+        int64_t claimEstate=100,claimCreditPool=300;
+        const auto claimPlan=EstateManager::prepare_cash_claims(7,claimEstate,0,claimCreditPool,
+            claimCases,claimLoans,claimProvinces);
+        check(claimEstate==100&&claimCases[0].cash==100&&claimLoans[0].paid==2&&
+              claimProvinces[0].firm==100&&claimCreditPool==300,
+              "estate cash claim preparation leaves all ledgers unchanged");
+        EstateManager::apply_cash_claims(claimPlan,claimEstate,0,claimCreditPool,claimCases,claimLoans,claimProvinces);
+        check(claimEstate==65&&claimCases[0].cash==65&&claimLoans[0].paid==12&&claimLoans[1].paid==25&&
+              claimProvinces[0].firm==110&&claimCreditPool==325,
+              "estate pays Province and royal-pool creditors in full from its own cash");
+        check(claimEstate==claimCases[0].cash&&claimEstate+claimProvinces[0].firm+
+              claimProvinces[1].firm+claimCreditPool==700,
+              "estate claim transfer conserves money across estate and creditor accounts");
+    }
+    {
+        std::vector<EstateCase> claimCases{{.decedent=7,.cash=20,.loans={50,51}}};
+        std::vector<Loan> claimLoans{{50,7,0,40,10,2,2,false,false,0},
+                                     {51,7,1,50,20,5,0,false,true,0}};
+        std::vector<Province> claimProvinces(2);
+        int64_t claimEstate=20,claimCreditPool=300;
+        const auto beforeCases=claimCases;const auto beforeLoans=claimLoans;
+        const auto beforeFirms=std::array<int64_t,2>{claimProvinces[0].firm,claimProvinces[1].firm};
+        const auto claimPlan=EstateManager::prepare_cash_claims(7,claimEstate,0,claimCreditPool,
+            claimCases,claimLoans,claimProvinces);
+        EstateManager::apply_cash_claims(claimPlan,claimEstate,0,claimCreditPool,claimCases,claimLoans,claimProvinces);
+        check(claimEstate==20&&claimCases==beforeCases&&claimLoans[0].paid==beforeLoans[0].paid&&
+              claimLoans[1].paid==beforeLoans[1].paid&&claimCreditPool==300&&
+              claimProvinces[0].firm==beforeFirms[0]&&claimProvinces[1].firm==beforeFirms[1],
+              "insufficient estate cash leaves every creditor and estate record unchanged");
+    }
+    {
+        std::vector<EstateCase> claimCases{{.decedent=7,.cash=100,.loans={50}}};
+        std::vector<Loan> claimLoans{{50,7,0,40,10,0,0,false,false,0}};
+        std::vector<Province> claimProvinces(1);
+        claimProvinces[0].firm=std::numeric_limits<int64_t>::max();
+        int64_t claimEstate=100,claimCreditPool=0;
+        bool claimThrew=false;
+        try { (void)EstateManager::prepare_cash_claims(7,claimEstate,0,claimCreditPool,
+            claimCases,claimLoans,claimProvinces); }
+        catch (const std::overflow_error&) { claimThrew=true; }
+        check(claimThrew&&claimEstate==100&&claimCases[0].cash==100&&claimLoans[0].paid==0,
+              "creditor account overflow rejects estate settlement before mutation");
+    }
+    {
+        std::vector<EstateCase> claimCases{{.decedent=7,.cash=100,.loans={50}}};
+        std::vector<Loan> claimLoans{{50,7,0,40,10,0,0,false,false,0}};
+        std::vector<Province> claimProvinces(1);
+        int64_t claimEstate=100,claimCreditPool=0;
+        const auto claimPlan=EstateManager::prepare_cash_claims(7,claimEstate,0,claimCreditPool,
+            claimCases,claimLoans,claimProvinces);
+        ++claimProvinces[0].firm;
+        bool claimThrew=false;
+        try { EstateManager::apply_cash_claims(claimPlan,claimEstate,0,claimCreditPool,
+            claimCases,claimLoans,claimProvinces); }
+        catch (const std::logic_error&) { claimThrew=true; }
+        check(claimThrew&&claimEstate==100&&claimCases[0].cash==100&&claimLoans[0].paid==0&&
+              claimCreditPool==0,
+              "stale creditor balance rejects before changing estate or loan rows");
+    }
+
+    std::vector<Person> kin(8);
+    for (size_t i = 0; i < kin.size(); ++i) { kin[i].id = i + 1; kin[i].alive = true; }
+    kin[0].alive = false;
+    kin[1].alive = false; // A deceased child does not block the next living tier.
+    const std::vector<Edge> family{
+        {2, 1, RelationKind::ParentChild, true}, {3, 1, RelationKind::ParentChild, true},
+        {1, 4, RelationKind::Spouse}, {1, 5, RelationKind::ParentChild, true},
+        {1, 6, RelationKind::ParentChild, true}, {7, 5, RelationKind::ParentChild, true},
+        {8, 5, RelationKind::ParentChild, true}
+    };
+    auto heirs = EstateManager::resolve_beneficiaries(1, kin, family);
+    check(heirs.tier == EstateBeneficiaryTier::Children && heirs.recipients == std::vector<uint64_t>{3},
+          "living direct children inherit before spouse, parents and siblings");
+    kin[2].alive = false;
+    heirs = EstateManager::resolve_beneficiaries(1, kin, family);
+    check(heirs.tier == EstateBeneficiaryTier::Spouse && heirs.recipients == std::vector<uint64_t>{4},
+          "spouse inherits when no direct child is living");
+    kin[3].alive = false;
+    heirs = EstateManager::resolve_beneficiaries(1, kin, family);
+    check(heirs.tier == EstateBeneficiaryTier::Parents && heirs.recipients == (std::vector<uint64_t>{5, 6}),
+          "living parents share before siblings in deterministic ID order");
+    kin[4].alive = false;
+    kin[5].alive = false;
+    heirs = EstateManager::resolve_beneficiaries(1, kin, family);
+    check(heirs.tier == EstateBeneficiaryTier::Siblings && heirs.recipients == (std::vector<uint64_t>{7, 8}),
+          "siblings are resolved through shared parent relationships");
+    kin[6].alive = false;
+    kin[7].alive = false;
+    heirs = EstateManager::resolve_beneficiaries(1, kin, family);
+    check(heirs.tier == EstateBeneficiaryTier::PublicEstate && heirs.recipients.empty(),
+          "no living kin selects the public estate tier without inventing a recipient");
+    const std::vector<Edge> unverified_household_edges{
+        {2, 1, RelationKind::ParentChild}, {3, 1, RelationKind::ParentChild},
+        {1, 5, RelationKind::ParentChild}, {7, 5, RelationKind::ParentChild},
+        {8, 5, RelationKind::ParentChild}, {1, 7, RelationKind::Sibling}
+    };
+    kin[0].alive=false;kin[1].alive=true;kin[2].alive=true;kin[4].alive=true;kin[6].alive=true;kin[7].alive=true;
+    heirs=EstateManager::resolve_beneficiaries(1,kin,unverified_household_edges);
+    check(heirs.tier==EstateBeneficiaryTier::PublicEstate&&heirs.recipients.empty(),
+          "unverified household parent and sibling edges cannot inherit");
+    threw = false;
+    try { (void)EstateManager::resolve_beneficiaries(9, kin, family); }
+    catch (const std::invalid_argument&) { threw = true; }
+    check(threw, "beneficiary resolution rejects unknown decedent ID");
+    kin[0].alive = true;
+    threw = false;
+    try { (void)EstateManager::resolve_beneficiaries(1, kin, family); }
+    catch (const std::invalid_argument&) { threw = true; }
+    check(threw, "beneficiary resolution rejects a living person");
+}
+
+void test_peerage_successor_resolution() {
+    using polyec::PeerageSuccessionManager;
+    using polyec::PeerageSuccessionState;
+
+    std::vector<Person> people(5);
+    for (size_t i = 0; i < people.size(); ++i) {
+        people[i].id = i + 1;
+        people[i].alive = true;
+    }
+    people[0].alive = false;
+    people[0].age_days = 60 * 365;
+    people[1].age_days = 17 * 365;
+    people[2].age_days = 16 * 365;
+    people[3].age_days = 55 * 365;
+    people[4].alive = false;
+    people[4].age_days = 65 * 365;
+    const std::vector<Edge> relations{
+        {2, 1, RelationKind::ParentChild, true},
+        {3, 1, RelationKind::ParentChild, true},
+        {4, 1, RelationKind::ParentChild, false},
+        {5, 1, RelationKind::ParentChild, true},
+    };
+
+    auto resolution = PeerageSuccessionManager::resolve_successor(1, people, relations);
+    check(resolution.state == PeerageSuccessionState::SuccessorSelected &&
+          resolution.successor_id == 2 && resolution.candidates.empty(),
+          "peerage selects the eldest living child with verified legal parentage");
+
+    resolution = PeerageSuccessionManager::resolve_successor(1, people,
+        {{2, 1, RelationKind::ParentChild, true}, {2, 1, RelationKind::ParentChild, true}});
+    check(resolution.state == PeerageSuccessionState::SuccessorSelected &&
+          resolution.successor_id == 2,
+          "duplicate parentage records do not turn one successor into an age tie");
+
+    people[2].age_days = 17 * 365;
+    resolution = PeerageSuccessionManager::resolve_successor(1, people, relations);
+    check(resolution.state == PeerageSuccessionState::RecognitionRequired &&
+          resolution.successor_id == 0 && resolution.candidates == std::vector<uint64_t>{2, 3},
+          "peerage age tie remains pending recognition with sorted candidates");
+
+    const std::vector<Edge> unverified{{4, 1, RelationKind::ParentChild, false}};
+    resolution = PeerageSuccessionManager::resolve_successor(1, people, unverified);
+    check(resolution.state == PeerageSuccessionState::RecognitionRequired &&
+          resolution.successor_id == 0 && resolution.candidates.empty(),
+          "no verified living child leaves peerage succession pending recognition");
+
+    resolution = PeerageSuccessionManager::resolve_successor(1, people,
+        {{1, 2, RelationKind::ParentChild, true}});
+    check(resolution.state == PeerageSuccessionState::RecognitionRequired &&
+          resolution.successor_id == 0 && resolution.candidates.empty(),
+          "peerage succession only follows child-to-parent relation edges");
+
+    bool threw = false;
+    try {
+        (void)PeerageSuccessionManager::resolve_successor(1, people,
+            {{99, 1, RelationKind::ParentChild, true}});
+    } catch (const std::invalid_argument&) {
+        threw = true;
+    }
+    check(threw, "peerage succession rejects invalid relationship IDs");
+
+    auto malformed_people = people;
+    malformed_people[1].id = 99;
+    threw = false;
+    try {
+        (void)PeerageSuccessionManager::resolve_successor(1, malformed_people, relations);
+    } catch (const std::invalid_argument&) {
+        threw = true;
+    }
+    check(threw, "peerage succession rejects non-canonical person IDs");
+
+    malformed_people = people;
+    malformed_people[1].age_days = -1;
+    threw = false;
+    try {
+        (void)PeerageSuccessionManager::resolve_successor(1, malformed_people, relations);
+    } catch (const std::invalid_argument&) {
+        threw = true;
+    }
+    check(threw, "peerage succession rejects negative person age");
+
+    threw = false;
+    try {
+        (void)PeerageSuccessionManager::resolve_successor(1, people,
+            {{2, 1, RelationKind::Sibling, true}});
+    } catch (const std::invalid_argument&) {
+        threw = true;
+    }
+    check(threw, "peerage succession rejects legal-parentage flag on a non-parent edge");
+
+    threw = false;
+    people[0].alive = true;
+    try {
+        (void)PeerageSuccessionManager::resolve_successor(1, people, relations);
+    } catch (const std::invalid_argument&) {
+        threw = true;
+    }
+    check(threw, "peerage succession rejects a living title holder");
+}
 
 int main() {
     test_transfer();
@@ -1007,12 +1870,22 @@ int main() {
     test_payroll_overflow_rejects();
     test_payroll_early_return_ordering();
     test_payroll_wrapper_matches_prepare_apply();
+    test_batch_matches_sequential_groups();
+    test_batch_shared_underfunding_pro_rata();
+    test_batch_apply_is_atomic_after_stale_read();
+    test_batch_prepare_failure_leaves_inputs_unchanged();
+    test_estate_death_settlement();
+    test_site_payroll_hand_calculated();
+    test_site_payroll_shared_sources_and_tax_remainder();
+    test_site_payroll_stale_read_set_atomicity();
+    test_site_payroll_prepare_failure_is_pure();
     test_employment_boundaries();
     test_employment_daily_helpers();
     test_employment_appointment_and_office();
     test_employment_appointment_preflight();
     test_household_index();
     test_project_manager();
+    test_peerage_successor_resolution();
     if (failures) {
         std::fprintf(stderr, "%d manager test failure(s)\n", failures);
         return 1;
@@ -1020,3 +1893,9 @@ int main() {
     std::printf("manager tests passed\n");
     return 0;
 }
+
+
+
+
+
+

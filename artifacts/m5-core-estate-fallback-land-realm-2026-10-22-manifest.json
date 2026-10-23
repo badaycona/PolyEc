@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-22",
+  "scope": "M5 estate fallback land-title retention and transfer through Realm",
+  "platform": "Windows",
+  "build_directory": "build/m5-core",
+  "target": "polyec_realm_tests",
+  "release": {
+    "build": "pass",
+    "direct_run": "pass",
+    "checks": 20716,
+    "profile": "A: 10000 persons, 19743 sparse relations, 90 days"
+  },
+  "debug": {
+    "build": "pass",
+    "direct_run": "pass",
+    "checks": 20716,
+    "profile": "A: 10000 persons, 19743 sparse relations, 90 days",
+    "executable_wall_seconds_approx": 219
+  },
+  "full_ctest": {
+    "release": "19/19 passed before recent test-only additions",
+    "debug": "19/19 passed before recent test-only additions"
+  },
+  "not_rerun": [
+    "Python",
+    "native",
+    "GDExtension",
+    "Godot"
+  ],
+  "files": [
+    "core/tests/test_realm.cpp",
+    "docs/design/M5-core-estate-fallback-land-realm-plan.md",
+    "docs/reports/M5-core-estate-fallback-land-realm-evidence-2026-10-22.md",
+    "docs/CURRENT_TASK.md",
+    "docs/DEVELOPMENT_HISTORY.md"
+  ],
+  "sha256": {
+    "core/tests/test_realm.cpp": "47a1766d8850328bf1cb9082cbf93b8fba4f92f56aa19c77a211f0247e3f08bd",
+    "docs/design/M5-core-estate-fallback-land-realm-plan.md": "c0553f0c76dfbe92cf6ed68c72d9fdf0b11da1e948f105a1abc770ba8e60dc3f",
+    "docs/reports/M5-core-estate-fallback-land-realm-evidence-2026-10-22.md": "0452bec7cdcff91c09db73c805b96b60842a976138e268923175110a3069d18c",
+    "docs/CURRENT_TASK.md": "d278309268623e89c3d398013fe8e1a658d798ec7d21186a52da3c25d3e9e74e",
+    "docs/DEVELOPMENT_HISTORY.md": "dda47a2bed51c3d0e4f3fa214040b32aeba2912c8a91970df85b928f817b63fc"
+  }
+}

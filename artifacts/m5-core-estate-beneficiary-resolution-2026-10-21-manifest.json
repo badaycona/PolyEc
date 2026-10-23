@@ -1,0 +1,20 @@
+{
+  "schema": "m5-core-estate-beneficiary-resolution-v1",
+  "date": "2026-10-21",
+  "scope": "Read-only resolution of the first living estate kinship tier",
+  "priority": ["children", "spouse", "parents", "siblings", "public_estate"],
+  "release_all_build": "pass",
+  "release_ctest": {"passed": 19, "total": 19, "elapsed_seconds": 950.24},
+  "release_manager_test_after_final_guard": "pass",
+  "debug_manager_test_after_final_guard": "pass",
+  "diff_check": "pass",
+  "source_sha256": {
+    "core/include/polyec/managers/estate_manager.hpp": "8EE1E30632367CA23ADE35AC8220626962C31FABEB16E7702AFD11A89CB8809D",
+    "core/tests/test_managers.cpp": "15476327C53DC8E833B89EA2A65559BAD2988EED5B80035FB02B05C6635AF658"
+  },
+  "review": {"self_review": true, "independent_review": false},
+  "limits": [
+    "No Realm death transition, asset transfer, debt payoff, public estate ledger, or save migration was added.",
+    "Debug full CTest and Python/native/Godot checks were not run."
+  ]
+}

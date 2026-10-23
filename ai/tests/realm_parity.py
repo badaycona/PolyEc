@@ -31,8 +31,13 @@ for role,family in enumerate(('governance','economic','civilian')):
             check(np.all(probs[mask<.5]==0),'invalid action probability')
             actions=logits.argmax(1).astype('int64');obs,mask,_,done,_=env.step(actions);hidden=memory*(~done)[:,None]
     check(not core.RealmNativePolicy().load(str(base/'missing.onnx')),'missing model fails closed')
-    invalid=np.zeros((1,512),dtype='float32');invalid[0,0]=np.nan
+    invalid=np.zeros((1,core.REALM_OBS),dtype='float32');invalid[0,0]=np.nan
     try:runtime.predict(invalid,np.zeros((1,64),dtype='float32'));raise AssertionError('NaN accepted')
     except RuntimeError:check(True,'NaN rejected')
     report['families'][family]={'max_abs_logits':maxima[0],'max_abs_memory':maxima[1],'batch_sizes':[1,3,32,64],'inference_p95_ms':float(np.percentile(times,95))}
 (a.models/'native-parity.json').write_text(json.dumps(report,indent=2));print(json.dumps(report,indent=2))
+
+
+
+
+

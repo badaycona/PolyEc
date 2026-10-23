@@ -1,0 +1,50 @@
+{
+  "source_checkpoint": "m5-work-authorization-4a52a99cdf02",
+  "engine_schema": 16,
+  "binding_sha256": "7b3f35c6c00d009ec9d7acfd8037da183e77b6dd70b5242d512456757c48b7a2",
+  "generator_sha256": "eaeab9a198568247c99841d913e02365d22f6223120d49eb1ae71f27714e5537",
+  "fixtures": [
+    {
+      "file": "codec-cs.save",
+      "sha256": "3ab29d68c6e8fbb15ff067dd0a66ad3c69b92862b04563dd9881d530fd93cf8e",
+      "fingerprint": 16780521883149340810,
+      "bundle": "test",
+      "note": "Actual v16 regional payroll; public site retains its one funded cash"
+    },
+    {
+      "file": "partial-site.save",
+      "sha256": "058e182ed50d1b36f645f948f453cd812565c978e0e33a540ca5e94aabda165a",
+      "fingerprint": 12543939258556808461,
+      "bundle": "migration-v16",
+      "note": "Actual v16 command/attendance/payroll"
+    },
+    {
+      "file": "split-paid.save",
+      "sha256": "32acd1018ae73f5553315e9471356f2eae4fa9d9a9ad5f9d0e49cf51744dbcce",
+      "fingerprint": 5871417650809270769,
+      "bundle": "migration-v16",
+      "note": "Actual v16 command/attendance/payroll"
+    },
+    {
+      "file": "legacy-debt.save",
+      "sha256": "cf0b206b3d69bde7c09bb5f78381a2e23d688e21ceffa0f57cfae743ec37d8cb",
+      "fingerprint": 13479517244525936211,
+      "bundle": "migration-v16",
+      "note": "Balanced firm-to-person test snapshot before actual v16 shortage payroll"
+    },
+    {
+      "file": "mixed-unassigned.save",
+      "sha256": "b63d141c8097264be930905b1aa1528d1cda98048a32f19100f33d600d440895",
+      "fingerprint": 16528198196786097890,
+      "bundle": "migration-v16",
+      "note": "Literal historical unassigned Work incl. future accepted shift; v16 reader validates, actual v16 payroll"
+    },
+    {
+      "file": "split-partial-money.save",
+      "sha256": "23dab6464301ec617ddc41800fb18b843dbb5f49fbb3bdb3ca878d0bf0f2d2ad",
+      "fingerprint": 5480417297471382020,
+      "bundle": "migration-v16",
+      "note": "Wage3, balanced shortage fixture, actual v16 gross1 payment"
+    }
+  ]
+}

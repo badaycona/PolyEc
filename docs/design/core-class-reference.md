@@ -2,6 +2,8 @@
 
 Ngày đối chiếu: 2026-10-19. Baseline Git: 6cc55ab, kèm thay đổi chưa commit trong checkout. Đây là tài liệu giải thích và đối chiếu thiết kế, không phải báo cáo nghiệm thu code.
 
+**Ghi chú cập nhật tài liệu:** các khái niệm tổng quát về composition, ownership và ranh giới Realm/Campaign đã được tổng hợp trong [DEVELOPER_GUIDE mục 2.3](../DEVELOPER_GUIDE.md#23-bieu-dien-doi-tuong-bang-cach-ghep-cac-thanh-phan). Danh mục class bên dưới vẫn là ảnh chụp ở baseline nêu trên; không dùng tên, trường hoặc trạng thái của nó như mô tả source hiện tại mà chưa đối chiếu lại code. Công việc và mức hoàn thành lấy từ [CURRENT_TASK](../CURRENT_TASK.md) cùng report tương ứng.
+
 Tài liệu bao phủ từng class, struct và enum khai báo trong core/include/polyec; bổ sung RealmRuntime, NativePolicy và PolicyOutput để giải thích chỗ nối với AI. Các lớp giao diện Godot, lớp chạy thí nghiệm trong native/lab và thư viện bên ngoài không thuộc danh mục core này. Kiểu phụ trợ nội bộ được ghi cùng lớp hoặc thuật toán sử dụng nó.
 
 **Cách đọc:** bắt đầu từ mục 1 để hiểu bức tranh chung; đọc mục 3 về Realm và mục 7 về Campaign; sau đó tìm hồ sơ của từng tên. Phần [thiết kế tổng quan](core-architecture-refactor.md) giải thích lý do refactor. [CURRENT_TASK](../CURRENT_TASK.md) xác định công việc nào đang thực sự được giao.
@@ -112,9 +114,9 @@ Nguồn: [realm.hpp](../../core/include/polyec/realm.hpp), [realm.cpp](../../cor
 | advance_ticks(ticks) | ticks không âm; không vượt H; ticks dương bị chặn nếu pause |
 | person(id) | id từ 1 đến N; sai thì ném lỗi, không trả một Person mặc định |
 | Đường legacy policy | candidates/mask/observation bị chặn khi timeline_contract đã bật |
-| Save | POLYEC_REALM_7, đúng bundle, dữ liệu không quá 256 MiB; parse tạm và kiểm trước thay live state |
+| Save | POLYEC_REALM_7–10, đúng bundle, dữ liệu không quá 256 MiB; Person-record, primary Province-record, Edge-record, Loan-primary-record, Project-primary-record, Fact-record, Knowledge-record, Proposal-primary-record, Proposal-court-extension-record, Loan-court-extension-record, Project-court-extension-record, Person-court-extension-record, Province-court-extension-record, Investigation-record, Court-scalars-record và ScheduleBook codecs đọc section riêng vào Realm tạm, Realm kiểm invariant toàn thế giới rồi mới thay live state |
 
-**Được làm:** nhận và kiểm lệnh, điều phối các bước ngày, sở hữu dữ liệu và kiểm bảo toàn. Hiện Realm còn trực tiếp chứa nhiều công thức, thao tác việc làm, save và tạo observation; đây là phần cần tách theo thiết kế.
+**Được làm:** nhận và kiểm lệnh, điều phối các bước ngày, sở hữu dữ liệu và kiểm bảo toàn. Phần save Person record và ScheduleBook đã có codec stateless riêng; Realm vẫn sở hữu dữ liệu, reindex và kiểm invariant toàn thế giới. Các công thức nghiệp vụ/save section khác chỉ tách khi có bounded plan phù hợp.
 
 **Không được làm:** chứa Godot Node, tự mua tài nguyên, tự chọn chiến lược thay policy, cho UI/Python sửa trực tiếp vector nội bộ hoặc tạo số dư chính thức thứ hai.
 
@@ -129,16 +131,16 @@ Nguồn: [realm.hpp](../../core/include/polyec/realm.hpp), [realm.cpp](../../cor
 | Trường | Ý nghĩa | Giá trị/điều kiện và mức kiểm hiện có |
 |---|---|---|
 | id | Mã người | id bằng vị trí trong people + 1; invariant kiểm |
-| household | Mã hộ hiện tại | 1..N; load/invariant kiểm. Là nhãn hộ, không phải số lượng thành viên |
+| household_membership.household_id | Nhãn hộ trong HouseholdMembership | 1..N; load/invariant kiểm. Đây là ID người sáng lập dùng làm nhãn hộ, không phải số lượng thành viên hay một Household sở hữu độc lập |
 | decisions, sampling | Số thứ tự lệnh và chỉ số lấy mẫu cá nhân | uint64; lịch có kiểm tràn; không suy mọi đường lệnh khác đã có cùng bảo vệ |
 | region | Địa bàn đang ở | 0..R; load/invariant kiểm |
 | age_days | Tuổi tính theo ngày | Bình thường không âm; invariant hiện chưa kiểm đủ miền tuổi |
 | health | Sức khỏe | Bình thường tối đa 100; có thể xuống 0/âm khi chết; invariant chỉ kiểm cận trên |
 | nutrition | Dinh dưỡng | 0..100; invariant kiểm |
 | skill | Kỹ năng | Đường tăng kỹ năng giới hạn 100; chưa có kiểm tổng quát 0..100 trong invariant |
-| job | Nơi gán việc | -1 là chưa gán; Work đặt bằng region. Không phải JobType hay ID một EmploymentContract |
-| job_kind | Loại việc thường | 0 lao động, 1 giáo viên; invariant kiểm 0..1 |
-| busy_until | Ngày kết thúc khoảng bận | Điều kiện chặn lệnh thường là lớn hơn ngày hiện tại; query việc dùng lớn hơn hoặc bằng |
+| work_assignment.job | Nơi gán việc trong WorkAssignment | -1 là chưa gán; Work đặt bằng region. WorkAssignment nhóm cặp giá trị legacy `job`/`job_kind`, chưa phải EmploymentContract; trường này không phải JobType hay ID EmploymentContract |
+| work_assignment.job_kind | Loại việc thường trong WorkAssignment | 0 lao động, 1 giáo viên; invariant kiểm 0..1 qua `work_assignment.job_kind` |
+| busy_until | Ngày kết thúc khoảng bận | Thuộc trực tiếp Person; điều kiện chặn lệnh thường là lớn hơn ngày hiện tại, query việc dùng lớn hơn hoặc bằng |
 | destination | Nơi đang đến | -1 là không đi; khi đi phải là địa bàn thật. Invariant chưa kiểm toàn bộ liên kết này |
 | goal | Mã mục tiêu | Khởi tạo và scenario dùng 0..2; invariant chưa kiểm miền này |
 | school_days | Số ngày học còn lại | Đường tạo dùng thời hạn dương rồi giảm về 0; chưa có invariant đầy đủ |
@@ -150,16 +152,17 @@ Nguồn: [realm.hpp](../../core/include/polyec/realm.hpp), [realm.cpp](../../cor
 | family | Nhóm vai trò policy | Governance/Economic/Civilian; load kiểm enum 0..2 |
 | stats | Sáu chỉ số | Xem hồ sơ Stats |
 | taxing_authority, sovereign | Quyền thu thuế, vai trò tối cao | bool; không phải mọi Governance đều có quyền này |
-| candidate, office, special_advisor | Được giới thiệu, đã bổ nhiệm, loại cố vấn | bool; không tự tương đương với EmploymentState |
-| hired_by | ID người bổ nhiệm | 0 là không có; read_court kiểm không vượt N |
-| salary_due, office_notice | Ngày trả lương chức vụ và mốc được từ chức | Ngày game; nguồn ghi/đọc là court extension |
+| candidate, special_advisor | Được giới thiệu, loại cố vấn | bool; thuộc trực tiếp Person; không tự tương đương với EmploymentState |
+| office_appointment.office | Đã bổ nhiệm | bool trong OfficeAppointment; không tự tương đương với EmploymentState |
+| office_appointment.hired_by | ID người bổ nhiệm | 0 là không có; read_court kiểm không vượt N |
+| office_appointment.salary_due, office_appointment.office_notice | Ngày trả lương chức vụ và mốc được từ chức | Ngày game trong OfficeAppointment; nguồn ghi/đọc là court extension |
 | last_decision_day | Ngày gần nhất đã ra quyết định | -1 ban đầu hoặc ngày game; dùng để không chọn cùng người lặp trong ngày |
 
 **Được chứa:** dữ liệu cá nhân và liên kết gọn. **Không được chứa:** toàn bộ Realm, model AI riêng, Godot Node riêng, quỹ hộ bị nhân bản hoặc logic quyết toán toàn nền kinh tế.
 
-**Điều kiện việc làm:** describe_job trước hết loại người chết; chức vụ hợp lệ theo ba trường office/hired_by/family được ưu tiên; nếu không, chỉ nhận work job khi job >= 0, busy_until >= ngày và job_kind đúng 0 hoặc 1. Không có descriptor thì None/Idle.
+**Điều kiện việc làm:** describe_job trước hết loại người chết; chức vụ hợp lệ theo `office_appointment.office`, `office_appointment.hired_by` và `family` được ưu tiên; nếu không, chỉ nhận work job khi `work_assignment.job >= 0`, `busy_until >= ngày` và `work_assignment.job_kind` đúng 0 hoặc 1. Không có descriptor thì None/Idle.
 
-**Quan hệ và giới hạn:** hộ được tra qua household và HouseholdIndex; guardian là query suy ra từ người lớn còn sống cùng hộ, chưa phải record Guardianship đầy đủ. organization hiện chỉ có mã và quỹ pilot, chưa phải một Organization hoàn chỉnh. Các trường bổ nhiệm được lưu qua write_court/read_court, dù khai báo trong Person.
+**Quan hệ và giới hạn:** hộ được tra qua `household_membership.household_id` và HouseholdIndex; số dư quỹ hộ nằm trong sổ thưa Realm-owned, không nằm trong Person hay index. Guardian là query suy ra từ người lớn còn sống cùng hộ, chưa phải record Guardianship đầy đủ. organization hiện chỉ có mã và quỹ pilot, chưa phải một Organization hoàn chỉnh. Các trường bổ nhiệm được lưu qua write_court/read_court, dù khai báo trong Person.
 
 **Ca kiểm:** sinh, chết, đổi hộ, thiếu người giám hộ, hết hạn việc, bổ nhiệm xóa việc trước, từ chức, cùng người nhận nhiều khoản, ID đối tượng tham chiếu không còn đúng.
 
@@ -203,7 +206,7 @@ Nguồn: [realm.hpp](../../core/include/polyec/realm.hpp), [realm.cpp](../../cor
 
 **Tập giá trị:** Governance = 0 (quản trị), Economic = 1 (kinh tế), Civilian = 2 (dân thường). Lưu enum ngoài 0..2 bị load từ chối.
 
-**Scope:** dùng để sinh lựa chọn, kiểm quyền, chọn policy/nhịp quyết định. Hộ gia đình dùng Person.household; hai người cùng Family không có nghĩa cùng hộ.
+**Scope:** dùng để sinh lựa chọn, kiểm quyền, chọn policy/nhịp quyết định. Hộ gia đình dùng `Person::household_membership.household_id`; hai người cùng Family không có nghĩa cùng hộ.
 
 **Không được:** dùng thay JobType hoặc quyền sovereign/taxing_authority. Người thuộc Governance có thể không có chức vụ bổ nhiệm. Runtime phải đồng bộ bộ nhớ khi vai trò đổi.
 
@@ -271,9 +274,9 @@ Các record sau đều do Realm sở hữu, trừ khi nói rõ đang là bản s
 
 ### 4.1. Edge — một quan hệ giữa hai người
 
-**Chứa:** from, to là ID người; kind là mã loại quan hệ. **Đã kiểm:** invariant yêu cầu hai đầu đều trong 1..N.
+**Chứa:** from, to là ID người; `kind` là `RelationKind` có kiểu rõ trong miền ParentChild=0, Sibling=1, Agreement=2. **Đã kiểm:** invariant yêu cầu hai đầu đều trong 1..N; codec đọc từ số nguyên tạm, reject ngoài miền trước khi publish.
 
-**Miền kind theo đường tạo hiện tại:** 0 cho liên kết hộ/cha-con trong các tình huống khởi tạo và sinh, 1 cho liên kết xã hội ban đầu, 2 khi nhận đề nghị. Invariant hiện không kiểm miền kind; không tự diễn giải kind=0 là mô hình pháp lý gia đình hoàn chỉnh.
+**Token save giữ nguyên:** 0 cho liên kết hộ/cha-con trong các tình huống khởi tạo và sinh, 1 cho liên kết xã hội ban đầu, 2 khi nhận đề nghị. Enum chỉ làm rõ các call site hiện có; không tự diễn giải kind=0 là mô hình pháp lý gia đình hoàn chỉnh.
 
 **Quan hệ:** Person 1 → nhiều Edge đi/đến; mỗi Edge tham chiếu đúng hai người. Có thể có self-edge từ cách khởi tạo hộ hiện tại; validator hiện không cấm. Đây là quan hệ thưa, không phải ma trận N×N.
 
@@ -386,7 +389,7 @@ Nguồn: [job.hpp](../../core/include/polyec/jobs/job.hpp), [worker_job.hpp](../
 
 **Chứa:** không có trường riêng. Singleton dùng chung là kWorkerJob.
 
-**Kết quả cố định:** type=Worker, name=Worker, is_work_job=true. **Điều kiện được resolver chọn:** Person sống, không có bổ nhiệm hợp lệ được ưu tiên, job >=0, busy_until >= ngày, job_kind=0.
+**Kết quả cố định:** type=Worker, name=Worker, is_work_job=true. **Điều kiện được resolver chọn:** Person sống, không có bổ nhiệm hợp lệ được ưu tiên, `work_assignment.job >= 0`, `busy_until >= ngày`, `work_assignment.job_kind=0`.
 
 **Quan hệ:** nhiều Person cùng tham chiếu một mô tả. **Không được:** tự tính sản lượng hay giữ tổng số người đang làm. Test cần bao gồm người chưa có việc, hết hạn và chết để không bị mặc định thành Worker.
 
@@ -394,7 +397,7 @@ Nguồn: [job.hpp](../../core/include/polyec/jobs/job.hpp), [worker_job.hpp](../
 
 **Chứa:** không có trường riêng; singleton kTeacherJob. **Kết quả:** type=Teacher, name=Teacher, is_work_job=true.
 
-**Điều kiện resolver:** tương tự Worker nhưng job_kind=1. **Điều kiện gán qua Work hiện tại:** người ít nhất 18 tuổi, skill >=20, còn chỗ giáo viên theo school và ngân khố đủ điều kiện hiện có. Resolver không tự tuyển người đủ kỹ năng thành giáo viên.
+**Điều kiện resolver:** tương tự Worker nhưng `work_assignment.job_kind=1`. **Điều kiện gán qua Work hiện tại:** người ít nhất 18 tuổi, skill >=20, còn chỗ giáo viên theo school và ngân khố đủ điều kiện hiện có. Resolver không tự tuyển người đủ kỹ năng thành giáo viên.
 
 **Không được:** tự tăng skill học sinh hoặc tự rút lương. Test phải chứng minh việc đã gán là Teacher, không bỏ qua bằng nhánh Worker dự phòng.
 
@@ -402,9 +405,9 @@ Nguồn: [job.hpp](../../core/include/polyec/jobs/job.hpp), [worker_job.hpp](../
 
 **Chứa:** không có trường riêng; singleton kAppointedOfficeJob. **Kết quả:** type=AppointedOffice, name=AppointedOffice, is_work_job=false.
 
-**Điều kiện resolver:** Person sống, office=true, hired_by khác 0, family=Governance. Hàm thuần chỉ có Person nên không tự kiểm người bổ nhiệm còn sống hoặc toàn bộ quyền bổ nhiệm; các kiểm đó thuộc nghiệp vụ/cross-reference.
+**Điều kiện resolver:** Person sống, `office_appointment.office=true`, `office_appointment.hired_by` khác 0, `family=Governance`. Hàm thuần chỉ có Person nên không tự kiểm người bổ nhiệm còn sống hoặc toàn bộ quyền bổ nhiệm; các kiểm đó thuộc nghiệp vụ/cross-reference.
 
-**Quan hệ:** được suy ra từ các trường bổ nhiệm trên Person. **Không được:** dùng cùng lịch sản lượng/tiền công hằng ngày của Work chỉ vì cùng là Job. Lương bổ nhiệm vẫn theo lịch riêng đã chốt.
+**Quan hệ:** được suy ra từ `Person::office_appointment`. **Không được:** dùng cùng lịch sản lượng/tiền công hằng ngày của Work chỉ vì cùng là Job. Lương bổ nhiệm vẫn theo lịch riêng đã chốt.
 
 ### 5.5. EmploymentState và JobType — hai câu trả lời khác nhau
 
@@ -716,7 +719,7 @@ Nguồn: [finance_manager.hpp](../../core/include/polyec/managers/finance_manage
 
 ### 8.5. HouseholdIndex — danh sách tra cứu thành viên hộ
 
-**Chứa:** class không giữ state lâu dài; build nhận vector Person const, trả map household ID → vector member IDs đã sắp tăng và không thêm trùng cùng người trong một danh sách.
+**Chứa:** class không giữ state lâu dài; build nhận vector Person const, đọc nhãn từ `Person::household_membership.household_id`, trả map household ID → vector member IDs đã sắp tăng và không thêm trùng cùng người trong một danh sách.
 
 **Miền kiểm của helper:** household và Person.id khác 0; helper tự nó không kiểm tất cả cận trên/duy nhất ID thế giới. Realm kiểm thêm household consistency.
 
@@ -934,7 +937,7 @@ OfficeAppointment là “hồ sơ bổ nhiệm”: liên kết người được
 
 Hai hồ sơ không sở hữu bản sao Person hoặc Province. Chúng tham chiếu qua ID. Chúng không chứa model AI, thanh toán đã tự cộng vào ví hay lịch Godot.
 
-Các điều kiện cần thiết là đầu mối hợp lệ, khoảng thời gian hợp lệ và quy tắc kết thúc rõ ràng. Không tự thêm điều khoản sa thải, số việc đồng thời hoặc mức lương mới. Hiện đây là thiết kế đích; các trường job, hired_by, office và deadline của Person vẫn là hiện trạng cần chuyển đổi có kiểm chứng.
+Các điều kiện cần thiết là đầu mối hợp lệ, khoảng thời gian hợp lệ và quy tắc kết thúc rõ ràng. Không tự thêm điều khoản sa thải, số việc đồng thời hoặc mức lương mới. Đây vẫn là thiết kế đích: `Person::work_assignment` chỉ gom cặp trường legacy `job`/`job_kind`; `Person::office_appointment` gom bốn giá trị bổ nhiệm hiện có nhưng chưa là hồ sơ có ID, cơ quan thuê hoặc thời hạn đầy đủ. Chuyển đổi tiếp cần contract và kiểm chứng riêng.
 
 ### 12.4. ScheduleDomain — nơi quản lý lịch
 
@@ -990,6 +993,22 @@ Projection lấy dữ liệu lõi và tạo bản thông tin phù hợp cho ngư
 
 Nó không sở hữu thế giới thật và không cho phép sửa tiền qua bản view. Không mặc định tất cả dữ liệu trong core đều được đưa cho người chơi hoặc policy. Quy tắc quyền xem phải được kiểm tra riêng, không chỉ dựa vào tên “View”.
 
+### 12.11. GameplayConfig — snapshot quy tắc của một world
+
+Đã có trong `core/include/polyec/gameplay_config.hpp` và `core/src/gameplay_config.cpp`. Bộ đọc file chỉ nhận tập con TOML số nguyên theo schema v1, validate đối tượng tạm, reject khóa sai/trùng/thiếu và số vượt miền với đường dẫn trường. Realm giữ bản sao riêng và chỉ công bố accessor const; thay file không sửa world đang chạy. Snapshot có defaults lịch sử cố định, canonical bytes và fingerprint.
+
+Work settlement, payroll và ProductionManager nhận cùng ticks/unit và quantities từ snapshot. Schema 15 lưu CONFIG_1 cùng WORKPAY_1 cho số tiền trả dở một công; old saves dùng defaults lịch sử. Python gọi cùng loader C++; native model pilot reject snapshot không được hỗ trợ. Config không sở hữu live money/inventory hoặc thay ownership/transaction/forfeit rules. [Plan và contract](M5-gameplay-config-loader-plan.md), [bằng chứng](../reports/M5-gameplay-config-evidence-2026-10-20.md).
+
+### 12.12. Command xưởng và payroll nhiều tài khoản
+
+Creation và `EstablishmentTransferCommand` đã được gom vào `core/src/realm_establishment.cpp`, là member của Realm. Realm validate ownership/ID/sequence/source, chuẩn bị allocation rồi commit tiền/kho/counter/fact; không thêm owner state riêng. Transfer nối Person inventory/cash, public Province stock/treasury hoặc organization cash theo quyền. [Gate 5 evidence](../reports/M5-T2.4-gate5-evidence-2026-10-20.md).
+
+`FinanceManager::prepare_batch`/`apply_batch` đã hỗ trợ const/mutable span Establishment và source ID theo group. Plan opaque giữ read-set site ID/region/cash, Province/tax và recipient; manager không sở hữu account hoặc tự chọn worker. Caller legacy dùng ID zero. Hỗ trợ này chưa được Realm dùng để trả lương từ site: cần authorization và migration trước nối pipeline. [Gate 6a evidence](../reports/M5-T2.4-gate6a-evidence-2026-10-20.md).
+
+### 12.13. Quyền nhận Work tại xưởng
+
+`WorkAuthorizationCommand` là typed Set/Revoke qua Realm; quản lý xưởng và Submit Work dùng cùng quyền ownership. Worker nhận window game tick rồi tự Submit, ca đã nhận không bị cắt bởi thay quyền. Establishment giữ sparse windows; schema16/ESTABLISH_4 và loader cũ migrate exact union, không phủ khoảng nghỉ. Bộ đếm windows được suy ra khi load và cập nhật cùng commit, không serialize. Schedule chuẩn bị allocation/result/fact trước publish ID/session. [Gate 6b1 evidence](../reports/M5-T2.4-gate6b1-evidence-2026-10-20.md). Chưa nối lương từ cash xưởng; không gọi window này là hợp đồng/học nghề M5.2 đầy đủ.
+
 ## 13. Quan hệ giữa các class: đọc như các mối liên hệ trong đời thật
 
 Có ba loại mũi tên cần phân biệt:
@@ -1008,8 +1027,8 @@ Số lượng 1:n nghĩa là một đầu có thể nối nhiều bản ghi ở 
 | Realm → Person | Một Realm sở hữu nhiều Person | Person.id xác định người trong Realm. ID hiện gắn vị trí mảng; người chết vẫn có hồ sơ. |
 | Realm → Province | Một Realm sở hữu nhiều Province | Số vùng theo cấu hình Realm, gồm vùng 0. Không dùng chỉ số từ thế giới khác. |
 | Person → Province | Nhiều người thuộc một vùng qua region | region phải trong miền vùng hợp lệ. Province không sở hữu một bản sao Person. |
-| Person → nhóm hộ | Nhiều người cùng household | household là nhãn nhóm, chưa có class Household riêng. Family không phải hộ gia đình. |
-| Person → người thuê | Nhiều người có thể trỏ một người qua hired_by | 0 là không có. Chỉ có ID không đủ chứng minh người thuê còn sống và quan hệ còn hiệu lực. |
+| Person → nhóm hộ | Nhiều người cùng `household_membership.household_id` | Trường trong value record là nhãn nhóm, chưa có class Household riêng. Family không phải hộ gia đình. |
+| Person → người bổ nhiệm | Người được bổ nhiệm tham chiếu người bổ nhiệm qua `office_appointment.hired_by` | 0 là không có. Chỉ có ID không đủ chứng minh người bổ nhiệm còn sống và quyền bổ nhiệm còn hiệu lực. |
 | Person → mô tả Job | describe_job trả mô tả tùy trạng thái | Job không sở hữu Person; hiện chưa là hợp đồng bền vững. |
 | WorkerJob / TeacherJob / AppointedOfficeJob → Job | Ba loại kế thừa | Thể hiện “là một loại việc”. Không biểu diễn quan hệ chủ–thợ bằng kế thừa. |
 | Edge → Person, Person | Hai đầu tham chiếu người | Đây là quan hệ thưa; không tạo ma trận mọi người với mọi người. Hiện có self-edge trong khởi tạo. |
@@ -1079,7 +1098,7 @@ Khi chuyển hợp đồng sang timeline, phải xác định cách ánh xạ m�
 
 | Tình huống | Những phần phải đối chiếu |
 |---|---|
-| Người đang làm được bổ nhiệm | Work cũ, job, office, family, hired_by, kỳ lương và lịch liên quan phải cùng hiểu một trạng thái mới. Hiện Appoint có xóa các trường việc cũ; tương lai không được để hợp đồng cũ vẫn sinh sản lượng. |
+| Người đang làm được bổ nhiệm | `work_assignment`, `office_appointment`, family, kỳ lương và lịch liên quan phải cùng hiểu một trạng thái mới. Hiện Appoint xóa assignment việc cũ; tương lai không được để hợp đồng cũ vẫn sinh sản lượng. |
 | Người xin thôi chức | Kiểm tra hạn thông báo bằng game time; sau khi thành công, cách đọc việc và quyền không được còn báo giữ chức. |
 | Người chết giữa khoảng có lịch | Hồ sơ Person vẫn còn; lịch và evaluator phải có quy tắc về phần còn hiệu lực. Hiện cơ chế retirement không nên bị hiểu là mọi luật chết–làm việc tương lai đã giải quyết. |
 | Hủy phiên chưa bắt đầu | Hiện có thể xóa phiên hợp lệ trước xử lý; đừng gọi sổ lịch hiện tại là lịch sử kiểm toán đầy đủ. |

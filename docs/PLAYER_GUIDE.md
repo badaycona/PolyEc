@@ -130,7 +130,7 @@ Bạn không giải quyết từng đơn xin học hay từng ca làm. Các bên
 
 ### Sản xuất, chợ và nợ
 
-Xưởng cần vốn, người, vật tư, dụng cụ và nơi bán; ruộng cần đất, mùa và lao động. Có tiền mà thiếu thợ hoặc đường thì chưa chắc mở rộng được. Hệ thống đích có 16 nhóm hàng; các loại có công dụng khác nhau, không tự thay thế nhau chỉ vì cùng giá.
+Xưởng cần vốn, người, vật tư, dụng cụ và nơi bán; ruộng cần đất, mùa và lao động. Có tiền mà thiếu thợ hoặc đường thì chưa chắc mở rộng được. Trong thế giới đã bật lịch làm việc, hàng do xưởng làm ra chỉ được ghi nhận khi người được phép làm việc tại cơ sở, thời gian và chú ý thực sự được cấp, cùng vật tư đúng công thức. Hàng thô hiện vẫn dùng nguồn harvest của mô phỏng. Vì vậy hàng không tự xuất hiện chỉ do một người được gắn nhãn nghề hoặc đang sống ở một vùng. Hệ thống đích có 16 nhóm hàng; các loại có công dụng khác nhau, không tự thay thế nhau chỉ vì cùng giá.
 
 Mua hàng phụ thuộc khả năng chi trả và hàng thật. Thương nhân tính chuyện mua bán khi thông tin giá có thể đến muộn; hàng tới nơi chưa chắc còn bán được đúng giá dự kiến. Vay cho bạn tiền hôm nay và nghĩa vụ sau này. Cứu trợ có thể giúp một bên sống sót nhưng làm ngân khố chịu rủi ro và tạo kỳ vọng về lần sau.
 
@@ -150,7 +150,7 @@ Bạn thấy điều triều đình có căn cứ biết, không thấy thẳng 
 
 Đường, thủy lợi, kho, giáo dục, y tế và tư pháp tạo năng lực lâu dài, đồng thời cần bảo trì và người vận hành. Phát triển có thể thay cán cân quyền lực: cảng giúp thương nhân mạnh hơn, trường mở cơ hội cho người ngoài gia tộc cũ.
 
-Huy động quân cần người chỉ huy, nghĩa vụ, lương, trang bị và tiếp vận. Người đi lính không vẫn làm đủ việc ở nhà. Ngoại thương có đối tác hữu hạn, tuyến và thuế; không phải cửa hàng mua bán vô tận. Bản đầu hướng tới quyết định nhà nước và tiếp vận, chưa có điều khiển chiến thuật từng binh sĩ.
+Huy động quân cần người chỉ huy, nghĩa vụ, lương, trang bị và tiếp vận. Người đi lính không vẫn làm đủ việc ở nhà. Kho quân nhu phân biệt Lương khô với Khẩu phần bổ sung: người tình nguyện chỉ nhận món bổ sung sau khi đã được cấp bữa Lương khô, nên món đó không thay bữa chính. Ngoại thương có đối tác hữu hạn, tuyến và thuế; không phải cửa hàng mua bán vô tận. Sovereign có thể tạm đình chỉ lệnh mới với từng đối tác khi muốn dừng giao dịch; chuyến hàng đã được chấp nhận vẫn tiếp tục tới nơi, còn tuyến đường biển là một lựa chọn riêng. Hồ sơ Nam Cảng ghi riêng số đơn đã hoàn tất, lượng hàng và tổng tiền hàng trước thuế/phí theo từng đối tác; đây là số tổng kết lịch sử, không phải lợi nhuận hoặc mức độ thân thiện. Thương nhân có thể đặt lệnh trực tiếp như trước hoặc gửi đề nghị cho đối tác. Đề nghị giữ tiền, hàng và chỗ chứa cần thiết tối đa bảy ngày game; đối tác phải tự trả lời. Nếu bị từ chối hoặc quá hạn, phần tài sản còn giữ được trả lại. Bản phát triển hiện chưa có người điều khiển tự chủ cho phản hồi của đối tác, nên đề nghị không được trả lời sẽ hết hạn; điều này không ngăn lệnh trực tiếp. Bản đầu hướng tới quyết định nhà nước và tiếp vận, chưa có điều khiển chiến thuật từng binh sĩ.
 
 ### Chọn lợi thế đầu triều đại
 
@@ -167,6 +167,8 @@ Hướng dẫn và màn thử có tình huống đặt trước để dạy/ki�
 ## Trạng thái thực tế so với hướng sản phẩm
 
 M4 dùng bộ điều khiển kiểm thử được ghi nhãn để chạy việc thường lệ. Sandbox M3 có mạng đã huấn luyện nhưng vẫn là model thử nghiệm; chưa chứng minh đạt toàn bộ chất lượng quyết định.
+
+Trong hồ sơ cá thể của màn **Quốc gia · Sandbox**, mục **Nợ ngủ** là số ngày quy đổi nguyên theo mô phỏng; đây không phải bộ đếm số giờ thức liên tục. **Gắng sức** là chỉ số thử từ 0 đến 100, tăng theo chú ý Work thực và giảm theo thời gian Rest đã chạy trong game. Hai chỉ số này hiện chưa tự giảm sản lượng hoặc chặn một lệnh. Khi một khoảng Rest kết thúc, người đó vẫn ở đúng vùng đã nghỉ và dinh dưỡng đạt ít nhất 40, mỗi 16 tick Rest thực hồi 1 điểm sức khỏe; phần dưới 16 tick của khoảng đó không tạo điểm lẻ, sức khỏe tối đa 100. Đây là giả định mô phỏng chưa được hiệu chỉnh theo sinh lý hoặc cân bằng cuối.
 
 Hộ động/quỹ chung đầy đủ, cơ sở/nghề, hôn nhân, thừa kế, giáo hội, quốc gia 27 khu/16 nhóm hàng và hành vi học đủ sâu đang thuộc công việc M5 trở đi. Bộ tính attention hiện tại là nền kỹ thuật; người chơi chưa nên hiểu nó như hệ làm/nghỉ/chăm sóc đã hoàn chỉnh.
 

@@ -1,0 +1,89 @@
+{
+  "date": "2026-10-22",
+  "topic": "Nối chuyển giao xưởng sau tử vong qua lao động, sản xuất, chợ, thuế mua hàng và lưu/tải",
+  "files": {
+    "core/tests/test_realm.cpp": {
+      "sha256": "f1ccae524018e0da6eb214f3ee30a3af784f2c54991c29a3f8bd2bc7b9a99e32",
+      "bytes": 245956
+    },
+    "core/include/polyec/realm.hpp": {
+      "sha256": "10e4e89f869ac4cde169d7ba0c70c0e7b7b12eb068fc5ba9f607cca180942406",
+      "bytes": 17732
+    },
+    "core/src/realm.cpp": {
+      "sha256": "f9fed53f628a3f8397388084eb3f067dcdac5ee0265996174a8ca5a3d671167c",
+      "bytes": 107910
+    },
+    "core/src/realm_lifecycle.cpp": {
+      "sha256": "99e8093013154ec6304d81c8162595a4f4acaeb065a0410f5f38bd14eeda1de4",
+      "bytes": 3969
+    },
+    "core/src/realm_payroll.cpp": {
+      "sha256": "7852ea7e24e59df10299d1dd98c9f11e1139c01e11653d9813af9fc0db224e91",
+      "bytes": 15504
+    },
+    "core/src/realm_establishment.cpp": {
+      "sha256": "a25f7adf7dabb6f9cf87f383a864ee5acadb167bc68dd552e1be25b5270ea489",
+      "bytes": 12319
+    },
+    "core/src/realm_save.cpp": {
+      "sha256": "afb86d26eca29253d07c489cf68f2b855a3a6febd05477a628fff2148abec21f",
+      "bytes": 13565
+    },
+    "docs/IMPLEMENTATION_PLAN.md": {
+      "sha256": "b51f460c3bee296c4d48c881f87ea8f1870c2a5ddf2fceee1f4260e5191845f5",
+      "bytes": 109659
+    },
+    "docs/CURRENT_TASK.md": {
+      "sha256": "05b63401dad0fcf018c5ca9ebd7d1b13db7600158467ba155e72009bac4adde4",
+      "bytes": 111400
+    },
+    "docs/DEVELOPMENT_HISTORY.md": {
+      "sha256": "bec0cad87ee846bbf3e4cb2de957aee6b2cecc72f0339556f82db8d5a383f80b",
+      "bytes": 91182
+    },
+    "docs/design/M5.4-workshop-inheritance-market-tax-chain-plan.md": {
+      "sha256": "ddaf4b253d644aec5afe484695d63bd66e716102b5244028a24bf4fcaa163b20",
+      "bytes": 2504
+    },
+    "docs/reports/M5.4-workshop-inheritance-market-tax-chain-evidence-2026-10-22.md": {
+      "sha256": "6aaf8fd94fb23060e6ab9f29f5eed3d59ce35bc7195a90f2d77221b6da2e4ea5",
+      "bytes": 7139
+    },
+    "build/windows/CMakeCache.txt": {
+      "sha256": "2a8ed0e2c727e43030a943ecf4644b3f52fcccbacfb90eecaf12ddc8fcc89643",
+      "bytes": 17684
+    },
+    "build/windows/core/Release/polyec_core.lib": {
+      "sha256": "5de3fbe16f43f2822828ae1d779036418d63c214923c23955f0c2edc2476a247",
+      "bytes": 18276932
+    },
+    "build/windows/core/Release/polyec_realm_tests.exe": {
+      "sha256": "d184f879b453c53db06e0beb3650910c3653aa834f3a82454b8d863c07af4401",
+      "bytes": 1115136
+    }
+  },
+  "result": {
+    "configuration": "Windows Release",
+    "direct_target": "polyec_realm_tests",
+    "exit_code": 0,
+    "checks": 21086,
+    "workload": "profile A: 10000 people, 19743 sparse relations, 90 days",
+    "chain": [
+      "estate pays the existing loan",
+      "sole adult heir receives the personal workshop",
+      "previously authorized shift continues after transfer",
+      "workshop pays four units and consumes two Fiber to produce two Cloth",
+      "heir sells one produced item to the local market",
+      "another resident buys the item and purchase tax is accounted",
+      "save/load preserves financial, inventory and work records"
+    ],
+    "gameplay_source_changed": false,
+    "save_schema_changed": false,
+    "python_native_godot_run": false,
+    "debug_run": false,
+    "full_ctest_run": false,
+    "guild_behavior_tested": false,
+    "learned_policy_tested": false
+  }
+}

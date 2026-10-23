@@ -1,0 +1,58 @@
+{
+  "files": {
+    "core/include/polyec/good_catalog.hpp": {
+      "bytes": 5566,
+      "sha256": "1810a13beee4abc656920434c2e1e3456f343ea997d3a34e23ba2b4023bf34c2"
+    },
+    "build/windows/core/Release/polyec_world_atlas_tests.exe": {
+      "bytes": 227328,
+      "sha256": "323b835dc934182ba7362eaf62ca83b4ab7e8e9fe40fa3a2a887f8cc15f2dcfb"
+    },
+    "docs/CURRENT_TASK.md": {
+      "bytes": 104731,
+      "sha256": "c12fe0ed7cd7430e9d979c85938a019256d8e0b157f9f83c26564e466b54b714"
+    },
+    "docs/DEVELOPMENT_HISTORY.md": {
+      "bytes": 85776,
+      "sha256": "a2ae0e59b21d1a9d52332d4f9b202f48490a3a7eaef6b3b9ea2f23efeca5b254"
+    },
+    "docs/IMPLEMENTATION_PLAN.md": {
+      "bytes": 109659,
+      "sha256": "b51f460c3bee296c4d48c881f87ea8f1870c2a5ddf2fceee1f4260e5191845f5"
+    },
+    "core/include/polyec/world_atlas.hpp": {
+      "bytes": 14622,
+      "sha256": "1d1ec73e861e8c0ef8314c58a2287cd3e095e7bd74acf7bec5b2485ccf9ea979"
+    },
+    "docs/design/M5-atlas-specialty-good-mapping-plan.md": {
+      "bytes": 2750,
+      "sha256": "231792be64b18ce24a7068014881c2162d6a985ef0bba003f2da3773ae899621"
+    },
+    "core/tests/test_world_atlas.cpp": {
+      "bytes": 8710,
+      "sha256": "abcb91474169f1dde409da771564085e3e34429aa20b11842d81b916ec62d951"
+    },
+    "core/CMakeLists.txt": {
+      "bytes": 6224,
+      "sha256": "3fca61a637deb91c2b96b559d987a8abc93ee2c285002458d0242e6151218eae"
+    },
+    "docs/reports/M5-atlas-specialty-good-mapping-evidence-2026-10-22.md": {
+      "bytes": 3518,
+      "sha256": "78e51f80d2c9a1c85ff539a0f910ea21324564bd4051631cabe988a121c300df"
+    }
+  },
+  "platform": "Windows Release",
+  "date": "2026-10-22",
+  "record": "M5.2/M5.4 atlas specialty mapping evidence",
+  "result": {
+    "direct_runner_exit_code": 0,
+    "target": "polyec_world_atlas_tests",
+    "full_ctest_run": false,
+    "group_only_mappings": 3,
+    "debug_run": false,
+    "goods_supply_or_production_changed": false,
+    "specialty_mappings_verified": 7,
+    "malformed_records_rejected": 4,
+    "exact_product_mappings": 4
+  }
+}

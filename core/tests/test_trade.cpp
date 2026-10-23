@@ -41,3 +41,9 @@ int main() {
     std::cout<<checks-failures<<'/'<<checks<<" trade checks passed\n";
     return failures?1:0;
 }
+
+
+
+
+
+

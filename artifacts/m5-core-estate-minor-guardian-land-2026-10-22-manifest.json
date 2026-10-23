@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-22",
+  "task": "M5-core-estate-minor-guardian-land",
+  "base_head": "dff2781a41ae52a4bd476b4b1460ad0f09ef5dc3",
+  "note": "Hashes describe shared working-tree files after the checks recorded in the report. Hashed source, test and CMake files also contain unrelated pre-existing dirty changes.",
+  "files": [
+    {
+      "path": "core/tests/test_realm.cpp",
+      "sha256": "02c0a4bbb04552d63fb0f5a21d58c09eef7f7ffe47c6d6594de47be1f29c9257"
+    },
+    {
+      "path": "docs/design/M5-core-estate-minor-guardian-land-plan.md",
+      "sha256": "ea8ce02e9d6469bbce3354aa6bba7a5981247d981e93af540dbd3568fd6867ad"
+    },
+    {
+      "path": "docs/reports/M5-core-estate-minor-guardian-land-evidence-2026-10-22.md",
+      "sha256": "c7207d233af750ea4329c6d70783e8a1c9fe944369e3fa950101f984cf541b8d"
+    },
+    {
+      "path": "docs/CURRENT_TASK.md",
+      "sha256": "5dd48428ef00d5abb2e292e4a43ede5b45dec196aac3022fe49a5845a3fa262e"
+    },
+    {
+      "path": "docs/DEVELOPMENT_HISTORY.md",
+      "sha256": "8e126b05d829fc58369bf9c7f6bd0f9d775896d2f63b290fd008d8ff2088c94d"
+    }
+  ]
+}

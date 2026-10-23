@@ -1,0 +1,83 @@
+{
+  "baseline_head": "dff2781a41ae52a4bd476b4b1460ad0f09ef5dc3",
+  "checkpoint_date": "2026-10-21",
+  "note": "Full-file hashes from the dirty working tree; source includes other accepted and in-progress M5/core slices and is not an isolated patch. Land registry gates passed Release/Debug; self-review only; no commit/push.",
+  "files": [
+    {
+      "path": "core/include/polyec/land_holding.hpp",
+      "sha256": "8bbb64ebdc4356c4e0c731e80717c6775d1d584a87f302273b2cca0608e3ecb3"
+    },
+    {
+      "path": "core/include/polyec/land_title_section_codec.hpp",
+      "sha256": "e66f67bb5c12d20f3f39833b5c1011e405f3fe2084fba55c43fba59efa582873"
+    },
+    {
+      "path": "core/include/polyec/realm.hpp",
+      "sha256": "3610405a6b7a9063cea0641017bbcb179fa09e8543df17e148dab37290a89b22"
+    },
+    {
+      "path": "core/include/polyec/schedule_section_codec.hpp",
+      "sha256": "67cbb8ac62587bbe0c8a93b5b3f41e78f6b2508c6fe9519d364b1cded532973b"
+    },
+    {
+      "path": "core/src/realm.cpp",
+      "sha256": "9fd6e0e16faa463014a6e7fc17e1d2921f0ad9ab192c42e746d249bb2b2d8a61"
+    },
+    {
+      "path": "core/tests/test_realm.cpp",
+      "sha256": "421975e95a3f88ff855b71d766e5d9b5a616084997c3d50cd3ae183d2dcde949"
+    },
+    {
+      "path": "core/tests/test_schedule.cpp",
+      "sha256": "62d682ffd53d69419d5007c8257e557ac4cdb7f706c355074113cbf070028c97"
+    },
+    {
+      "path": "core/tests/test_campaign.cpp",
+      "sha256": "5e110c1f7b00ddf85782fd2328593c9e6b4ed5576d5a0d49ab46b0f9b3ce7901"
+    },
+    {
+      "path": "core/tests/test_household_fund.cpp",
+      "sha256": "05a56176f93747766379b39d8f98f46b96848af0e3ec104c5d69a2a2ddeb7319"
+    },
+    {
+      "path": "core/tests/test_gameplay_config.cpp",
+      "sha256": "3ea37d0e8cbcec19449c2251f0d38d3307ca98784a25f616b8805d85aa14b7d3"
+    },
+    {
+      "path": "core/tests/work_authorization_fixture.hpp",
+      "sha256": "76b718fb8a978039ebb7175f05632cf17100d29804010bae961db40a10682c14"
+    },
+    {
+      "path": "bindings/python/realm_binding.cpp",
+      "sha256": "722fa5e6d41ec5c8b0940721e8db37c22774ce9cf6b1fd7faf2956bf0b928780"
+    },
+    {
+      "path": "ai/tests/realm_binding_checks.py",
+      "sha256": "bfdf1358e5d40ed9ee566f638e71ec2341857047c6fd39af7f65a476445fa71c"
+    },
+    {
+      "path": "ai/tests/realm_clock_binding_checks.py",
+      "sha256": "933ad0f4ac80236204303ec9af140630a86e290f84c68a61a775240b924d0b76"
+    },
+    {
+      "path": "docs/design/M5-land-title-registry-plan.md",
+      "sha256": "50ae44b9fcee4ce08c9df5c17f9b9cce25d4ad227c14a52e852b50dce402ad55"
+    },
+    {
+      "path": "docs/IMPLEMENTATION_PLAN.md",
+      "sha256": "5dea37c27681f1df691615cc8315cf7fff0a6154fee67953d547693644316590"
+    },
+    {
+      "path": "docs/CURRENT_TASK.md",
+      "sha256": "7abea5444761e89efbdbfa7bf435b304a7e6a72c8c0310d0790919c139045fb8"
+    },
+    {
+      "path": "docs/DEVELOPMENT_HISTORY.md",
+      "sha256": "ea3bd02ac6c4e1c92b72a33ebbc2ec82eb3f089f14233e24d18172f3ad3b0941"
+    },
+    {
+      "path": "docs/reports/M5-land-title-registry-evidence-2026-10-21.md",
+      "sha256": "35904ba2d9c09aeb5c11ca5dcf1e43325d0f038a1648bfc6db7253efaf40bcd4"
+    }
+  ]
+}

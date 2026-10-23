@@ -1,0 +1,116 @@
+{
+  "date": "2026-10-22",
+  "task": "M5-core-refactor-R1-R4-integration",
+  "base_head": "dff2781a41ae52a4bd476b4b1460ad0f09ef5dc3",
+  "note": "Hashes describe source and documentation as checked in the shared working tree. This checkpoint is not a patch ownership claim; some files contain earlier unrelated working-tree changes. No commit or push.",
+  "files": [
+    {
+      "path": "core/CMakeLists.txt",
+      "sha256": "d8ccadc35d21b0bbeab4436e2966d1b49425f6e5ff4ffba2c38bb6d4e19d99ac"
+    },
+    {
+      "path": "core/include/polyec/managers/employment_manager.hpp",
+      "sha256": "0542f6d34a0087b55e061c73a0af647ff87ed75e9b1b67f48eb4298e0e67a4f2"
+    },
+    {
+      "path": "core/include/polyec/managers/finance_manager.hpp",
+      "sha256": "6c46aabf2d7fb5e5a52bbe3fd2dfe7429bd86e14b0dfe302b59986e36bdfed57"
+    },
+    {
+      "path": "core/include/polyec/realm.hpp",
+      "sha256": "85a39db1eb050d7cb11cee6880f631b15008e10a054bea0c9d75e88261b55970"
+    },
+    {
+      "path": "core/src/employment_manager.cpp",
+      "sha256": "5d0cfccc78d6bb920281162c962ae1d46851b3f603f2913795ac30735a40b572"
+    },
+    {
+      "path": "core/src/finance_manager.cpp",
+      "sha256": "de8bf675a2e65841f03bb189591498049e0763b453136ccbaa98562ffecc16f0"
+    },
+    {
+      "path": "core/src/realm.cpp",
+      "sha256": "c5e822947457bc7c57c1b6a6edd75d44301de1c89377c878c8f9d1732612b984"
+    },
+    {
+      "path": "core/src/realm_save.cpp",
+      "sha256": "a715f5faf6750280b5bab034e350ba94a58154d9b2cb917b2bbbb51f56f6828f"
+    },
+    {
+      "path": "core/src/realm_view.cpp",
+      "sha256": "1a494fa55ff58c420e334fe91479912d9d871d32312063c597d6cfe17c7174b4"
+    },
+    {
+      "path": "core/tests/test_managers.cpp",
+      "sha256": "a139d95537c3259aede0a52b9c99162fa9378a0d5cd831a4c1942efa0b3765fe"
+    },
+    {
+      "path": "core/tests/test_realm.cpp",
+      "sha256": "ad20c9226234ab1beebf9b3c2fd8cbdfde662174a3f13d13ef3a1e3c24fb427c"
+    },
+    {
+      "path": "core/tests/test_realm_court.cpp",
+      "sha256": "403754cfa33596802497b61343aa7c7a62c8a8dc21ed52ff9e05422a6a88e67a"
+    },
+    {
+      "path": "core/tests/test_realm_view_projector.cpp",
+      "sha256": "226186a900bd2838f82fb451d244b4f52abc2a9873a8faa9a9b349ae62731376"
+    },
+    {
+      "path": "core/tests/test_schedule.cpp",
+      "sha256": "3fd637a563bb8656a45e36387125a5965d9a8417561a7aae9470f82d14e0ba07"
+    },
+    {
+      "path": "ai/tests/realm_binding_checks.py",
+      "sha256": "c9c055c94738e4ffcf1f6bda09af0d58beff690f5af8228525838b3987aec1fc"
+    },
+    {
+      "path": "ai/tests/realm_clock_binding_checks.py",
+      "sha256": "af4ff247ed357afe1e3b23d32c6c22e9287a4a58aa066ca8e953377596b67c5c"
+    },
+    {
+      "path": "native/realm_contracts.cpp",
+      "sha256": "61bc725b20dfa96d0fe6c4b8aa4da694ec5ae5167b075b3918c15a77b960b836"
+    },
+    {
+      "path": "native/realm_runtime.cpp",
+      "sha256": "ebff80d651ced865f013a7bb3baa0c80e5e1c31c73548a61338cd826552e09b3"
+    },
+    {
+      "path": "gdext/polyec_session.cpp",
+      "sha256": "f825ba502f17a8a8cd558cd9166cfc0a6891114303eafe924b117c67aa291197"
+    },
+    {
+      "path": "godot_project/tests/realm_worksite_smoke.gd",
+      "sha256": "0deda3e39b1a7add983ad066c5125bd143e79a6e3280d006fcda6a57b8096920"
+    },
+    {
+      "path": "godot_project/models/realm-v11/README.md",
+      "sha256": "c94eff37a6c03f6a3fad78714ea30bd8c049fc7ef84698d1b9e137d2a843557a"
+    },
+    {
+      "path": "docs/design/core-architecture-refactor.md",
+      "sha256": "6c6a646ea70d3720b2a43f99c798400910f90007984286b30e13c39d7e987f38"
+    },
+    {
+      "path": "docs/reports/M5-core-R4-save-orchestration-evidence-2026-10-22.md",
+      "sha256": "eb0bd68f3dffe69b08988ec4f0f3f92d05304b619e41ef3ed8e3b9e5c576b9f6"
+    },
+    {
+      "path": "docs/reports/M5-core-R4-view-method-evidence-2026-10-22.md",
+      "sha256": "97733e4086bd2de56224f69241149f8a782783db4b3610a3a7292e12c53be262"
+    },
+    {
+      "path": "docs/reports/M5-core-refactor-R1-R4-integration-evidence-2026-10-22.md",
+      "sha256": "811223f0da4bb6f1470aff8987a28a441279f9ca30bed17381f903a304899246"
+    },
+    {
+      "path": "docs/CURRENT_TASK.md",
+      "sha256": "249471e6364c0e23cd65acc16ff56728948915fe4b2e757d2758537251ec3d88"
+    },
+    {
+      "path": "docs/DEVELOPMENT_HISTORY.md",
+      "sha256": "f7b7dbed52893ac77c4a4890c55866cc05ed4069c1874d07be62c832e4edf4ac"
+    }
+  ]
+}

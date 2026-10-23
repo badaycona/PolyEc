@@ -1,0 +1,240 @@
+{
+  "run_kind": "smoke_only",
+  "seed": 20261025,
+  "model_contract": "realm-worksite-payroll-goods27-config-v34",
+  "decisions": 1024,
+  "intent_diagnostics": {
+    "Hold": {
+      "legal_candidates": 1024,
+      "decisions": 97,
+      "reward_mean": -0.013805221200358967,
+      "advantage_mean": -0.26329031421025234,
+      "positive_advantage_fraction": 0.030927835051546393
+    },
+    "Buy": {
+      "legal_candidates": 0,
+      "decisions": 0,
+      "reward_mean": null,
+      "advantage_mean": null,
+      "positive_advantage_fraction": null
+    },
+    "Sell": {
+      "legal_candidates": 0,
+      "decisions": 0,
+      "reward_mean": null,
+      "advantage_mean": null,
+      "positive_advantage_fraction": null
+    },
+    "Travel": {
+      "legal_candidates": 0,
+      "decisions": 0,
+      "reward_mean": null,
+      "advantage_mean": null,
+      "positive_advantage_fraction": null
+    },
+    "Borrow": {
+      "legal_candidates": 761,
+      "decisions": 66,
+      "reward_mean": -0.019438394014397283,
+      "advantage_mean": -0.25016665644943714,
+      "positive_advantage_fraction": 0.07575757575757576
+    },
+    "Repay": {
+      "legal_candidates": 658,
+      "decisions": 51,
+      "reward_mean": -0.006286829480314718,
+      "advantage_mean": -0.3031620526065429,
+      "positive_advantage_fraction": 0.0196078431372549
+    },
+    "Project": {
+      "legal_candidates": 625,
+      "decisions": 9,
+      "reward_mean": -0.008677025907672942,
+      "advantage_mean": -0.11989269529779752,
+      "positive_advantage_fraction": 0.4444444444444444
+    },
+    "Hire": {
+      "legal_candidates": 0,
+      "decisions": 0,
+      "reward_mean": null,
+      "advantage_mean": null,
+      "positive_advantage_fraction": null
+    },
+    "Tax": {
+      "legal_candidates": 1536,
+      "decisions": 40,
+      "reward_mean": -0.014147879541997099,
+      "advantage_mean": -0.14711523929145187,
+      "positive_advantage_fraction": 0.0
+    },
+    "Aid": {
+      "legal_candidates": 1865,
+      "decisions": 116,
+      "reward_mean": 0.00284829982335615,
+      "advantage_mean": -0.2622094236852216,
+      "positive_advantage_fraction": 0.017241379310344827
+    },
+    "Investigate": {
+      "legal_candidates": 896,
+      "decisions": 69,
+      "reward_mean": -0.011486997609819704,
+      "advantage_mean": -0.31407365715806035,
+      "positive_advantage_fraction": 0.014492753623188406
+    },
+    "Offer": {
+      "legal_candidates": 1927,
+      "decisions": 112,
+      "reward_mean": -0.03198539159633843,
+      "advantage_mean": -0.3006942352866255,
+      "positive_advantage_fraction": 0.017857142857142856
+    },
+    "Accept": {
+      "legal_candidates": 0,
+      "decisions": 0,
+      "reward_mean": null,
+      "advantage_mean": null,
+      "positive_advantage_fraction": null
+    },
+    "Reject": {
+      "legal_candidates": 0,
+      "decisions": 0,
+      "reward_mean": null,
+      "advantage_mean": null,
+      "positive_advantage_fraction": null
+    },
+    "Work": {
+      "legal_candidates": 0,
+      "decisions": 0,
+      "reward_mean": null,
+      "advantage_mean": null,
+      "positive_advantage_fraction": null
+    },
+    "Study": {
+      "legal_candidates": 0,
+      "decisions": 0,
+      "reward_mean": null,
+      "advantage_mean": null,
+      "positive_advantage_fraction": null
+    },
+    "Rest": {
+      "legal_candidates": 0,
+      "decisions": 0,
+      "reward_mean": null,
+      "advantage_mean": null,
+      "positive_advantage_fraction": null
+    },
+    "Social": {
+      "legal_candidates": 0,
+      "decisions": 0,
+      "reward_mean": null,
+      "advantage_mean": null,
+      "positive_advantage_fraction": null
+    },
+    "Join": {
+      "legal_candidates": 0,
+      "decisions": 0,
+      "reward_mean": null,
+      "advantage_mean": null,
+      "positive_advantage_fraction": null
+    },
+    "Migrate": {
+      "legal_candidates": 0,
+      "decisions": 0,
+      "reward_mean": null,
+      "advantage_mean": null,
+      "positive_advantage_fraction": null
+    },
+    "Support": {
+      "legal_candidates": 0,
+      "decisions": 0,
+      "reward_mean": null,
+      "advantage_mean": null,
+      "positive_advantage_fraction": null
+    },
+    "Appoint": {
+      "legal_candidates": 0,
+      "decisions": 0,
+      "reward_mean": null,
+      "advantage_mean": null,
+      "positive_advantage_fraction": null
+    },
+    "Mobilize": {
+      "legal_candidates": 990,
+      "decisions": 73,
+      "reward_mean": -0.007891526890676213,
+      "advantage_mean": -0.2778348046138066,
+      "positive_advantage_fraction": 0.0136986301369863
+    },
+    "Resign": {
+      "legal_candidates": 0,
+      "decisions": 0,
+      "reward_mean": null,
+      "advantage_mean": null,
+      "positive_advantage_fraction": null
+    },
+    "Marry": {
+      "legal_candidates": 115,
+      "decisions": 3,
+      "reward_mean": -0.014899096762140593,
+      "advantage_mean": -0.19974327584107718,
+      "positive_advantage_fraction": 0.0
+    },
+    "CreateEstablishment": {
+      "legal_candidates": 7797,
+      "decisions": 144,
+      "reward_mean": -0.015434353494533247,
+      "advantage_mean": -0.18037473472213605,
+      "positive_advantage_fraction": 0.020833333333333332
+    },
+    "TransferEstablishmentGoods": {
+      "legal_candidates": 2947,
+      "decisions": 50,
+      "reward_mean": -0.0005294067366048694,
+      "advantage_mean": -0.06396480150055141,
+      "positive_advantage_fraction": 0.06
+    },
+    "AuthorizeWorkAtSite": {
+      "legal_candidates": 3180,
+      "decisions": 54,
+      "reward_mean": -0.004039839796152794,
+      "advantage_mean": -0.08655107603192812,
+      "positive_advantage_fraction": 0.05555555555555555
+    },
+    "WorkAtSite": {
+      "legal_candidates": 3180,
+      "decisions": 60,
+      "reward_mean": -0.006700444179781092,
+      "advantage_mean": -0.12208404804890355,
+      "positive_advantage_fraction": 0.06666666666666667
+    },
+    "BuyMilitaryRations": {
+      "legal_candidates": 2048,
+      "decisions": 41,
+      "reward_mean": -0.015338133251090057,
+      "advantage_mean": -0.21375760007876812,
+      "positive_advantage_fraction": 0.0
+    },
+    "ShipMilitaryRations": {
+      "legal_candidates": 0,
+      "decisions": 0,
+      "reward_mean": null,
+      "advantage_mean": null,
+      "positive_advantage_fraction": null
+    },
+    "FundMunicipal": {
+      "legal_candidates": 2048,
+      "decisions": 39,
+      "reward_mean": -0.017801439316453747,
+      "advantage_mean": -0.17861999061483985,
+      "positive_advantage_fraction": 0.0
+    },
+    "ForeignTrade": {
+      "legal_candidates": 0,
+      "decisions": 0,
+      "reward_mean": null,
+      "advantage_mean": null,
+      "positive_advantage_fraction": null
+    }
+  },
+  "note": "Opportunity counts and action choices are from one random-initialized PPO rollout; not a quality evaluation."
+}

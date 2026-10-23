@@ -1,0 +1,1588 @@
+{
+  "task": "M5-v22-worksite-context-policy-audit",
+  "schema": "realm-v11",
+  "reward_version": "realm-v11-person-enterprise-equity-v1",
+  "model_contract": "realm-household-fund-goods27-v5",
+  "regions": 6,
+  "runtime_sampling": "masked categorical; 256 fixed-seed draws per context/seed",
+  "model_selection": "diagnostic only; all seeds remain peer_eligible=false",
+  "contexts": [
+    {
+      "name": "starting_world",
+      "day": 0,
+      "actor": 8,
+      "cash": 500,
+      "transfer_candidate_legal": false,
+      "transfer_fiber_inventory_feature": 0.0,
+      "establishment_count": 0,
+      "invariant": true
+    },
+    {
+      "name": "cloth_workshop_without_fiber",
+      "day": 0,
+      "actor": 8,
+      "cash": 475,
+      "transfer_candidate_legal": false,
+      "transfer_fiber_inventory_feature": 0.0,
+      "establishment_count": 1,
+      "invariant": true
+    },
+    {
+      "name": "cloth_workshop_with_fiber",
+      "day": 0,
+      "actor": 8,
+      "cash": 411,
+      "transfer_candidate_legal": true,
+      "transfer_fiber_inventory_feature": 0.25,
+      "establishment_count": 1,
+      "invariant": true
+    }
+  ],
+  "seeds": [
+    {
+      "seed": 1,
+      "policy_sha256": "211ec0e6e9c64fb453ea9fff2005ac525d4a1971e03a21d11a48a5d19e80d87d",
+      "manifest_sha256": "9c1bbe88def63adca1297a8e2dae8b2862897ce21c883d86d443d268a754ed1b",
+      "peer_eligible": false,
+      "contexts": {
+        "starting_world": {
+          "day": 0,
+          "actor": 8,
+          "cash": 500,
+          "transfer_candidate_legal": false,
+          "transfer_fiber_inventory_feature": 0.0,
+          "establishment_count": 0,
+          "invariant": true,
+          "action_intents": {
+            "Hold": {
+              "legal_candidates": 1,
+              "probability_mass": 0.029607204720377922,
+              "sampled_decisions": 10
+            },
+            "Buy": {
+              "legal_candidates": 7,
+              "probability_mass": 0.2080928087234497,
+              "sampled_decisions": 58
+            },
+            "Sell": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Travel": {
+              "legal_candidates": 6,
+              "probability_mass": 0.16831398010253906,
+              "sampled_decisions": 42
+            },
+            "Borrow": {
+              "legal_candidates": 1,
+              "probability_mass": 0.030277151614427567,
+              "sampled_decisions": 6
+            },
+            "Repay": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Project": {
+              "legal_candidates": 2,
+              "probability_mass": 0.05927739664912224,
+              "sampled_decisions": 21
+            },
+            "Hire": {
+              "legal_candidates": 1,
+              "probability_mass": 0.029841572046279907,
+              "sampled_decisions": 10
+            },
+            "Tax": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Aid": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Investigate": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Offer": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02904461696743965,
+              "sampled_decisions": 5
+            },
+            "Accept": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Reject": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Work": {
+              "legal_candidates": 1,
+              "probability_mass": 0.03004523552954197,
+              "sampled_decisions": 8
+            },
+            "Study": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Rest": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Social": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Join": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Migrate": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Support": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Appoint": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Mobilize": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Resign": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Marry": {
+              "legal_candidates": 5,
+              "probability_mass": 0.14394639432430267,
+              "sampled_decisions": 30
+            },
+            "CreateEstablishment": {
+              "legal_candidates": 9,
+              "probability_mass": 0.2715536653995514,
+              "sampled_decisions": 66
+            },
+            "TransferEstablishmentGoods": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "AuthorizeWorkAtSite": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "WorkAtSite": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            }
+          },
+          "focused_actions": {
+            "BuyFiber": {
+              "legal_candidates": 1,
+              "probability_mass": 0.029702767729759216,
+              "sampled_decisions": 8
+            },
+            "TransferFiber": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            }
+          },
+          "sample_count": 256
+        },
+        "cloth_workshop_without_fiber": {
+          "day": 0,
+          "actor": 8,
+          "cash": 475,
+          "transfer_candidate_legal": false,
+          "transfer_fiber_inventory_feature": 0.0,
+          "establishment_count": 1,
+          "invariant": true,
+          "action_intents": {
+            "Hold": {
+              "legal_candidates": 1,
+              "probability_mass": 0.026449458673596382,
+              "sampled_decisions": 7
+            },
+            "Buy": {
+              "legal_candidates": 7,
+              "probability_mass": 0.18589875102043152,
+              "sampled_decisions": 45
+            },
+            "Sell": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Travel": {
+              "legal_candidates": 6,
+              "probability_mass": 0.15036392211914062,
+              "sampled_decisions": 43
+            },
+            "Borrow": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02704840898513794,
+              "sampled_decisions": 12
+            },
+            "Repay": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Project": {
+              "legal_candidates": 2,
+              "probability_mass": 0.05295567214488983,
+              "sampled_decisions": 16
+            },
+            "Hire": {
+              "legal_candidates": 1,
+              "probability_mass": 0.0266589242964983,
+              "sampled_decisions": 7
+            },
+            "Tax": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Aid": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Investigate": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Offer": {
+              "legal_candidates": 1,
+              "probability_mass": 0.025947125628590584,
+              "sampled_decisions": 4
+            },
+            "Accept": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Reject": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Work": {
+              "legal_candidates": 1,
+              "probability_mass": 0.026840899139642715,
+              "sampled_decisions": 6
+            },
+            "Study": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Rest": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Social": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Join": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Migrate": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Support": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Appoint": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Mobilize": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Resign": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Marry": {
+              "legal_candidates": 7,
+              "probability_mass": 0.17951619625091553,
+              "sampled_decisions": 33
+            },
+            "CreateEstablishment": {
+              "legal_candidates": 9,
+              "probability_mass": 0.24259060621261597,
+              "sampled_decisions": 70
+            },
+            "TransferEstablishmentGoods": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "AuthorizeWorkAtSite": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02839256450533867,
+              "sampled_decisions": 8
+            },
+            "WorkAtSite": {
+              "legal_candidates": 1,
+              "probability_mass": 0.027337398380041122,
+              "sampled_decisions": 5
+            }
+          },
+          "focused_actions": {
+            "BuyFiber": {
+              "legal_candidates": 1,
+              "probability_mass": 0.026534834876656532,
+              "sampled_decisions": 6
+            },
+            "TransferFiber": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            }
+          },
+          "sample_count": 256
+        },
+        "cloth_workshop_with_fiber": {
+          "day": 0,
+          "actor": 8,
+          "cash": 411,
+          "transfer_candidate_legal": true,
+          "transfer_fiber_inventory_feature": 0.25,
+          "establishment_count": 1,
+          "invariant": true,
+          "action_intents": {
+            "Hold": {
+              "legal_candidates": 1,
+              "probability_mass": 0.025758428499102592,
+              "sampled_decisions": 11
+            },
+            "Buy": {
+              "legal_candidates": 7,
+              "probability_mass": 0.1805398166179657,
+              "sampled_decisions": 36
+            },
+            "Sell": {
+              "legal_candidates": 1,
+              "probability_mass": 0.025357713922858238,
+              "sampled_decisions": 6
+            },
+            "Travel": {
+              "legal_candidates": 6,
+              "probability_mass": 0.14644336700439453,
+              "sampled_decisions": 40
+            },
+            "Borrow": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02634277194738388,
+              "sampled_decisions": 9
+            },
+            "Repay": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Project": {
+              "legal_candidates": 2,
+              "probability_mass": 0.05157361179590225,
+              "sampled_decisions": 20
+            },
+            "Hire": {
+              "legal_candidates": 1,
+              "probability_mass": 0.025962872430682182,
+              "sampled_decisions": 5
+            },
+            "Tax": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Aid": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Investigate": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Offer": {
+              "legal_candidates": 1,
+              "probability_mass": 0.025270195677876472,
+              "sampled_decisions": 3
+            },
+            "Accept": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Reject": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Work": {
+              "legal_candidates": 1,
+              "probability_mass": 0.026140358299016953,
+              "sampled_decisions": 9
+            },
+            "Study": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Rest": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Social": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Join": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Migrate": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Support": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Appoint": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Mobilize": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Resign": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Marry": {
+              "legal_candidates": 6,
+              "probability_mass": 0.15054646134376526,
+              "sampled_decisions": 41
+            },
+            "CreateEstablishment": {
+              "legal_candidates": 9,
+              "probability_mass": 0.23625792562961578,
+              "sampled_decisions": 60
+            },
+            "TransferEstablishmentGoods": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02608361281454563,
+              "sampled_decisions": 5
+            },
+            "AuthorizeWorkAtSite": {
+              "legal_candidates": 1,
+              "probability_mass": 0.027098722755908966,
+              "sampled_decisions": 5
+            },
+            "WorkAtSite": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02662411518394947,
+              "sampled_decisions": 6
+            }
+          },
+          "focused_actions": {
+            "BuyFiber": {
+              "legal_candidates": 1,
+              "probability_mass": 0.025340622290968895,
+              "sampled_decisions": 2
+            },
+            "TransferFiber": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02608361281454563,
+              "sampled_decisions": 5
+            }
+          },
+          "sample_count": 256
+        }
+      }
+    },
+    {
+      "seed": 2,
+      "policy_sha256": "1700614048bb5f553900e727f5490e0ad8efc2fcdf714b566ef1e2d8f711b763",
+      "manifest_sha256": "31fd65077bb3cfbca469c34993e2def2759f7a235b7f37acd20f167076c7d972",
+      "peer_eligible": false,
+      "contexts": {
+        "starting_world": {
+          "day": 0,
+          "actor": 8,
+          "cash": 500,
+          "transfer_candidate_legal": false,
+          "transfer_fiber_inventory_feature": 0.0,
+          "establishment_count": 0,
+          "invariant": true,
+          "action_intents": {
+            "Hold": {
+              "legal_candidates": 1,
+              "probability_mass": 0.029400590807199478,
+              "sampled_decisions": 11
+            },
+            "Buy": {
+              "legal_candidates": 7,
+              "probability_mass": 0.20778927206993103,
+              "sampled_decisions": 62
+            },
+            "Sell": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Travel": {
+              "legal_candidates": 6,
+              "probability_mass": 0.1684286892414093,
+              "sampled_decisions": 36
+            },
+            "Borrow": {
+              "legal_candidates": 1,
+              "probability_mass": 0.029992518946528435,
+              "sampled_decisions": 15
+            },
+            "Repay": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Project": {
+              "legal_candidates": 2,
+              "probability_mass": 0.05802369862794876,
+              "sampled_decisions": 20
+            },
+            "Hire": {
+              "legal_candidates": 1,
+              "probability_mass": 0.029768574982881546,
+              "sampled_decisions": 4
+            },
+            "Tax": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Aid": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Investigate": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Offer": {
+              "legal_candidates": 1,
+              "probability_mass": 0.028826266527175903,
+              "sampled_decisions": 6
+            },
+            "Accept": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Reject": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Work": {
+              "legal_candidates": 1,
+              "probability_mass": 0.030179420486092567,
+              "sampled_decisions": 3
+            },
+            "Study": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Rest": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Social": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Join": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Migrate": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Support": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Appoint": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Mobilize": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Resign": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Marry": {
+              "legal_candidates": 5,
+              "probability_mass": 0.146949902176857,
+              "sampled_decisions": 37
+            },
+            "CreateEstablishment": {
+              "legal_candidates": 9,
+              "probability_mass": 0.2706409990787506,
+              "sampled_decisions": 62
+            },
+            "TransferEstablishmentGoods": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "AuthorizeWorkAtSite": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "WorkAtSite": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            }
+          },
+          "focused_actions": {
+            "BuyFiber": {
+              "legal_candidates": 1,
+              "probability_mass": 0.0297398641705513,
+              "sampled_decisions": 8
+            },
+            "TransferFiber": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            }
+          },
+          "sample_count": 256
+        },
+        "cloth_workshop_without_fiber": {
+          "day": 0,
+          "actor": 8,
+          "cash": 475,
+          "transfer_candidate_legal": false,
+          "transfer_fiber_inventory_feature": 0.0,
+          "establishment_count": 1,
+          "invariant": true,
+          "action_intents": {
+            "Hold": {
+              "legal_candidates": 1,
+              "probability_mass": 0.026217525824904442,
+              "sampled_decisions": 8
+            },
+            "Buy": {
+              "legal_candidates": 7,
+              "probability_mass": 0.18529340624809265,
+              "sampled_decisions": 44
+            },
+            "Sell": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Travel": {
+              "legal_candidates": 6,
+              "probability_mass": 0.1501898616552353,
+              "sampled_decisions": 36
+            },
+            "Borrow": {
+              "legal_candidates": 1,
+              "probability_mass": 0.026745617389678955,
+              "sampled_decisions": 6
+            },
+            "Repay": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Project": {
+              "legal_candidates": 2,
+              "probability_mass": 0.05174198001623154,
+              "sampled_decisions": 15
+            },
+            "Hire": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02654569409787655,
+              "sampled_decisions": 8
+            },
+            "Tax": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Aid": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Investigate": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Offer": {
+              "legal_candidates": 1,
+              "probability_mass": 0.025704799219965935,
+              "sampled_decisions": 4
+            },
+            "Accept": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Reject": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Work": {
+              "legal_candidates": 1,
+              "probability_mass": 0.026912035420536995,
+              "sampled_decisions": 8
+            },
+            "Study": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Rest": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Social": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Join": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Migrate": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Support": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Appoint": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Mobilize": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Resign": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Marry": {
+              "legal_candidates": 7,
+              "probability_mass": 0.18367880582809448,
+              "sampled_decisions": 52
+            },
+            "CreateEstablishment": {
+              "legal_candidates": 9,
+              "probability_mass": 0.24133983254432678,
+              "sampled_decisions": 63
+            },
+            "TransferEstablishmentGoods": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "AuthorizeWorkAtSite": {
+              "legal_candidates": 1,
+              "probability_mass": 0.028332289308309555,
+              "sampled_decisions": 7
+            },
+            "WorkAtSite": {
+              "legal_candidates": 1,
+              "probability_mass": 0.027298172935843468,
+              "sampled_decisions": 5
+            }
+          },
+          "focused_actions": {
+            "BuyFiber": {
+              "legal_candidates": 1,
+              "probability_mass": 0.026520125567913055,
+              "sampled_decisions": 6
+            },
+            "TransferFiber": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            }
+          },
+          "sample_count": 256
+        },
+        "cloth_workshop_with_fiber": {
+          "day": 0,
+          "actor": 8,
+          "cash": 411,
+          "transfer_candidate_legal": true,
+          "transfer_fiber_inventory_feature": 0.25,
+          "establishment_count": 1,
+          "invariant": true,
+          "action_intents": {
+            "Hold": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02554752491414547,
+              "sampled_decisions": 10
+            },
+            "Buy": {
+              "legal_candidates": 7,
+              "probability_mass": 0.18021446466445923,
+              "sampled_decisions": 49
+            },
+            "Sell": {
+              "legal_candidates": 1,
+              "probability_mass": 0.025537913665175438,
+              "sampled_decisions": 7
+            },
+            "Travel": {
+              "legal_candidates": 6,
+              "probability_mass": 0.14633923768997192,
+              "sampled_decisions": 33
+            },
+            "Borrow": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02606196515262127,
+              "sampled_decisions": 10
+            },
+            "Repay": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Project": {
+              "legal_candidates": 2,
+              "probability_mass": 0.05041821300983429,
+              "sampled_decisions": 18
+            },
+            "Hire": {
+              "legal_candidates": 1,
+              "probability_mass": 0.025867227464914322,
+              "sampled_decisions": 5
+            },
+            "Tax": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Aid": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Investigate": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Offer": {
+              "legal_candidates": 1,
+              "probability_mass": 0.025046516209840775,
+              "sampled_decisions": 6
+            },
+            "Accept": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Reject": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Work": {
+              "legal_candidates": 1,
+              "probability_mass": 0.026224246248602867,
+              "sampled_decisions": 7
+            },
+            "Study": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Rest": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Social": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Join": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Migrate": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Support": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Appoint": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Mobilize": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Resign": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Marry": {
+              "legal_candidates": 6,
+              "probability_mass": 0.1533815860748291,
+              "sampled_decisions": 37
+            },
+            "CreateEstablishment": {
+              "legal_candidates": 9,
+              "probability_mass": 0.23517107963562012,
+              "sampled_decisions": 53
+            },
+            "TransferEstablishmentGoods": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02621152624487877,
+              "sampled_decisions": 7
+            },
+            "AuthorizeWorkAtSite": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02737968973815441,
+              "sampled_decisions": 7
+            },
+            "WorkAtSite": {
+              "legal_candidates": 1,
+              "probability_mass": 0.026598723605275154,
+              "sampled_decisions": 7
+            }
+          },
+          "focused_actions": {
+            "BuyFiber": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02549928054213524,
+              "sampled_decisions": 3
+            },
+            "TransferFiber": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02621152624487877,
+              "sampled_decisions": 7
+            }
+          },
+          "sample_count": 256
+        }
+      }
+    },
+    {
+      "seed": 3,
+      "policy_sha256": "795b2bfd88cb9186a60dc70d10e09af9935f109d78f86e3629d2ac9f3a1add31",
+      "manifest_sha256": "edea10e8d139ab9181adccd24f00f1ff5137343d626486172ead80e73978c0d5",
+      "peer_eligible": false,
+      "contexts": {
+        "starting_world": {
+          "day": 0,
+          "actor": 8,
+          "cash": 500,
+          "transfer_candidate_legal": false,
+          "transfer_fiber_inventory_feature": 0.0,
+          "establishment_count": 0,
+          "invariant": true,
+          "action_intents": {
+            "Hold": {
+              "legal_candidates": 1,
+              "probability_mass": 0.029401125386357307,
+              "sampled_decisions": 8
+            },
+            "Buy": {
+              "legal_candidates": 7,
+              "probability_mass": 0.20689211785793304,
+              "sampled_decisions": 58
+            },
+            "Sell": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Travel": {
+              "legal_candidates": 6,
+              "probability_mass": 0.16671471297740936,
+              "sampled_decisions": 39
+            },
+            "Borrow": {
+              "legal_candidates": 1,
+              "probability_mass": 0.029097305610775948,
+              "sampled_decisions": 9
+            },
+            "Repay": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Project": {
+              "legal_candidates": 2,
+              "probability_mass": 0.05919284373521805,
+              "sampled_decisions": 12
+            },
+            "Hire": {
+              "legal_candidates": 1,
+              "probability_mass": 0.029554344713687897,
+              "sampled_decisions": 6
+            },
+            "Tax": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Aid": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Investigate": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Offer": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02831755205988884,
+              "sampled_decisions": 5
+            },
+            "Accept": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Reject": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Work": {
+              "legal_candidates": 1,
+              "probability_mass": 0.0298184584826231,
+              "sampled_decisions": 4
+            },
+            "Study": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Rest": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Social": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Join": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Migrate": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Support": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Appoint": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Mobilize": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Resign": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Marry": {
+              "legal_candidates": 5,
+              "probability_mass": 0.14323383569717407,
+              "sampled_decisions": 36
+            },
+            "CreateEstablishment": {
+              "legal_candidates": 9,
+              "probability_mass": 0.27777767181396484,
+              "sampled_decisions": 79
+            },
+            "TransferEstablishmentGoods": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "AuthorizeWorkAtSite": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "WorkAtSite": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            }
+          },
+          "focused_actions": {
+            "BuyFiber": {
+              "legal_candidates": 1,
+              "probability_mass": 0.029461508616805077,
+              "sampled_decisions": 8
+            },
+            "TransferFiber": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            }
+          },
+          "sample_count": 256
+        },
+        "cloth_workshop_without_fiber": {
+          "day": 0,
+          "actor": 8,
+          "cash": 475,
+          "transfer_candidate_legal": false,
+          "transfer_fiber_inventory_feature": 0.0,
+          "establishment_count": 1,
+          "invariant": true,
+          "action_intents": {
+            "Hold": {
+              "legal_candidates": 1,
+              "probability_mass": 0.026215266436338425,
+              "sampled_decisions": 7
+            },
+            "Buy": {
+              "legal_candidates": 7,
+              "probability_mass": 0.1844736933708191,
+              "sampled_decisions": 54
+            },
+            "Sell": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Travel": {
+              "legal_candidates": 6,
+              "probability_mass": 0.14864809811115265,
+              "sampled_decisions": 26
+            },
+            "Borrow": {
+              "legal_candidates": 1,
+              "probability_mass": 0.025945555418729782,
+              "sampled_decisions": 7
+            },
+            "Repay": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Project": {
+              "legal_candidates": 2,
+              "probability_mass": 0.05278068035840988,
+              "sampled_decisions": 12
+            },
+            "Hire": {
+              "legal_candidates": 1,
+              "probability_mass": 0.026352083310484886,
+              "sampled_decisions": 11
+            },
+            "Tax": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Aid": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Investigate": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Offer": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02524915523827076,
+              "sampled_decisions": 9
+            },
+            "Accept": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Reject": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Work": {
+              "legal_candidates": 1,
+              "probability_mass": 0.026587458327412605,
+              "sampled_decisions": 11
+            },
+            "Study": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Rest": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Social": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Join": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Migrate": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Support": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Appoint": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Mobilize": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Resign": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Marry": {
+              "legal_candidates": 7,
+              "probability_mass": 0.17928007245063782,
+              "sampled_decisions": 53
+            },
+            "CreateEstablishment": {
+              "legal_candidates": 9,
+              "probability_mass": 0.2476808875799179,
+              "sampled_decisions": 53
+            },
+            "TransferEstablishmentGoods": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "AuthorizeWorkAtSite": {
+              "legal_candidates": 1,
+              "probability_mass": 0.028265444561839104,
+              "sampled_decisions": 9
+            },
+            "WorkAtSite": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02852173149585724,
+              "sampled_decisions": 4
+            }
+          },
+          "focused_actions": {
+            "BuyFiber": {
+              "legal_candidates": 1,
+              "probability_mass": 0.026269059628248215,
+              "sampled_decisions": 11
+            },
+            "TransferFiber": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            }
+          },
+          "sample_count": 256
+        },
+        "cloth_workshop_with_fiber": {
+          "day": 0,
+          "actor": 8,
+          "cash": 411,
+          "transfer_candidate_legal": true,
+          "transfer_fiber_inventory_feature": 0.25,
+          "establishment_count": 1,
+          "invariant": true,
+          "action_intents": {
+            "Hold": {
+              "legal_candidates": 1,
+              "probability_mass": 0.025523267686367035,
+              "sampled_decisions": 8
+            },
+            "Buy": {
+              "legal_candidates": 7,
+              "probability_mass": 0.17913736402988434,
+              "sampled_decisions": 55
+            },
+            "Sell": {
+              "legal_candidates": 1,
+              "probability_mass": 0.025140294805169106,
+              "sampled_decisions": 5
+            },
+            "Travel": {
+              "legal_candidates": 6,
+              "probability_mass": 0.14472542703151703,
+              "sampled_decisions": 35
+            },
+            "Borrow": {
+              "legal_candidates": 1,
+              "probability_mass": 0.025264916941523552,
+              "sampled_decisions": 8
+            },
+            "Repay": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Project": {
+              "legal_candidates": 2,
+              "probability_mass": 0.05138816684484482,
+              "sampled_decisions": 9
+            },
+            "Hire": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02565675973892212,
+              "sampled_decisions": 3
+            },
+            "Tax": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Aid": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Investigate": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Offer": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02458154410123825,
+              "sampled_decisions": 5
+            },
+            "Accept": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Reject": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Work": {
+              "legal_candidates": 1,
+              "probability_mass": 0.025885412469506264,
+              "sampled_decisions": 2
+            },
+            "Study": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Rest": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Social": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Join": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Migrate": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Support": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Appoint": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Mobilize": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Resign": {
+              "legal_candidates": 0,
+              "probability_mass": 0.0,
+              "sampled_decisions": 0
+            },
+            "Marry": {
+              "legal_candidates": 6,
+              "probability_mass": 0.14938917756080627,
+              "sampled_decisions": 44
+            },
+            "CreateEstablishment": {
+              "legal_candidates": 9,
+              "probability_mass": 0.2411196231842041,
+              "sampled_decisions": 63
+            },
+            "TransferEstablishmentGoods": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02717992477118969,
+              "sampled_decisions": 6
+            },
+            "AuthorizeWorkAtSite": {
+              "legal_candidates": 1,
+              "probability_mass": 0.027237795293331146,
+              "sampled_decisions": 6
+            },
+            "WorkAtSite": {
+              "legal_candidates": 1,
+              "probability_mass": 0.027770444750785828,
+              "sampled_decisions": 7
+            }
+          },
+          "focused_actions": {
+            "BuyFiber": {
+              "legal_candidates": 1,
+              "probability_mass": 0.025111520662903786,
+              "sampled_decisions": 6
+            },
+            "TransferFiber": {
+              "legal_candidates": 1,
+              "probability_mass": 0.02717992477118969,
+              "sampled_decisions": 6
+            }
+          },
+          "sample_count": 256
+        }
+      }
+    }
+  ]
+}

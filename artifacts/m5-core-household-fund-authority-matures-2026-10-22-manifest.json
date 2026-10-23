@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-22",
+  "scope": "M5 household fund authority becomes available when the surviving minor reaches adulthood through Realm game time",
+  "platform": "Windows",
+  "build_directory": "build/m5-core",
+  "target": "polyec_realm_tests",
+  "release": {
+    "build": "pass",
+    "direct_run": "pass",
+    "checks": 20721,
+    "profile": "A: 10000 persons, 19743 sparse relations, 90 days"
+  },
+  "debug": {
+    "build": "pass",
+    "direct_run": "pass",
+    "checks": 20721,
+    "profile": "A: 10000 persons, 19743 sparse relations, 90 days",
+    "executable_wall_seconds_approx": 216
+  },
+  "full_ctest": {
+    "release": "19/19 passed before recent test-only additions",
+    "debug": "19/19 passed before recent test-only additions"
+  },
+  "not_rerun": [
+    "Python",
+    "native",
+    "GDExtension",
+    "Godot"
+  ],
+  "files": [
+    "core/tests/test_realm.cpp",
+    "docs/design/M5-core-household-fund-authority-matures-plan.md",
+    "docs/reports/M5-core-household-fund-authority-matures-evidence-2026-10-22.md",
+    "docs/CURRENT_TASK.md",
+    "docs/DEVELOPMENT_HISTORY.md"
+  ],
+  "sha256": {
+    "core/tests/test_realm.cpp": "58b23f58523c2d1841e9afb6f6e27f20fb0aa2e523d95547d9e7e15955043d79",
+    "docs/design/M5-core-household-fund-authority-matures-plan.md": "6b89baaa18c88fdd9d2545b55fb0a52acf1f4f82dbeffa756775bea9e37d2988",
+    "docs/reports/M5-core-household-fund-authority-matures-evidence-2026-10-22.md": "f16b65640dc70e92f635a86c218f1360b71c23f7e88767a65aa3a4a17c0a7528",
+    "docs/CURRENT_TASK.md": "73d6118fda0f68868604751b9aac4198e79ab05618d599b58ed5a3c1dee72a1d",
+    "docs/DEVELOPMENT_HISTORY.md": "8ee28ba4ac2579bcbc6673a84b7e84ff47ba284518ed49859ab92a3b1d94ff40"
+  }
+}

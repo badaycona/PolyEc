@@ -3,6 +3,7 @@ project(PolyEc VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+option(POLYEC_ENABLE_REALM_PHASE_PROFILE "Instrument Realm day phases for diagnostic benchmarks" OFF)
 if(MSVC AND NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
   # Match godot-cpp's default before creating core targets as well.
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")

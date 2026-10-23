@@ -1,0 +1,46 @@
+{
+  "created_utc": "2026-10-20T19:19:17Z",
+  "task": "M5 core refactor: typed Realm relation kinds",
+  "files": [
+    {
+      "sha256": "5b46500c881ca8bbacc58484c8288a53d9a507f60c96ca2cbcefb6dd10fb83de",
+      "path": "core/include/polyec/realm.hpp"
+    },
+    {
+      "sha256": "74cc7cc0a3f5821d20c1538a887f7458703d4273f131d1e7026dbdd5bb6fc89b",
+      "path": "core/include/polyec/edge_section_codec.hpp"
+    },
+    {
+      "sha256": "4430d3a6c48b940d92b8c1aed9936a5a06ad9492c1cabb8154f934d153e4cbf4",
+      "path": "core/src/realm.cpp"
+    },
+    {
+      "sha256": "bc061bffb8b73444de27c1be3ca180c77294c01326ad67ffc9c79667664042f8",
+      "path": "core/src/realm_court.cpp"
+    },
+    {
+      "sha256": "4ceb6e29116f4aa120dfb212c729204c60523db7efcf6d9c8b9a9cd4ed7024d4",
+      "path": "core/tests/test_realm.cpp"
+    },
+    {
+      "sha256": "7bc46ca92529d09f8ac778d72e9ebd129d5db1360f78c250fbd5e2c031649161",
+      "path": "docs/design/core-class-reference.md"
+    },
+    {
+      "sha256": "aa09ed3642d100364921a9fa05bc40f4b78f27305dce1bd577f3149918767734",
+      "path": "docs/design/M5-core-relation-kind-plan.md"
+    },
+    {
+      "sha256": "4e1c9f4522d6b4a293f0cad583358fd6f0ae079ee203fdb1940c9472a790ce89",
+      "path": "docs/reports/M5-core-relation-kind-evidence-2026-10-21.md"
+    },
+    {
+      "sha256": "9f1d4ce1ac26085cfcaa74044cf526982eef72b65caf70db1f986dcee6c74d39",
+      "path": "docs/CURRENT_TASK.md"
+    },
+    {
+      "sha256": "50b734311cb022666611941963194922bee1d839a7a1f715a72e3400cfac8f03",
+      "path": "docs/DEVELOPMENT_HISTORY.md"
+    }
+  ]
+}

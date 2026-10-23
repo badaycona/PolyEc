@@ -1,0 +1,67 @@
+{
+  "platform": "Windows Release",
+  "date": "2026-10-22",
+  "files": {
+    "docs/IMPLEMENTATION_PLAN.md": {
+      "sha256": "b51f460c3bee296c4d48c881f87ea8f1870c2a5ddf2fceee1f4260e5191845f5",
+      "bytes": 109659
+    },
+    "docs/reports/M5-peerage-successor-resolution-evidence-2026-10-22.md": {
+      "sha256": "781d808d91635dfb7011add026d9182b2fc2e42839a3a4c0f81de501d9a30d4d",
+      "bytes": 7426
+    },
+    "core/tests/test_managers.cpp": {
+      "sha256": "e1159fe5d3113118a50d84c4745244e18caccc9d4e604442e99f8342cd213ec2",
+      "bytes": 100196
+    },
+    "docs/DEVELOPMENT_HISTORY.md": {
+      "sha256": "2361a1269078da8bcae3facc89fb2241bcd0a62ff53ed3ccb22e0ad7276f2014",
+      "bytes": 88815
+    },
+    "core/CMakeLists.txt": {
+      "sha256": "3fca61a637deb91c2b96b559d987a8abc93ee2c285002458d0242e6151218eae",
+      "bytes": 6224
+    },
+    "docs/design/M5-peerage-successor-resolution-plan.md": {
+      "sha256": "e7084c82c2c3541939fa017c7fd60bb15cc2d4d594829a764b1ea23acc99e087",
+      "bytes": 3035
+    },
+    "build/windows/core/Release/polyec_manager_tests.exe": {
+      "sha256": "e223ea8958fef29d44d99841fd1303667ed76ff21b4537f3dbee80f450c449ca",
+      "bytes": 545280
+    },
+    "core/include/polyec/realm.hpp": {
+      "sha256": "c5fd9c79a38a7eee19daab74e861ff5617302b78d951c21ef54eeb21fc872276",
+      "bytes": 17649
+    },
+    "docs/design/M5-core-estate-beneficiary-resolution-plan.md": {
+      "sha256": "d0315d25cabd69dc84340b22cbf480837dcde6df1603667a27054a4cd6aa17ae",
+      "bytes": 1739
+    },
+    "core/include/polyec/managers/peerage_succession_manager.hpp": {
+      "sha256": "846c70e160b3b4a219887816197bd1bc3a3f781f295b6dd5861c49060b2002e5",
+      "bytes": 2957
+    },
+    "docs/CURRENT_TASK.md": {
+      "sha256": "0956ede0df0ac9929b2edc48313142f2b11cb2d1d8187497d2043f5dc192f6da",
+      "bytes": 108702
+    }
+  },
+  "record": "M5.3 pure peerage successor resolution evidence",
+  "result": {
+    "death_transition_integrated": false,
+    "debug_run": false,
+    "direct_runner_exit_code": 0,
+    "full_ctest_run": false,
+    "target": "polyec_manager_tests",
+    "realm_title_registry_added": false,
+    "cases": [
+      "eldest living verified child including minor",
+      "unverified or deceased child exclusion",
+      "age tie awaits recognition",
+      "no eligible child awaits recognition",
+      "duplicate edge deduplication",
+      "invalid IDs rejected"
+    ]
+  }
+}

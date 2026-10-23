@@ -1,0 +1,28 @@
+{
+  "task": "M5 v16 validation-only model selection",
+  "date": "2026-10-21",
+  "schema": "realm-v11",
+  "self_review_only": true,
+  "working_tree": "shared dirty checkout; hashes identify this snapshot, not an isolated commit",
+  "validation": {
+    "syntax_check": "pass",
+    "three_seed_runset": "pass; 3 distinct economic smoke seeds, 1 update and 1,024 decisions each",
+    "selection_run": "pass; eligible_seeds empty, selected_seed null, no bundle created",
+    "validation_worlds": 2,
+    "validation_days": 2,
+    "holdout_smoke_r1": false,
+    "peer_eligibility": false
+  },
+  "limitations": [
+    "Three-seed runset used only one update per seed, below the 25-update selection/R1 floor.",
+    "Holdout smoke remains 2 worlds by 2 days and cannot establish policy quality.",
+    "Full R1, R2/R3, R5, cross-family learned peers and profile B remain open."
+  ],
+  "files_sha256": {
+    "ai/evaluation/realm_policy_holdout_v11.py": "EC7D7E22299516BBCC3D1C1E161A04DAE6A6F616F87F339CF648FF02F6381107",
+    "ai/evaluation/realm_select_v11.py": "04048900FA79D8D77E48C3F8F4A449F4617D6A1CF1231E03B3160CEF06F457C0",
+    "ai/training/realm_train_v11.py": "46552B323825CFCF45345A5E4300D976626F8A588510E55B9D28D35C5FF86A9D",
+    "docs/design/M5-v16-validation-model-selection-plan.md": "1A554934E0AEA497214DA9E9B2C64AD5A6C73DCB0B1031E222F14856F89B213C",
+    "docs/reports/M5-v16-validation-model-selection-evidence-2026-10-21.md": "4AB86494102E498DD8A3373584A7FB9BE7E90CC812F718E060BE7D2AA8DE80E2"
+  }
+}

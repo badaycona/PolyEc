@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-22",
+  "scope": "C++ core integration checkpoint for M5 estate, household fund authority, and appointed office lifecycle; includes Realm estate-tier priority fixtures",
+  "platform": "Windows Visual Studio",
+  "build_directory": "build/m5-core",
+  "core_ctest_release": {
+    "result": "pass",
+    "passed": 19,
+    "total": 19,
+    "wall_seconds": 38.54
+  },
+  "realm_target": {
+    "release_checks": 20741,
+    "debug_checks": 20741,
+    "profile": "A: 10000 persons, 19743 sparse relations, 90 days",
+    "release_profile_seconds": 5.76705,
+    "debug_profile_seconds": 23.0234
+  },
+  "court_target": {
+    "release_checks": 537,
+    "debug_checks": 537
+  },
+  "full_ctest_debug": "19/19 passed before latest test-only additions; affected Debug Realm/Court runners passed directly after additions",
+  "not_run": [
+    "ALL_BUILD",
+    "Python",
+    "native",
+    "GDExtension",
+    "Godot"
+  ],
+  "link_check": "1072 local repository references passed",
+  "review": "Codex self-review; no independent reviewer",
+  "files": [
+    "core/tests/test_realm.cpp",
+    "core/tests/test_realm_court.cpp",
+    "docs/CURRENT_TASK.md",
+    "docs/DEVELOPMENT_HISTORY.md",
+    "docs/reports/M5-core-estate-office-lifecycle-integration-evidence-2026-10-22.md"
+  ],
+  "sha256": {
+    "docs/DEVELOPMENT_HISTORY.md": "fd61e2b62720a6220a30a13b99d850041c63f95152fb4f487cde0bb9ab2b1ae1",
+    "core/tests/test_realm.cpp": "5910756ee75b218c5de47cb5178053019211c37d606fd4f257240a271d7d2af7",
+    "core/tests/test_realm_court.cpp": "bde42ab943919206a9ba6bea0b96037e534362ed9f06745f6c8e7b3860a12715",
+    "docs/CURRENT_TASK.md": "2f735d3f83c5bdf13c79fdeb40887e5494b509f93028e311d49aac6ee9fecabb",
+    "docs/reports/M5-core-estate-office-lifecycle-integration-evidence-2026-10-22.md": "7f12be6ea9d83f5bc17b1693a9587116571364f270bc8d9ea0147eef3e207857"
+  }
+}

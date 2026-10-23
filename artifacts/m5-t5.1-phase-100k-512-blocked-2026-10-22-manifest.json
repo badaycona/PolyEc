@@ -1,0 +1,44 @@
+{
+  "baseline_head": "working-tree",
+  "note": "Blocked benchmark attempt. Hashes identify current benchmark source/build/model manifests and report; no output JSON exists because manifest validation stopped before simulation.",
+  "command": "polyec_realm_benchmark <v7 governance/economic/civilian ONNX> <v7 dir> <output> 31 37 100000 512",
+  "exit_code": 1,
+  "files": [
+    {
+      "path": "native/realm_benchmark.cpp",
+      "sha256": "cdc172582a42ca4010ade5143b04d3d6329aeccf39fbbc90ec3cd6a7ca20ba41"
+    },
+    {
+      "path": "docs/design/M5-T5.1-runtime-phase-profile-plan.md",
+      "sha256": "78a9e29c706e0f5b46733a871df37cbf321a801a679629cc7ec58f83cf31c531"
+    },
+    {
+      "path": "docs/reports/M5-T5.1-phase-profile-100k-512-blocked-2026-10-22.md",
+      "sha256": "56fed5aab8490d3290a001ffd0344504bee0a4b1f773e0e03f0b1aa302ddd0a3"
+    },
+    {
+      "path": "docs/CURRENT_TASK.md",
+      "sha256": "e5ce810ecf88f304294f92870c687484179a7ec00ed0031b11c72c58817b943c"
+    },
+    {
+      "path": "docs/DEVELOPMENT_HISTORY.md",
+      "sha256": "6cedb88be5a0ffbaf74254215d90c0b3fdb91afa9361bec77bbaaf895233e3ee"
+    },
+    {
+      "path": "build/m5-phase-runtime/Release/polyec_realm_benchmark.exe",
+      "sha256": "341a7fe506ede1f40b0548ca9d7d6bde47a8b213519bda9e35a6500086c558ba"
+    },
+    {
+      "path": "artifacts/models/realm-v7-pilot-2026-10-21/governance/manifest.json",
+      "sha256": "16f7491e3556a00a8f447cefb3d2974501fe799615512b071112f1b8e3f7fbe7"
+    },
+    {
+      "path": "artifacts/models/realm-v7-pilot-2026-10-21/economic/manifest.json",
+      "sha256": "01412876f736330ee092636fb68d7e5acdc04a1302d694cfa0e3d6ddb82b8782"
+    },
+    {
+      "path": "artifacts/models/realm-v7-pilot-2026-10-21/civilian/manifest.json",
+      "sha256": "9c66314fd3d75164f814620e6526ae3b62707197952a16512e9b0cca9826205a"
+    }
+  ]
+}

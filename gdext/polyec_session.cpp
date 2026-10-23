@@ -1,5 +1,6 @@
 #include "polyec/sim.hpp"
 #include "polyec/campaign.hpp"
+#include "polyec/atlas_cartography.hpp"
 #include <godot_cpp/godot.hpp>
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/core/class_db.hpp>
@@ -7,6 +8,7 @@
 #include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/packed_vector2_array.hpp>
 #include <chrono>
+#include <algorithm>
 #include <memory>
 #ifdef POLYEC_AI_ENABLED
 #include "polyec/lab.hpp"
@@ -37,6 +39,8 @@ protected:
         ClassDB::bind_method(D_METHOD("tick"), &PolyEcSession::tick);
         ClassDB::bind_method(D_METHOD("set_active", "value"), &PolyEcSession::set_active);
         ClassDB::bind_method(D_METHOD("set_speed", "value"), &PolyEcSession::set_speed);
+        ClassDB::bind_method(D_METHOD("capability_catalog"), &PolyEcSession::capability_catalog);
+        ClassDB::bind_method(D_METHOD("atlas_map_data"), &PolyEcSession::atlas_map_data);
         ClassDB::bind_method(D_METHOD("rl_available"), &PolyEcSession::rl_available);
         ClassDB::bind_method(D_METHOD("m4_start", "seed", "population"), &PolyEcSession::m4_start, DEFVAL(int64_t(37)), DEFVAL(int64_t(10000)));
         ClassDB::bind_method(D_METHOD("m4_snapshot"), &PolyEcSession::m4_snapshot);
@@ -55,6 +59,7 @@ protected:
         ClassDB::bind_method(D_METHOD("rl_step"), &PolyEcSession::rl_step);
         ClassDB::bind_method(D_METHOD("rl_snapshot"), &PolyEcSession::rl_snapshot);
         ClassDB::bind_method(D_METHOD("realm_schema"), &PolyEcSession::realm_schema);
+        ClassDB::bind_method(D_METHOD("realm_model_contract"), &PolyEcSession::realm_model_contract);
         ClassDB::bind_method(D_METHOD("realm_load", "paths", "hashes", "seed", "population"), &PolyEcSession::realm_load);
         ClassDB::bind_method(D_METHOD("realm_step", "days"), &PolyEcSession::realm_step);
         ClassDB::bind_method(D_METHOD("realm_step_one_day"), &PolyEcSession::realm_step_one_day);
@@ -64,12 +69,67 @@ protected:
         ClassDB::bind_method(D_METHOD("realm_pause_revision"), &PolyEcSession::realm_pause_revision);
         ClassDB::bind_method(D_METHOD("realm_snapshot", "actor"), &PolyEcSession::realm_snapshot,DEFVAL(int64_t(1)));
         ClassDB::bind_method(D_METHOD("realm_command", "actor", "action", "expected"), &PolyEcSession::realm_command,DEFVAL(String()));
+        ClassDB::bind_method(D_METHOD("realm_military_combat_consent", "actor", "consent", "expected"), &PolyEcSession::realm_military_combat_consent,DEFVAL(String()));
+        ClassDB::bind_method(D_METHOD("realm_military_raid", "partner_id", "force_units", "expected"), &PolyEcSession::realm_military_raid,DEFVAL(String()));
+        ClassDB::bind_method(D_METHOD("realm_military_battle", "actor", "raid_id", "retreat", "defenders", "expected"), &PolyEcSession::realm_military_battle,DEFVAL(String()));
+        ClassDB::bind_method(D_METHOD("realm_foreign_trade_suspension", "actor", "partner_id", "suspended", "expected"), &PolyEcSession::realm_foreign_trade_suspension,DEFVAL(String()));
+        ClassDB::bind_method(D_METHOD("realm_foreign_trade_offer", "actor", "partner_id", "operation", "good", "quantity", "expected"), &PolyEcSession::realm_foreign_trade_offer,DEFVAL(String()));
+        ClassDB::bind_method(D_METHOD("realm_title_transfer", "actor", "holding_id", "recipient", "expected"), &PolyEcSession::realm_title_transfer,DEFVAL(String()));
+        ClassDB::bind_method(D_METHOD("realm_land_use_rights"), &PolyEcSession::realm_land_use_rights);
+        ClassDB::bind_method(D_METHOD("realm_land_use_grant", "actor", "holding_id", "grantee", "expected"), &PolyEcSession::realm_land_use_grant,DEFVAL(String()));
+        ClassDB::bind_method(D_METHOD("realm_land_use_revoke", "actor", "holding_id", "expected"), &PolyEcSession::realm_land_use_revoke,DEFVAL(String()));
+        ClassDB::bind_method(D_METHOD("realm_market_order", "actor", "operation", "order_id", "region", "good", "quantity", "maximum_unit_price", "expected"), &PolyEcSession::realm_market_order,DEFVAL(String()));
+        ClassDB::bind_method(D_METHOD("realm_debug_worksite_cycle", "actor", "expected"), &PolyEcSession::realm_debug_worksite_cycle);
         ClassDB::bind_method(D_METHOD("realm_draft", "card", "reroll"), &PolyEcSession::realm_draft);
         ClassDB::bind_method(D_METHOD("realm_save", "path", "restore"), &PolyEcSession::realm_save);
         ClassDB::bind_method(D_METHOD("realm_route", "actor", "from", "to", "open"), &PolyEcSession::realm_route);
 #endif
     }
 public:
+    Dictionary atlas_map_data() const {
+        Array regions;
+        for (const auto& polygon : polyec::kAtlasMapPolygons) {
+            const auto& territory = polyec::kWorldAtlas[polygon.territory_id];
+            Dictionary row;
+            row["id"] = int(polygon.territory_id);
+            row["name"] = String::utf8(territory.name.data());
+            row["group"] = String::utf8(territory.region_group.data());
+            row["specialty"] = String::utf8(territory.specialty.data());
+            row["description"] = String::utf8(territory.advantages_and_constraints.data());
+            row["royal"] = territory.royal_domain;
+            row["anchor"] = Vector2(polygon.label_anchor.x, polygon.label_anchor.y);
+            PackedVector2Array points;
+            for (const auto& point : polygon.vertices) points.push_back(Vector2(point.x, point.y));
+            row["polygon"] = points;
+            regions.push_back(row);
+        }
+        Array links;
+        for (const auto& link : polyec::kWorldAtlasLinks) {
+            Dictionary row;
+            row["from"] = int(link.from); row["to"] = int(link.to);
+            row["corridor"] = int(link.corridor); row["mode"] = int(link.mode);
+            row["direction"] = int(link.direction);
+            links.push_back(row);
+        }
+        Dictionary result;
+        result["version"] = "atlas-cartography-v1";
+        result["unit"] = "map_unit";
+        result["regions"] = regions;
+        result["links"] = links;
+        return result;
+    }
+    Array capability_catalog() const {
+        Array result;
+        for(const auto& definition:polyec::kCapabilityCatalog){
+            Dictionary row;row["id"]=int(definition.id);row["key"]=String::utf8(definition.key);
+            row["unit"]=String::utf8(definition.unit);row["minimum"]=definition.minimum;
+            row["maximum"]=definition.maximum;row["owner"]=String::utf8(definition.owner);
+            row["scenario_configurable"]=definition.scenario_configurable;
+            row["always_active"]=definition.always_active;row["disabled_value"]=definition.disabled_value;
+            result.push_back(row);
+        }
+        return result;
+    }
     bool m4_start(int64_t seed=37,int64_t population=10000){try{auto next=std::make_unique<polyec::Campaign>(uint64_t(seed),int(population));next->pause();campaign=std::move(next);campaign_error.clear();return true;}catch(const std::exception&e){campaign_error=e.what();return false;}}
     bool m4_step(int64_t days){if(!active||!campaign||days<1||days>30){campaign_error=!active?"Cửa sổ không hoạt động":(!campaign?"Chưa mở sổ M4":"Khoảng ngày phải trong 1–30");return false;}try{campaign->advance(int(days));campaign_error.clear();return true;}catch(const std::exception&e){campaign_error=e.what();return false;}}
     bool m4_step_one_day(){if(!active||!campaign){campaign_error=!active?"Cửa sổ không hoạt động":"Chưa mở sổ M4";return false;}try{campaign->step_one_day();campaign_error.clear();return true;}catch(const std::exception&e){campaign_error=e.what();return false;}}
@@ -106,6 +166,7 @@ public:
     }
 #ifdef POLYEC_AI_ENABLED
     String realm_schema()const{return polyec::realm_schema;}
+    String realm_model_contract()const{const polyec::Realm world(1,1,128);const auto contract=world.model_contract();return String::utf8(contract.c_str());}
     bool realm_load(const Array&paths,const Array&hashes,int64_t seed,int64_t population){
         controller.set_paused(true);anchor=Clock::now();
         if(paths.size()!=3||hashes.size()!=3||population<128||population>100000){realm.stop("Invalid model bundle/profile");return false;}
@@ -122,6 +183,75 @@ public:
     bool realm_paused()const{return realm.paused();}
     uint64_t realm_pause_revision()const{return realm.pause_revision();}
     bool realm_command(int64_t actor,int64_t action,const String&expected=String()){if(!active)return false;return realm.command(uint64_t(actor),int(action),expected.utf8().get_data());}
+    bool realm_military_combat_consent(int64_t actor,bool consent,const String&expected=String()){if(!active)return false;return realm.military_combat_consent(uint64_t(actor),consent,expected.utf8().get_data());}
+    Dictionary realm_military_raid(int partnerId,int forceUnits,const String&expected=String()){
+        Dictionary result;const bool success=active&&realm.military_raid(partnerId,forceUnits,expected.utf8().get_data());
+        result["success"]=success;result["error"]=String::utf8(realm.error().c_str());
+        if(success&&realm.world())result["fingerprint"]=String::num_uint64(realm.world()->fingerprint());
+        return result;
+    }
+    Dictionary realm_military_battle(int64_t actor,int64_t raidId,bool retreat,const PackedInt64Array&defenderIds,const String&expected=String()){
+        std::vector<uint64_t> defenders;defenders.reserve(size_t(defenderIds.size()));
+        for(int64_t id:defenderIds)if(id>0)defenders.push_back(uint64_t(id));else defenders.push_back(0);
+        Dictionary result;const bool success=active&&actor>0&&raidId>0&&
+            realm.military_battle(uint64_t(actor),uint64_t(raidId),retreat,defenders,expected.utf8().get_data());
+        result["success"]=success;result["error"]=String::utf8(realm.error().c_str());
+        if(success&&realm.world())result["fingerprint"]=String::num_uint64(realm.world()->fingerprint());
+        return result;
+    }
+    bool realm_foreign_trade_suspension(int64_t actor,int partnerId,bool suspended,const String&expected=String()){if(!active)return false;return realm.foreign_trade_suspension(uint64_t(actor),partnerId,suspended,expected.utf8().get_data());}
+    bool realm_foreign_trade_offer(int64_t actor,int partnerId,int operation,int good,int64_t quantity,const String&expected=String()){if(!active||operation<0||operation>=2*polyec::kForeignTradePartnerCount)return false;return realm.foreign_trade_offer(uint64_t(actor),partnerId,static_cast<polyec::ForeignTradeOperation>(operation),good,quantity,expected.utf8().get_data());}
+    Dictionary realm_title_transfer(int64_t actor,int64_t holding,int64_t recipient,const String&expected=String()){
+        Dictionary result;const bool success=active&&actor>0&&holding>0&&recipient>0&&
+            realm.land_title_transfer(uint64_t(actor),uint64_t(holding),uint64_t(recipient),expected.utf8().get_data());
+        result["success"]=success;result["error"]=String::utf8(realm.error().c_str());
+        if(success&&realm.world())result["fingerprint"]=String::num_uint64(realm.world()->fingerprint());
+        return result;
+    }
+    Array realm_land_use_rights()const{
+        Array result;if(const auto* world=realm.world())for(const auto&right:world->land_use_rights()){
+            Dictionary row;row["id"]=int64_t(right.id);row["holding_id"]=int64_t(right.holding_id);
+            row["grantee"]=int64_t(right.grantee);row["grantor"]=int64_t(right.grantor);result.push_back(row);
+        }return result;
+    }
+    Dictionary realm_land_use_grant(int64_t actor,int64_t holding,int64_t grantee,const String&expected=String()){
+        Dictionary result;const bool success=active&&actor>0&&holding>0&&grantee>0&&
+            realm.land_use_grant(uint64_t(actor),uint64_t(holding),uint64_t(grantee),expected.utf8().get_data());
+        result["success"]=success;result["error"]=String::utf8(realm.error().c_str());
+        if(success&&realm.world())result["fingerprint"]=String::num_uint64(realm.world()->fingerprint());
+        return result;
+    }
+    Dictionary realm_land_use_revoke(int64_t actor,int64_t holding,const String&expected=String()){
+        Dictionary result;const bool success=active&&actor>0&&holding>0&&
+            realm.land_use_revoke(uint64_t(actor),uint64_t(holding),expected.utf8().get_data());
+        result["success"]=success;result["error"]=String::utf8(realm.error().c_str());
+        if(success&&realm.world())result["fingerprint"]=String::num_uint64(realm.world()->fingerprint());
+        return result;
+    }
+    Dictionary realm_market_order(int64_t actor,int64_t operation,int64_t orderId,int64_t region,int64_t good,
+                                  int64_t quantity,int64_t maximumUnitPrice,const String&expected=String()){
+        Dictionary result;uint64_t resultOrderId=0;bool success=false;
+        if(!active)result["error"]="Cửa sổ không hoạt động";
+        else if(actor<1||operation<0||operation>1||orderId<0||region<0||region>=27||good<0||good>=polyec::kGoodIdCount)
+            result["error"]="Thông tin đơn mua không hợp lệ";
+        else{
+            success=realm.market_order(uint64_t(actor),static_cast<polyec::MarketOrderOperation>(operation),
+                uint64_t(orderId),int(region),int(good),quantity,maximumUnitPrice,resultOrderId,
+                expected.utf8().get_data());
+            result["error"]=String::utf8(realm.error().c_str());
+        }
+        result["success"]=success;result["order_id"]=int64_t(resultOrderId);
+        if(success&&realm.world())result["fingerprint"]=String::num_uint64(realm.world()->fingerprint());
+        return result;
+    }
+    Dictionary realm_debug_worksite_cycle(int64_t actor,const String&expected){
+        Dictionary result;uint64_t site=0;int64_t actorCash=0,siteCash=0,fiber=0,cloth=0,paid=0;
+        const bool success=active&&realm.debug_worksite_cycle(uint64_t(actor),expected.utf8().get_data(),site,actorCash,siteCash,fiber,cloth,paid);
+        result["success"]=success;result["error"]=String::utf8(realm.error().c_str());result["establishment_id"]=int64_t(site);
+        result["actor_cash"]=actorCash;result["site_cash"]=siteCash;result["fiber"]=fiber;result["cloth"]=cloth;result["paid_units"]=paid;
+        if(success)result["fingerprint"]=String::num_uint64(realm.world()->fingerprint());
+        return result;
+    }
     bool realm_route(int64_t actor,int64_t from,int64_t to,bool open){return active&&realm.route(uint64_t(actor),int(from),int(to),open);}
     bool realm_draft(int64_t card,bool reroll){return reroll?realm.reroll(int(card)):realm.choose(int(card));}
     bool realm_save(const String&path,bool restore){return restore?realm.restore_interactive(path.utf8().get_data()):realm.save(path.utf8().get_data());}
@@ -130,11 +260,85 @@ public:
         auto*w=realm.world();if(!w)return d;if(actor<1||actor>w->count())actor=1;auto v=w->view(uint64_t(actor));
         d["day"]=v.day;d["persons"]=int64_t(v.persons);d["alive"]=int64_t(v.alive);d["children"]=int64_t(v.children);d["decisions"]=int64_t(v.decisions);d["money"]=v.money;d["invariant"]=w->invariant();d["fingerprint"]=String::num_uint64(w->fingerprint());d["inferences"]=int64_t(realm.inference_count());d["inference_ms"]=realm.inference_ms();
         Array cards;for(int c:v.draft.cards)cards.push_back(c);d["cards"]=cards;d["chosen"]=v.draft.chosen;d["tier"]=v.draft.tier;d["rerolled"]=v.draft.rerolled;
-        Array regions;for(auto&p:v.provinces){Dictionary r;r["treasury"]=p.treasury;r["firm"]=p.firm;r["unrest"]=p.unrest;r["road"]=p.road;r["jobs"]=p.jobs;r["workers"]=p.employed;r["school"]=p.school;r["students"]=p.school_used;r["tax"]=p.tax;Array prices,stock;for(int g=0;g<7;++g){prices.push_back(p.price[g]);stock.push_back(p.stock[g]);}r["prices"]=prices;r["stock"]=stock;regions.push_back(r);}d["regions"]=regions;
-        auto&p=w->person(actor);Dictionary person;person["id"]=actor;person["age"]=p.age_days/365;person["role"]=int(p.family);person["cash"]=p.cash;person["region"]=p.region;person["health"]=p.health;person["nutrition"]=p.nutrition;person["authority"]=p.taxing_authority;person["office"]=p.office;person["candidate"]=p.candidate;person["job_kind"]=p.job_kind;person["skill"]=p.skill;person["goal"]=p.goal;person["alive"]=p.alive;person["debt"]=w->debt(actor);person["decisions"]=int64_t(p.decisions);person["household"]=int64_t(p.household);Array stats;for(int x:p.stats.values)stats.push_back(x);person["stats"]=stats;d["person"]=person;
-        Array actions;auto cs=w->candidates(actor);auto ms=w->mask(actor);for(int a=0;a<polyec::realm_actions;++a)if(a==0||cs[a].kind!=polyec::Intent::Hold){Dictionary c;c["index"]=a;c["legal"]=ms[a]>.5f;c["name"]=String::utf8(polyec::Realm::action_name(cs[a]).c_str());c["target"]=cs[a].target;c["good"]=cs[a].good;c["amount"]=cs[a].amount;c["term"]=cs[a].term;actions.push_back(c);}d["actions"]=actions;
+        Array regions;for(int region=0;region<int(v.provinces.size());++region){auto&p=v.provinces[size_t(region)];Dictionary r;r["treasury"]=p.treasury;r["urban_fund"]=w->municipal_funds()[size_t(region)];r["firm"]=p.firm;r["unrest"]=p.unrest;r["road"]=p.road;r["jobs"]=p.jobs;r["workers"]=p.employed;r["school"]=p.school;r["students"]=p.school_used;r["tax"]=p.tax;r["military_ration_stock"]=w->military_ration_stock(region);r["military_supplementary_ration_stock"]=w->military_ration_stock(region,int(polyec::GoodId::SupplementaryFood));Array prices,stock;for(int good=0;good<polyec::kGoodIdCount;++good){prices.push_back(p.price[size_t(good)]);stock.push_back(p.stock[size_t(good)]);}r["prices"]=prices;r["stock"]=stock;regions.push_back(r);}d["regions"]=regions;
+        Array establishments;for(const auto&site:w->establishments()){Dictionary row;row["id"]=int64_t(site.id);row["region"]=site.region;row["owner_kind"]=int(site.owner_kind);row["owner_id"]=int64_t(site.owner_id);row["industry"]=int(site.industry);row["cash"]=site.cash;row["capacity"]=site.capacity;row["source_good"]=site.source_good;row["source_units"]=site.source_units;Array stock;for(const auto quantity:site.stock)stock.push_back(quantity);row["stock"]=stock;establishments.push_back(row);}d["establishments"]=establishments;
+        auto&p=w->person(actor);Dictionary person;person["id"]=actor;person["age"]=p.age_days/365;person["role"]=int(p.family);person["sovereign"]=p.sovereign;person["cash"]=p.cash;person["region"]=p.region;person["health"]=p.health;person["nutrition"]=p.nutrition;person["sleep_debt"]=p.body_state.sleep_debt;person["exertion"]=p.body_state.exertion;person["authority"]=p.taxing_authority;person["office"]=p.office_appointment.office;person["candidate"]=p.candidate;person["job_kind"]=p.work_assignment.job_kind;person["skill"]=p.skill;person["goal"]=p.goal;person["alive"]=p.alive;person["debt"]=w->debt(actor);person["decisions"]=int64_t(p.decisions);person["household"]=int64_t(p.household_membership.household_id);const auto&service=p.military_service;Dictionary serviceView;serviceView["active"]=service.active;serviceView["combat_consent"]=service.combat_consent;serviceView["commander"]=int64_t(service.commander);serviceView["start_day"]=service.start_day;serviceView["end_day"]=service.end_day;serviceView["source_region"]=service.source_region;serviceView["wage_per_day"]=service.wage_per_day;serviceView["escrow"]=service.escrow;serviceView["paid_total"]=service.paid_total;person["military_service"]=serviceView;Array stats;Dictionary namedStats;Array activeCapabilities;for(size_t i=0;i<polyec::kLegacyCapabilities.size();++i){const int value=p.stats.get(polyec::kLegacyCapabilities[i]);stats.push_back(value);namedStats[String::utf8(polyec::kLegacyCapabilityKeys[i])]=value;if(w->capability_active(polyec::kLegacyCapabilities[i]))activeCapabilities.push_back(String::utf8(polyec::kLegacyCapabilityKeys[i]));}person["stats"]=stats;person["legacy_capabilities"]=namedStats;person["active_capabilities"]=activeCapabilities;Dictionary capabilities;for(size_t i=0;i<polyec::kCapabilityCount;++i)capabilities[String::utf8(polyec::kCapabilityKeys[i])]=w->capability_value(actor,static_cast<polyec::CapabilityId>(i));Array capabilitySchema;for(const auto capabilityId:w->capability_schema())capabilitySchema.push_back(String::utf8(polyec::kCapabilityKeys[static_cast<size_t>(capabilityId)]));person["capabilities"]=capabilities;person["capability_schema"]=capabilitySchema;d["person"]=person;
+        if(v.provinces.size()>8&&(p.sovereign||(p.family==polyec::Family::Economic&&p.region==8))){
+            Dictionary trade;Array partners;int partnerId=0;for(const auto&partner:w->foreign_trade_partners()){
+                Dictionary ledger;ledger["partner_id"]=partnerId;
+                ledger["cash"]=partner.money;ledger["escrow"]=partner.escrow;
+                ledger["dry_food"]=partner.goods[size_t(polyec::GoodId::DryFood)];
+                ledger["salt"]=partner.goods[size_t(polyec::GoodId::Salt)];
+                ledger["salt_capacity"]=partner.salt_capacity;ledger["trade_suspended"]=partner.trade_suspended;
+                ledger["decision_sequence"]=String::num_uint64(partner.decision_sequence);
+                ledger["offer_cash_escrow"]=partner.offer_cash_escrow;
+                ledger["completed_import_orders"]=partner.completed_import_orders;
+                ledger["completed_export_orders"]=partner.completed_export_orders;
+                ledger["imported_units"]=partner.imported_units;ledger["exported_units"]=partner.exported_units;
+                ledger["import_gross"]=partner.import_gross;ledger["export_gross"]=partner.export_gross;
+                partners.push_back(ledger);++partnerId;
+            }trade["partners"]=partners;
+            auto route_info=[&](uint8_t from,uint8_t to){
+                Dictionary info;
+                for(const auto&route:w->national_transport_routes()){
+                    if(route.atlas_link>=polyec::kWorldAtlasLinks.size())continue;
+                    const auto&link=polyec::kWorldAtlasLinks[route.atlas_link];
+                    if(link.from!=8||link.to!=9||link.mode!=polyec::AtlasRouteMode::CoastalShipping||
+                       route.from!=from||route.to!=to)continue;
+                    info["open"]=route.open;info["travel_days"]=route.travel_days;
+                    info["capacity_per_day"]=route.capacity_per_day;info["fee_per_unit"]=route.fee_per_unit;
+                    return info;
+                }
+                info["open"]=false;info["travel_days"]=0;info["capacity_per_day"]=0;info["fee_per_unit"]=0;
+                return info;
+            };
+            trade["import_route"]=route_info(9,8);trade["export_route"]=route_info(8,9);
+            Array orders;for(const auto&order:w->foreign_trade_orders()){Dictionary item;item["partner_id"]=order.partner_id;item["operation"]=int(order.operation);item["quantity"]=order.quantity;item["arrival_day"]=order.arrival_day;item["good"]=order.good;orders.push_back(item);}
+            trade["orders"]=orders;
+            Array offers;const auto allOffers=w->foreign_trade_offers();const size_t firstOffer=allOffers.size()>24?allOffers.size()-24:0;
+            for(size_t offerIndex=firstOffer;offerIndex<allOffers.size();++offerIndex){const auto&offer=allOffers[offerIndex];Dictionary row;row["id"]=String::num_uint64(offer.id);row["owner"]=int64_t(offer.owner);row["partner_id"]=offer.partner_id;row["operation"]=int(offer.operation);row["good"]=offer.good;row["quantity"]=offer.quantity;row["created_day"]=offer.created_day;row["due_day"]=offer.due_day;row["status"]=int(offer.status);row["held_cash"]=offer.held_cash;row["held_good"]=offer.held_good;row["order_id"]=String::num_uint64(offer.order_id);offers.push_back(row);}
+            trade["offers"]=offers;d["foreign_trade"]=trade;
+        }
+        Array actions;auto cs=w->candidates(actor);auto ms=w->mask(actor);for(int a=0;a<polyec::realm_actions;++a)if(a==0||cs[a].kind!=polyec::Intent::Hold){Dictionary c;c["index"]=a;c["legal"]=ms[a]>.5f;c["name"]=String::utf8(polyec::Realm::action_name(cs[a]).c_str());c["target"]=cs[a].target;c["good"]=cs[a].good;c["amount"]=cs[a].amount;c["term"]=cs[a].term;actions.push_back(c);}d["actions"]=actions;d["timeline_contract"]=w->timeline_contract();const auto modelContract=w->model_contract();d["model_contract"]=String::utf8(modelContract.c_str());
         Array facts;int start=std::max(0,int(v.facts.size())-40);for(int i=start;i<int(v.facts.size());++i){auto&f=v.facts[i];Dictionary x;x["id"]=int64_t(f.id);x["parent"]=int64_t(f.parent);x["actor"]=int64_t(f.actor);x["target"]=int64_t(f.target);x["day"]=f.day;x["region"]=f.region;x["kind"]=f.kind;x["amount"]=f.amount;facts.push_back(x);}d["facts"]=facts;
-        Array offers;for(auto&o:w->offers(actor)){Dictionary offer;offer["id"]=int64_t(o.id);offer["from"]=int64_t(o.from);offer["to"]=int64_t(o.to);offer["kind"]=o.kind;offer["amount"]=o.amount;offer["due"]=o.due;offers.push_back(offer);}d["offers"]=offers;auto funds=w->royal_funds();d["credit_pool"]=funds[0];d["restricted_fund"]=funds[1];d["royal_reference"]=w->royal_reference();d["schema"]=String(polyec::realm_schema);d["loans"]=int(w->loans().size());d["projects"]=int(w->projects().size());d["edges"]=int(w->relations().size());return d;
+        Array knowledge;for(const auto&k:v.knowledge){Dictionary x;x["observer"]=int64_t(k.observer);x["fact"]=int64_t(k.fact);x["arrives"]=k.arrives;x["source_investigation_id"]=int64_t(k.source_investigation_id);x["kind"]=int(k.kind);x["confidence_basis_points"]=k.confidence_basis_points;knowledge.push_back(x);}d["knowledge"]=knowledge;
+        Array marketOrders;for(const auto&order:w->market_orders()){Dictionary row;row["id"]=int64_t(order.id);row["owner"]=int64_t(order.owner);row["region"]=order.region;row["good"]=order.good;row["quantity"]=order.quantity;row["maximum_unit_price"]=order.maximum_unit_price;row["personal_escrow"]=order.personal_escrow;row["household_escrow"]=order.household_escrow;row["organization_escrow"]=order.organization_escrow;marketOrders.push_back(row);}d["market_orders"]=marketOrders;d["market_escrow"]=w->market_escrow();
+        Array transportShipments;for(const auto&shipment:w->transport_shipments()){Dictionary row;row["id"]=int64_t(shipment.id);row["owner"]=int64_t(shipment.owner);row["owner_kind"]=int(shipment.owner_kind);row["source_region"]=shipment.source_region;row["created_day"]=shipment.created_day;row["destination"]=shipment.destination;row["good"]=shipment.good;row["service_goal"]=int(shipment.service_goal);row["quantity"]=shipment.quantity;row["delivered"]=shipment.delivered;row["canceled"]=shipment.canceled;row["fee_escrow"]=shipment.fee_escrow;transportShipments.push_back(row);}d["transport_shipments"]=transportShipments;
+        Array militaryUnits;for(const auto&unit:w->military_unit_rosters()){Dictionary row;row["id"]=String::num_uint64(unit.id);row["source_region"]=unit.source_region;row["commander"]=int64_t(unit.commander);Array members;for(auto member:unit.members)members.push_back(int64_t(member));row["members"]=members;Array mobilizedMembers;for(auto member:unit.mobilized_members)mobilizedMembers.push_back(int64_t(member));row["mobilized_members"]=mobilizedMembers;Array combatConsented;for(auto member:unit.combat_consented_members)combatConsented.push_back(int64_t(member));row["combat_consented_members"]=combatConsented;Array battleReady;for(auto member:unit.battle_ready_members)battleReady.push_back(int64_t(member));row["battle_ready_members"]=battleReady;row["mobilized_until_day"]=unit.mobilized_until_day;row["payroll_escrow"]=unit.payroll_escrow;row["paid_total"]=unit.paid_total;militaryUnits.push_back(row);}d["military_unit_rosters"]=militaryUnits;
+        Array militaryRaids;for(const auto&raid:w->military_raids()){
+            if(!p.sovereign&&p.region!=raid.target_region)continue;
+            Dictionary row;row["id"]=String::num_uint64(raid.id);row["partner_id"]=raid.partner_id;
+            row["target_region"]=raid.target_region;row["created_day"]=raid.created_day;
+            row["resolved_day"]=raid.resolved_day;row["force_units"]=raid.force_units;
+            row["defense_score"]=raid.defense_score;row["attacker_losses"]=raid.attacker_losses;
+            row["defender_casualties"]=raid.defender_casualties;row["salt_looted"]=raid.salt_looted;
+            row["status"]=int(raid.status);Array defenderIds;
+            for(const auto id:raid.defenders)defenderIds.push_back(int64_t(id));
+            row["defenders"]=defenderIds;militaryRaids.push_back(row);
+        }d["military_raids"]=militaryRaids;
+        Array battleCandidates;if(p.sovereign)for(const auto id:w->military_battle_candidates(polyec::kMilitaryRaidTargetRegion)){
+            Dictionary row;const auto&volunteer=w->person(id);row["id"]=int64_t(id);row["health"]=volunteer.health;
+            row["military_capability"]=w->capability_value(id,polyec::LegacyCapability::Military);
+            row["has_weapon"]=volunteer.inventory[size_t(polyec::GoodId::Weapon)]>0;
+            battleCandidates.push_back(row);
+        }d["military_battle_candidates"]=battleCandidates;
+        Array militaryObligations;for(const auto&item:w->military_obligations()){const bool is_member=std::find(item.member_ids.begin(),item.member_ids.end(),actor)!=item.member_ids.end();if(item.obligor!=actor&&item.recipient!=actor&&!is_member&&!(p.family==polyec::Family::Governance&&(p.region==item.source_region||p.region==item.destination_region)))continue;Dictionary row;row["id"]=int64_t(item.id);row["obligor"]=int64_t(item.obligor);row["recipient"]=int64_t(item.recipient);row["source_region"]=item.source_region;row["destination_region"]=item.destination_region;row["created_day"]=item.created_day;row["first_due_day"]=item.first_due_day;row["due_day"]=item.due_day;row["completed_day"]=item.completed_day;row["extensions"]=item.extensions;row["required_members"]=item.required_members;row["delivered_at_first_deadline"]=item.delivered_at_first_deadline;row["shortage_at_first_deadline"]=item.shortage_at_first_deadline;row["delivered_at_last_deadline"]=item.delivered_at_last_deadline;row["shortage_at_last_deadline"]=item.shortage_at_last_deadline;row["first_deadline_checked"]=item.first_deadline_checked;row["due_checked"]=item.due_checked;Array members;for(auto id:item.member_ids)members.push_back(int64_t(id));row["members"]=members;Array delivered;for(auto id:item.delivered_member_ids)delivered.push_back(int64_t(id));row["delivered_members"]=delivered;militaryObligations.push_back(row);}d["military_obligations"]=militaryObligations;
+        Array militarySupplyObligations;for(const auto&item:w->military_supply_obligations()){
+            if(item.obligor!=actor&&item.recipient!=actor&&
+               !(p.family==polyec::Family::Governance&&(p.region==item.source_region||p.region==item.destination_region)))continue;
+            Dictionary row;row["id"]=int64_t(item.id);row["personnel_obligation_id"]=int64_t(item.personnel_obligation_id);
+            row["obligor"]=int64_t(item.obligor);row["recipient"]=int64_t(item.recipient);
+            row["source_region"]=item.source_region;row["destination_region"]=item.destination_region;
+            row["created_day"]=item.created_day;row["first_due_day"]=item.first_due_day;row["due_day"]=item.due_day;
+            row["completed_day"]=item.completed_day;row["extensions"]=item.extensions;row["required"]=item.required;
+            row["delivered"]=item.delivered;row["delivered_at_first_deadline"]=item.delivered_at_first_deadline;
+            row["shortage_at_first_deadline"]=item.shortage_at_first_deadline;
+            row["delivered_at_last_deadline"]=item.delivered_at_last_deadline;
+            row["shortage_at_last_deadline"]=item.shortage_at_last_deadline;
+            row["first_deadline_checked"]=item.first_deadline_checked;row["due_checked"]=item.due_checked;
+            militarySupplyObligations.push_back(row);
+        }d["military_supply_obligations"]=militarySupplyObligations;
+        Array offers;for(auto&o:w->offers(actor)){Dictionary offer;offer["id"]=int64_t(o.id);offer["from"]=int64_t(o.from);offer["to"]=int64_t(o.to);offer["kind"]=o.kind;offer["amount"]=o.amount;offer["service_term"]=o.service_term;offer["escrow"]=o.escrow;offer["due"]=o.due;Array roster;for(auto id:o.roster_members)roster.push_back(int64_t(id));offer["roster_members"]=roster;offers.push_back(offer);}d["offers"]=offers;auto funds=w->royal_funds();d["credit_pool"]=funds[0];d["restricted_fund"]=funds[1];d["royal_reference"]=w->royal_reference();d["schema"]=String(polyec::realm_schema);d["loans"]=int(w->loans().size());d["projects"]=int(w->projects().size());d["edges"]=int(w->relations().size());return d;
     }
     bool rl_load(const String& path,const String& sha256,int64_t seed) {
         controller.set_paused(true);
@@ -182,20 +386,31 @@ public:
     }
 #endif
     PolyEcSession() {
-        world->add_territory({polyec::EntityId{7}, "Thanh Điền", 75, 95, 490, 475});
-        world->add_territory({polyec::EntityId{8}, "Hắc Sơn", 480, 70, 430, 485});
+        for (const auto& polygon : polyec::kAtlasMapPolygons) {
+            const auto& territory = polyec::kWorldAtlas[polygon.territory_id];
+            double min_x = polygon.vertices[0].x, max_x = min_x;
+            double min_y = polygon.vertices[0].y, max_y = min_y;
+            for (const auto& point : polygon.vertices) {
+                min_x = std::min(min_x, point.x); max_x = std::max(max_x, point.x);
+                min_y = std::min(min_y, point.y); max_y = std::max(max_y, point.y);
+            }
+            // GameWorld reserves entity ID 0; its shell view stores Atlas ID + 1
+            // while the public map continues to expose the canonical Atlas ID.
+            world->add_territory({polyec::EntityId{uint64_t(polygon.territory_id) + 1},
+                std::string(territory.name), min_x, min_y, max_x - min_x, max_y - min_y});
+        }
     }
     Dictionary snapshot() const {
         auto view = world->player_view();
         Dictionary result;
         result["day"] = view.date.day;
         result["paused"] = view.paused;
-        result["selected"] = int64_t(view.selected.value);
+        result["selected"] = int64_t(view.selected.value == 0 ? 0 : view.selected.value - 1);
         result["speed"] = controller.get_time_scale();
         Array territories;
         for (const auto& region : view.territories) {
             Dictionary t;
-            t["id"] = int64_t(region.id.value);
+            t["id"] = int64_t(region.id.value - 1);
             t["name"] = String::utf8(region.name.c_str());
             t["x"] = region.x; t["y"] = region.y;
             t["w"] = region.w; t["h"] = region.h;
@@ -209,9 +424,14 @@ public:
         bool success = true;
         String reason = "ok";
         if (name == "select") {
-            auto r = world->execute({polyec::CommandType::SelectTerritory, polyec::EntityId{uint64_t(id)}});
-            success = r.success;
-            reason = String::utf8(r.reason.c_str());
+            if (id < 0 || id >= int64_t(polyec::kAtlasTerritoryCount)) {
+                success = false;
+                reason = "Atlas territory ID out of range";
+            } else {
+                auto r = world->execute({polyec::CommandType::SelectTerritory, polyec::EntityId{uint64_t(id) + 1}});
+                success = r.success;
+                reason = String::utf8(r.reason.c_str());
+            }
         } else if (name == "pause") {
             controller.set_paused(true);
             anchor = Clock::now();

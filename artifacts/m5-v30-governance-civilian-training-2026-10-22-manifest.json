@@ -1,0 +1,262 @@
+{
+  "title": "M5 v30 Governance/Civilian Realm v11 exploratory training",
+  "date": "2026-10-22",
+  "status": "completed; no eligible candidate in either family; no export or holdout",
+  "governance_validation_seeds": [
+    194000,
+    194001,
+    194002,
+    194003,
+    194004,
+    194005,
+    194006,
+    194007,
+    194008,
+    194009,
+    194010,
+    194011,
+    194012,
+    194013,
+    194014,
+    194015,
+    194016,
+    194017,
+    194018,
+    194019
+  ],
+  "civilian_validation_seeds": [
+    195000,
+    195001,
+    195002,
+    195003,
+    195004,
+    195005,
+    195006,
+    195007,
+    195008,
+    195009,
+    195010,
+    195011,
+    195012,
+    195013,
+    195014,
+    195015,
+    195016,
+    195017,
+    195018,
+    195019
+  ],
+  "updates_per_seed": 25,
+  "decisions_per_seed": 25600,
+  "families": [
+    "governance",
+    "civilian"
+  ],
+  "file_hashes": [
+    {
+      "path": "ai/training/realm_coplay_env_v11.py",
+      "bytes": 19517,
+      "sha256": "c5ff697a861cb4dc7c76fa6b11e64350b4e38c9292ee4ce1ece8a579d78adc21"
+    },
+    {
+      "path": "ai/training/realm_dev_baseline_v11.py",
+      "bytes": 1191,
+      "sha256": "759533c8d6422b89119a41776713eaef8ff67e805f682c6b68ac8b0aa4598ee6"
+    },
+    {
+      "path": "ai/training/realm_model_v11.py",
+      "bytes": 1898,
+      "sha256": "d471b4fc950333cbd250b91fe742191409dd721473de234b5cd0e13a300adbea"
+    },
+    {
+      "path": "ai/training/realm_train_v11.py",
+      "bytes": 23749,
+      "sha256": "b859804b02f34a612e4e0c08cdd25cecf3d62ed566967a98847b4fb163f9c7f3"
+    },
+    {
+      "path": "ai/training/realm_train_set_v11.py",
+      "bytes": 5949,
+      "sha256": "1a40e443b9aeb28e641710be0e67bc7d03e69698426a25fb750845c423d6bd3f"
+    },
+    {
+      "path": "ai/evaluation/realm_select_v11.py",
+      "bytes": 6786,
+      "sha256": "a2a53d9bab6a35a78c05860023931fc5087c9135f4dd7489987e7c9629800a5f"
+    },
+    {
+      "path": "ai/tests/realm_coplay_env_v11_checks.py",
+      "bytes": 5335,
+      "sha256": "a06dc07ce49e8d67b1e862b870f2f16702f4554d70dff6fa27b5f2de7a99772e"
+    },
+    {
+      "path": "ai/tests/realm_coplay_v11_checks.py",
+      "bytes": 4011,
+      "sha256": "3f7503949d4020bab84258512aefbed5dcdad7a493b7bc0f07c2d7de9e9817e2"
+    },
+    {
+      "path": "docs/design/M5-v30-governance-civilian-training-plan.md",
+      "bytes": 5702,
+      "sha256": "dad2570b0b77f7fc8bce41acd0e8875a898c5c977998062c42b6e170161415c4"
+    },
+    {
+      "path": "docs/design/M5-v31-extended-governance-civilian-training-plan.md",
+      "bytes": 4042,
+      "sha256": "f3277771d48af483677a255c57e2c43374aba4e96a5a487429648271b59cc2fe"
+    },
+    {
+      "path": "docs/reports/M5-v30-governance-civilian-training-evidence-2026-10-22.md",
+      "bytes": 10492,
+      "sha256": "c4212878f67127da3939ebd6608eaeebbac28f546dbcd7f8e2a43e523c2f2db6"
+    },
+    {
+      "path": "docs/CURRENT_TASK.md",
+      "bytes": 92798,
+      "sha256": "bf6ff3434cba97266f0d6f87a05e3a03fd365fc28e3db57ec493159c745772f8"
+    },
+    {
+      "path": "docs/DEVELOPMENT_HISTORY.md",
+      "bytes": 74210,
+      "sha256": "d6356479ab3691532b91166953ec3c68bbc88d3e91fff34feefe9e05a6d146fc"
+    },
+    {
+      "path": "artifacts/m5-v31-extended-training-stop-state-2026-10-22.json",
+      "bytes": 4838,
+      "sha256": "a9a357b566900e307d97f38454cbbea0351898a57c8b778c688be51c66ccef46"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/governance/TRAINING-SET.json",
+      "bytes": 1656,
+      "sha256": "0cbbac2094d38b95dfd828070c580ebc2657f0687eccdeb4599a999c9accd1bf"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/governance/validation/selection.json",
+      "bytes": 128700,
+      "sha256": "b21e561bfc70a2f97a126f38acc58f542d88af395b9e719891e96d514a9a4408"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian-fixed/TRAINING-SET.json",
+      "bytes": 1361,
+      "sha256": "77a8df655fad7f78911974245ed784660b3316f3ae46790034dfcd27a14485a3"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian-fixed/validation/selection.json",
+      "bytes": 129558,
+      "sha256": "358420cd8ad934d86ed665268279d93c6e9ac3fca67d2f28b6390bc79d789e26"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian-fixed-runset.log",
+      "bytes": 802719,
+      "sha256": "18816b1ca5dff3119dfaaf68b8b3b94ec731f9f41800abc16455b2e052b50a39"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian-fixed-validation.log",
+      "bytes": 304,
+      "sha256": "e7ade46ac31903725e2a70b449dd328bef327732141473b147049e294dbc305e"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian-runset.log",
+      "bytes": 1357,
+      "sha256": "c7a2c8c03be4cc0d32c0aca7764b383070379e1e074be493dd32d062b4c7f315"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian-adapter-smoke.log",
+      "bytes": 10680,
+      "sha256": "45a525cb71b280b8816d85f1c36065d814c98bef7e93c02ae44cb2a56edc5e15"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian/INCOMPLETE.json",
+      "bytes": 115,
+      "sha256": "a4d32d12d655e0e6827b8f980318cd65600626f6db5896392154b903b6d6a19b"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/governance/governance/seed-1/manifest.json",
+      "bytes": 1578,
+      "sha256": "716caeebd2072cc1cedc51d71787b13367e6bec5442ae964680e57cad67a9c7b"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/governance/governance/seed-1/policy.pt",
+      "bytes": 156770,
+      "sha256": "2038c39dcd1a90b029001e4c55a2a8cb7cdc627312f72673595dcefb51c923d6"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/governance/governance/seed-1/initial.pt",
+      "bytes": 156914,
+      "sha256": "4f13009577dee30a0fba86ab5cd930c06e74aef513171f57478625dac0921b78"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/governance/governance/seed-2/manifest.json",
+      "bytes": 1578,
+      "sha256": "414c168cd9342d9255258d06821986f0865ff36ed92b35b29ac5fed1c9c3d2ef"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/governance/governance/seed-2/policy.pt",
+      "bytes": 156770,
+      "sha256": "4f57ee8422ab9542abc34a93c383df8529993534c0b504ccfef974adafcc83b0"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/governance/governance/seed-2/initial.pt",
+      "bytes": 156914,
+      "sha256": "13914a0436b1fe81f6ccbcdfd915716ee30e4551edf1075e5eee8bd180f4070d"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/governance/governance/seed-3/manifest.json",
+      "bytes": 1578,
+      "sha256": "5b561cb516b95e97eb0d0606d230a2f8c314ab988d678e847c4ba52866f21947"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/governance/governance/seed-3/policy.pt",
+      "bytes": 156770,
+      "sha256": "83b4b005a455ba71e40da60db1b72cb5ac1be70571bbe99d676cc87ad0fca921"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/governance/governance/seed-3/initial.pt",
+      "bytes": 156914,
+      "sha256": "d0241a724db54c2012fce8bc2dbedc921f4d53d54902b9b41f666cd53875185f"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian-fixed/civilian/seed-1/manifest.json",
+      "bytes": 1578,
+      "sha256": "2ddedd09c946228fdc1c2ba72fe63d0a64ec1267e31c1eadf2a9db33a4246163"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian-fixed/civilian/seed-1/policy.pt",
+      "bytes": 156770,
+      "sha256": "aaaeab06e756152d156d4a407f4f6617da0ac86c58fc9a4c2645a5f59c2180ba"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian-fixed/civilian/seed-1/initial.pt",
+      "bytes": 156914,
+      "sha256": "4f13009577dee30a0fba86ab5cd930c06e74aef513171f57478625dac0921b78"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian-fixed/civilian/seed-2/manifest.json",
+      "bytes": 1578,
+      "sha256": "e02d986675b87c5d1f520a5d8126f386501e0f861fdba7554e8fa9ce08ed6752"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian-fixed/civilian/seed-2/policy.pt",
+      "bytes": 156770,
+      "sha256": "2fa44a175f85a8296ede8f346dd6d237e8d4fae876428fe6c4e4c858ea82df27"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian-fixed/civilian/seed-2/initial.pt",
+      "bytes": 156914,
+      "sha256": "13914a0436b1fe81f6ccbcdfd915716ee30e4551edf1075e5eee8bd180f4070d"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian-fixed/civilian/seed-3/manifest.json",
+      "bytes": 1578,
+      "sha256": "6454ab6c7ccc8cc9e451986730814e4885fb578946b690bbff868ba112852e18"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian-fixed/civilian/seed-3/policy.pt",
+      "bytes": 156770,
+      "sha256": "417fb18f2bfd5b1e405c7c40af7f311ab11047f18b5434ebb46d5762c39fb642"
+    },
+    {
+      "path": "build/m5-v30-governance-civilian-training/civilian-fixed/civilian/seed-3/initial.pt",
+      "bytes": 156914,
+      "sha256": "d0241a724db54c2012fce8bc2dbedc921f4d53d54902b9b41f666cd53875185f"
+    }
+  ]
+}

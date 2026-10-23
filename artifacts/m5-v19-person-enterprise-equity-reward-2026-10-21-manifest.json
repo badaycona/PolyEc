@@ -1,0 +1,56 @@
+{
+  "task": "M5-v19-person-enterprise-equity-reward",
+  "head": "dff2781a41ae52a4bd476b4b1460ad0f09ef5dc3",
+  "reward_version": "realm-v11-person-enterprise-equity-v1",
+  "source_sha256": {
+    "core/include/polyec/realm.hpp": "6b48bd8b1d470113b091d377cca1071dbc302556e78389d360ae330e6e4600fd",
+    "core/src/realm.cpp": "c1c14025293dce7b64517f2a9f48a5e7c71eb93adc765a423979c231ae96e030",
+    "core/src/realm_establishment.cpp": "a25f7adf7dabb6f9cf87f383a864ee5acadb167bc68dd552e1be25b5270ea489",
+    "core/tests/test_realm.cpp": "dfa24d080f4baf37bb6d66b9ecf51ff4a5c31661cca63269cb86a59051544ada",
+    "bindings/python/realm_binding.cpp": "5e3ed33166fc245142f13307f1fa7413a24695eb5069037e1c8a96b9c6206da5",
+    "ai/training/realm_coplay_env_v11.py": "99f2aea6ac5315d7a5650293cb3c66ccf184c0b46e1216b4403a41aa4ac78b15",
+    "ai/evaluation/realm_policy_holdout_v11.py": "d3769192da30ece647f7b3671730aed426b6b5bf238b2c52388eec0c101c1b3d",
+    "ai/evaluation/realm_select_v11.py": "b4f7fb8b5c4c3c2cec788431041fd6b8948fe8be2f46c56441ef1f8e9f98c7c1",
+    "ai/evaluation/realm_coplay_v11.py": "ce3dbcd8de816e01112608c6ce983adb236399967fa2ecbd96defdfc514f9e75"
+  },
+  "runs": [
+    {
+      "seed": 1,
+      "manifest_sha256": "8449744609c1c31d50c38fd20301f96a5cd776e3bdca3450b8ca8e770e12f1e9",
+      "policy_sha256": "0ab35f15f0cf6ad29ffc5ae27b07d7e1b09a40e30527bf41d65079883000a172",
+      "decisions": 25600,
+      "updates": 25,
+      "minibatch_sequences": null
+    },
+    {
+      "seed": 2,
+      "manifest_sha256": "51c684266e11633c8bc81f5779b3f2a0e9f8578c6803340c6764ecf9bb2cc28a",
+      "policy_sha256": "6513bf3fb0dae4230b2d10e6ae3576a349dd6b34736004b59356d0b5b9cffda3",
+      "decisions": 25600,
+      "updates": 25,
+      "minibatch_sequences": null
+    },
+    {
+      "seed": 3,
+      "manifest_sha256": "27f85ac32f45d34dc7dc3ff1c99733e4a408da8cc823ea6812e65f8609b9ba86",
+      "policy_sha256": "180b669880157c4521eb12cc4cef0328ef655d90faa0b5b5253a13bad5d7a0ba",
+      "decisions": 25600,
+      "updates": 25,
+      "minibatch_sequences": null
+    }
+  ],
+  "selection": "build/m5-v19-economic-selection-site-diagnostics/selection.json",
+  "selection_sha256": "7a732d4de9ab8097c75b0628b1fb7a5c97d89ca60b05ebedb1afb531193ba51f",
+  "r1_pass": false,
+  "selected_seed": null,
+  "peer_eligible": false,
+  "verification": {
+    "core_release_build": "pass",
+    "ctest": "18/18 pass",
+    "realm_test_after_liability_fixture": "pass",
+    "python_binding_release_build": "pass",
+    "coplay_resume_checks": "22 pass",
+    "python_syntax": "pass",
+    "paired_validation": "20 worlds x 128 days; invariants true"
+  }
+}

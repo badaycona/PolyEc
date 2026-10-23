@@ -4,6 +4,8 @@ Muốn biết **từng class nghĩa là gì, chứa gì, không được làm g�
 
 Cập nhật cách trình bày ngày 2026-10-19. Tài liệu này giải thích cách tổ chức lại code để giảm lỗi logic. Đây là thiết kế đích; việc sửa code được thực hiện từng bước và chỉ được ghi nhận hoàn thành sau khi kiểm tra.
 
+**Ghi chú cập nhật tài liệu:** các nguyên tắc tổng quát về ownership, composition, giao dịch và kiểm chứng trong tài liệu này đã được đưa vào [DEVELOPER_GUIDE mục 2–3](../DEVELOPER_GUIDE.md). Bảng bước R0–R4 và chỉ dẫn triển khai phía dưới là kế hoạch lịch sử ngày 2026-10-19, không phải trạng thái hiện tại hay quy trình hiện hành. Xem [CURRENT_TASK](../CURRENT_TASK.md), [IMPLEMENTATION_PLAN](../IMPLEMENTATION_PLAN.md) và [DEVELOPMENT_WORKFLOW](../DEVELOPMENT_WORKFLOW.md) trước khi dùng làm căn cứ công việc.
+
 Người dùng đã đồng ý thực hiện hướng thiết kế này. Việc viết lại tài liệu cho dễ đọc không thay đổi luật chơi, phạm vi M5 hay các điều kiện kỹ thuật đã đặt ra. Công việc đang giao và kết quả đã nghiệm thu vẫn được ghi tại [CURRENT_TASK](../CURRENT_TASK.md).
 
 ## 1. Chúng ta đang muốn sửa điều gì?

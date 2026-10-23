@@ -1,0 +1,55 @@
+{
+  "record": "M5 T5.3 Realm day people subphase diagnostic",
+  "date": "2026-10-22",
+  "build": "Windows MSVC Release; POLYEC_ENABLE_REALM_PHASE_PROFILE=ON",
+  "workload": {
+    "population": 100000,
+    "regions": 7,
+    "seed": 37,
+    "days": 31,
+    "complex_actors": 512
+  },
+  "source_effect": "compile-time diagnostics only; no gameplay transition changes",
+  "files": [
+    {
+      "path": "core/include/polyec/realm.hpp",
+      "sha256": "179447f24db742cd5659087e757ba70416d0a31a7401e2ebc297620fb28599ee",
+      "bytes": 27931
+    },
+    {
+      "path": "core/src/realm_lifecycle.cpp",
+      "sha256": "edefc7a5408c4685c3487282bf11df90cba1a4454e159aeeebd2e9833ec370ea",
+      "bytes": 6184
+    },
+    {
+      "path": "core/benchmarks/realm_core_benchmark.cpp",
+      "sha256": "a8c628643f1ad72cde63f01a8caf13e1700980b035ded935091b87c8b0ab6139",
+      "bytes": 6513
+    },
+    {
+      "path": "build/m5-phase-runtime/core/Release/polyec_realm_core_benchmark.exe",
+      "sha256": "b892b3f5e51e347f520174a9dddba8104fcae84ac8f1bb8f2bb9fb8f2a26edac",
+      "bytes": 579072
+    },
+    {
+      "path": "docs/design/M5-T5.3-daily-people-phase-diagnostics-plan.md",
+      "sha256": "8776a3a997d7d6f05d552e4b61b680a7525a44b0e49150f60edc5457197a3c36",
+      "bytes": 4162
+    },
+    {
+      "path": "docs/reports/M5-T5.3-daily-people-phase-diagnostics-evidence-2026-10-22.md",
+      "sha256": "62fe3a7d8e106d01a1925245481f3f630b4ed8f06886ffd2809e832404f06869",
+      "bytes": 4404
+    },
+    {
+      "path": "artifacts/m5-t5.3-people-phase-100k-512-run-1-2026-10-22.json",
+      "sha256": "b08cd0645a45a433a632275a3df8a23ed52a8fe0ed99d84cfe2eac3952f42b61",
+      "bytes": 947
+    },
+    {
+      "path": "artifacts/m5-t5.3-people-phase-100k-512-run-2-2026-10-22.json",
+      "sha256": "276bd38dfb780f452d631208e7a448886debf5b2d96d0e33715b822d4313aeb1",
+      "bytes": 946
+    }
+  ]
+}

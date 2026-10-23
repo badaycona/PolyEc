@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-22",
+  "scope": "M5.3 Realm marriage lifecycle: remarriage after death of living spouse",
+  "platform": "Windows Visual Studio",
+  "build_directory": "build/m5-core",
+  "target": "polyec_court_tests",
+  "release": {
+    "build": "pass",
+    "direct_run": "pass",
+    "checks": 537
+  },
+  "debug": {
+    "build": "pass",
+    "direct_run": "pass",
+    "checks": 537
+  },
+  "full_ctest": "Release 19/19 passed before this test-only scenario; does not include it",
+  "not_run": [
+    "Python",
+    "native",
+    "GDExtension",
+    "Godot"
+  ],
+  "first_attempt": "Oracle originally compared balances before the waiting period; Realm continues daily accounting during the wait. Oracle corrected to capture balances immediately before acceptance, then passed.",
+  "review": "Codex self-review; no independent reviewer",
+  "files": [
+    "core/tests/test_realm_court.cpp",
+    "docs/design/M5-core-marriage-remarry-after-death-plan.md",
+    "docs/reports/M5-core-marriage-remarry-after-death-evidence-2026-10-22.md",
+    "docs/CURRENT_TASK.md",
+    "docs/DEVELOPMENT_HISTORY.md"
+  ],
+  "sha256": {
+    "docs/DEVELOPMENT_HISTORY.md": "2fe358228a83d47c1381b8328a6bda3ebb4b093ab8149b2ead44a867ef2feb2e",
+    "core/tests/test_realm_court.cpp": "bde42ab943919206a9ba6bea0b96037e534362ed9f06745f6c8e7b3860a12715",
+    "docs/CURRENT_TASK.md": "ce1f75ffd9d3320c1324fd777899bfd091496ca325b09bfa39e46d40e98c5eab",
+    "docs/reports/M5-core-marriage-remarry-after-death-evidence-2026-10-22.md": "c7c59af715686a304905f0a7dbb27a3402057b833b0359e429b5e01db5827d37",
+    "docs/design/M5-core-marriage-remarry-after-death-plan.md": "b96322e885dd690a855be25841a10a905b6bc2af9e3fe29dfe4de0029d57474b"
+  }
+}

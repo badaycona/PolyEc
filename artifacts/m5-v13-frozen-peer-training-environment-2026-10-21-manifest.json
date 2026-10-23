@@ -1,0 +1,31 @@
+{
+  "task": "M5 v13 frozen-peer training environment",
+  "date": "2026-10-21",
+  "schema": "realm-v11",
+  "review_read": "docs/handoff/PPO-training-review-2026-10-21.md",
+  "self_review_only": true,
+  "working_tree": "shared dirty checkout; hashes identify this snapshot, not an isolated commit",
+  "checks": {
+    "release_binding_build": "pass",
+    "debug_binding_build": "pass",
+    "release_adapter_checks": 14,
+    "debug_adapter_checks": 14,
+    "paired_deterministic": true,
+    "snapshot_resume_replay": true,
+    "economic_transition_peer_decisions": 33,
+    "release_transition_seconds": 0.007,
+    "debug_transition_seconds": 0.018
+  },
+  "limitations": [
+    "Peer inference smoke used randomly initialized weights, not a trained learned policy.",
+    "Only one small economic transition was timed; this is not batch or profile-B throughput.",
+    "Cross-family holdout, sampled R1 and long training remain incomplete."
+  ],
+  "files_sha256": {
+    "ai/training/realm_coplay_env_v11.py": "7B2DABD75E0B8C80296E497402DB02384296F3F9957DA10C9FCCFB373565D55A",
+    "ai/tests/realm_coplay_env_v11_checks.py": "BE2A35B5E4BA5E8F957578F13EB203F1A5070E90C36CA334DCB77D593346BAA6",
+    "bindings/python/realm_binding.cpp": "ED021BDB6C77593829866AD56D5B9D795BE18659A5B5E8BCDA75F1BCD421BA63",
+    "docs/design/M5-v13-frozen-peer-training-environment-plan.md": "3DD260F788F2BC8746E341BB2E5A9BA9E12702CB103302F86D8F9DD6D4E55224",
+    "docs/reports/M5-v13-frozen-peer-training-environment-evidence-2026-10-21.md": "0E31D2BE804BC89A8F1970208B8F7EDC55191E8E218F5A154FE659077BEE6F40"
+  }
+}

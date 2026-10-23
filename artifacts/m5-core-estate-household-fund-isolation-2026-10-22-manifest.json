@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-22",
+  "task": "M5-core-estate-household-fund-isolation",
+  "base_head": "dff2781a41ae52a4bd476b4b1460ad0f09ef5dc3",
+  "note": "Hashes describe source and documentation as checked for this fixture-only change in the shared working tree. The test file and handoff docs contain earlier unrelated working-tree changes. No commit or push.",
+  "files": [
+    {
+      "path": "core/tests/test_realm.cpp",
+      "sha256": "9a6624a57c61871b5fb3f93b51bcd66ab1c2cfb4e3c465eaba2580e31fef8f13"
+    },
+    {
+      "path": "docs/design/M5-core-estate-household-fund-isolation-plan.md",
+      "sha256": "b73ceea1c44ec87a7a7a3a76949162f1a4daa18296f6742858a569fb07276ac9"
+    },
+    {
+      "path": "docs/reports/M5-core-estate-household-fund-isolation-evidence-2026-10-22.md",
+      "sha256": "1746d4d015d5f03eb78f2d1ae35534f9e0867c62c804f2774bd7939f1118a7a2"
+    },
+    {
+      "path": "docs/CURRENT_TASK.md",
+      "sha256": "ec79ed7bb85c932ba7b99fb35aa39e972aab4f47296fef489c7a346eee149263"
+    },
+    {
+      "path": "docs/DEVELOPMENT_HISTORY.md",
+      "sha256": "1cfb3239b8f89ac08572b2a65891a27e300c46b2aac511bae500bc055d1a2938"
+    }
+  ]
+}

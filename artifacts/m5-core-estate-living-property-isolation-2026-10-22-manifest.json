@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-22",
+  "task": "M5-core-estate-living-property-isolation",
+  "base_head": "dff2781a41ae52a4bd476b4b1460ad0f09ef5dc3",
+  "note": "Snapshot of the shared working tree for this fixture-only verification. The test and handoff documents contain earlier unrelated work. No commit or push.",
+  "files": [
+    {
+      "path": "core/tests/test_realm.cpp",
+      "sha256": "5e5995190d0bb6e2366b43dd192829f8d1b11bd2ac7d4fd103b47d7bf10cd047"
+    },
+    {
+      "path": "docs/design/M5-core-estate-living-property-isolation-plan.md",
+      "sha256": "51982fc284798aa307821ba9d559201bd4c34be1850919d232db2170b38c6c00"
+    },
+    {
+      "path": "docs/reports/M5-core-estate-living-property-isolation-evidence-2026-10-22.md",
+      "sha256": "a76e6aed67d4db71a4327b9367dd4d831c3127eaf762ef5c7178938c4170a4ab"
+    },
+    {
+      "path": "docs/CURRENT_TASK.md",
+      "sha256": "291b635c0375b8b020d230ce02ce745a6694a9df3137b78310c8f4b327dc93be"
+    },
+    {
+      "path": "docs/DEVELOPMENT_HISTORY.md",
+      "sha256": "2b4c86bde201f9d51d81cabe7d8523f2f46c4bff3f709c8ce877eb173f1fe438"
+    }
+  ]
+}

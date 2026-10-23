@@ -1,0 +1,22 @@
+{
+  "schema": "m5-v28-inventory-marking-counterfactual-v1",
+  "date": "2026-10-21",
+  "scope": "Offline inventory valuation counterfactual on exact v23 Economic checkpoint observations",
+  "training_seeds": [1, 2, 3],
+  "checkpoint_updates": [25, 25, 25],
+  "regions": 6,
+  "buy_samples": 15,
+  "buy_reference_mark_wins": 15,
+  "buy_liquidation_mark_wins": 0,
+  "inventory_region_price_samples": 52,
+  "inventory_region_mark_changes": 11,
+  "total_max_min_mark_swing": 585,
+  "maximum_single_sample_mark_swing": 192,
+  "audit_output": "build/m5-v28-inventory-marking-counterfactual/audit.json",
+  "audit_sha256": "023237E7159D3E03438CC1F4AB0025094BD200C2D7150D7AF665BA0AA26C4C83",
+  "source_sha256": {
+    "ai/evaluation/realm_inventory_marking_counterfactual_v11.py": "82ABF49E298804B8A89488BE5D220A6D6B2A372201031AC20ED5BF1DD1BE6C23"
+  },
+  "review": {"self_review": true, "independent_review": false, "reward_changed": false, "model_promoted": false},
+  "limits": ["Offline accounting counterfactual, not changed C++ utility or gameplay.", "Current-region liquidation valuation can vary when actor changes region.", "Travel and Sell commands were not executed."]
+}

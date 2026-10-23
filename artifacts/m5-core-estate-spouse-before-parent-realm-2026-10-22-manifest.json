@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-22",
+  "scope": "M5 Realm estate priority: spouse before living parent",
+  "platform": "Windows Visual Studio",
+  "build_directory": "build/m5-core",
+  "target": "polyec_realm_tests",
+  "release": {
+    "build": "pass",
+    "direct_run": "pass",
+    "checks": 20736,
+    "profile": "A: 10000 persons, 19743 sparse relations, 90 days",
+    "profile_seconds": 5.85195
+  },
+  "debug": {
+    "build": "pass",
+    "direct_run": "pass",
+    "checks": 20736,
+    "profile": "A: 10000 persons, 19743 sparse relations, 90 days",
+    "profile_seconds": 21.33,
+    "executable_wall_seconds_approx": 240
+  },
+  "full_ctest": "Release 19/19 passed before this test-only assertion; does not include it",
+  "not_run": [
+    "Python",
+    "native",
+    "GDExtension",
+    "Godot"
+  ],
+  "review": "Codex self-review; no independent reviewer",
+  "sha256": {
+    "docs/reports/M5-core-estate-spouse-before-parent-realm-evidence-2026-10-22.md": "5eb06311947658c23f96b691fce75473ea0114ff6d4d51ab307d02c23a894f53",
+    "docs/DEVELOPMENT_HISTORY.md": "db027319d76a07d0e2da394b404db79965f444c43491a74fafc4b2700936a2e5",
+    "core/tests/test_realm.cpp": "c75c7a475aeb303f428b442e1e92941e65f36d325cbf796cbf5eea6bb4e2506f",
+    "docs/CURRENT_TASK.md": "b7c3798ad43a531f42d38dfe615b333226f4bba848f13e4e54aada15e2e42c17",
+    "docs/design/M5-core-estate-spouse-before-parent-realm-plan.md": "66967b7f08ac5485a7a168b72c92df0432945a2cabece7a8ca6912cfd24a0792"
+  }
+}

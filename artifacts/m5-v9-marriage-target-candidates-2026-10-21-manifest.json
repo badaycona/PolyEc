@@ -1,0 +1,102 @@
+{
+  "task": "M5 realm-v9 marriage target candidates",
+  "baselineCommit": "dff2781a41ae52a4bd476b4b1460ad0f09ef5dc3",
+  "createdAt": "2026-10-21",
+  "review": "self-review only; no independent reviewer",
+  "git": "no commit or push",
+  "scopeNote": "Hashes cover whole files in the shared dirty working tree; some source and docs also contain earlier M5/core slices. No unrelated changes were staged.",
+  "checks": [
+    "Core full CTest Debug 18/18; Release 18/18",
+    "Python model-contract 14 and training preflight 477 in Debug and Release",
+    "Python clock binding 173 checks and 7 replay checkpoints in Debug and Release",
+    "Python household/migration/config/work authorization/transfer checks passed",
+    "Native runtime_contracts Release 1/1",
+    "Windows GDExt Release build; Godot 4.5.1 old-bundle guard 5/5"
+  ],
+  "files": [
+    {
+      "path": "core/CMakeLists.txt",
+      "sha256": "1fb268911d20f890af3d052c0dc81d01c68911cb6c4ffbf6fe7c77b7b2709197"
+    },
+    {
+      "path": "core/include/polyec/realm.hpp",
+      "sha256": "54b1b06ed1863dc78fe04a327f215f7ba3e2860b3b927e01537b869899c681b4"
+    },
+    {
+      "path": "core/src/realm.cpp",
+      "sha256": "bbaeb0d5aecbe0eef3a3006af8ce24343104c0eb2fd2a78fa2bf0c025bd287e7"
+    },
+    {
+      "path": "core/tests/test_realm.cpp",
+      "sha256": "c5c931b3335538033dac25a98fa5e186db13b3bd900b64d0a409986cebe9bf20"
+    },
+    {
+      "path": "core/tests/test_realm_court.cpp",
+      "sha256": "d62d7130ee562b127450b1f18486c45039f4566063f4c82e18a4bf53b06ec4a3"
+    },
+    {
+      "path": "native/include/polyec/model_manifest.hpp",
+      "sha256": "d98f39f68bbf02ca6101d4198858ad3b3a3af9ab70b7c8310f2ea5da134da065"
+    },
+    {
+      "path": "native/realm_contracts.cpp",
+      "sha256": "afc86f18459fa44c0aebb0639ab6556cd78ec6565333489048a677b886051436"
+    },
+    {
+      "path": "bindings/python/realm_binding.cpp",
+      "sha256": "59f841ca14bfc0cc1e001d1d72cc76069550026885c82484c3d74802aa57fd89"
+    },
+    {
+      "path": "ai/training/realm_model_v9.py",
+      "sha256": "08fff6477b2673a15bd052d2f9108aa9bb3e8886f427c93b51c25466ae630bcf"
+    },
+    {
+      "path": "ai/tests/model_contract_binding_checks.py",
+      "sha256": "0deeb58e4721e2d9bc4daa0c1b6d7c074a37c6edee5d4eb59548a22a498ca9da"
+    },
+    {
+      "path": "ai/tests/realm_training_checks.py",
+      "sha256": "890e45a9853b2f1d1b51ef15c0f6ad9ede06b8fb2a90b27ebec2257296b7f6b1"
+    },
+    {
+      "path": "ai/tests/realm_clock_binding_checks.py",
+      "sha256": "46f958dbddd4a8b86ec1a11b7e634cef97c81a22272fbb71345af9c8427c12a9"
+    },
+    {
+      "path": "ai/tests/gameplay_config_binding_checks.py",
+      "sha256": "ef2e667b72b86e2fc14c86c4b720d3991a65eac56dae1f6dcb9edbd1b7cc7ce5"
+    },
+    {
+      "path": "ai/tests/establishment_transfer_binding_checks.py",
+      "sha256": "2e0274bda72fa1c0b856d498a997106ee0627c4c471c1f85c70567c33fd9e8fd"
+    },
+    {
+      "path": "godot_project/ui/realm/realm_panel.gd",
+      "sha256": "552ef1f68bc711eeadc69323005841ebf812e76367d593182fb7ff7ec63f0048"
+    },
+    {
+      "path": "godot_project/tests/realm_smoke.gd",
+      "sha256": "c458def2836e1bd368965101d4633313396d0b00aac0aa290ddf33f0b49999cc"
+    },
+    {
+      "path": "godot_project/tests/realm_worksite_smoke.gd",
+      "sha256": "b1d9946f1ca2be72c66fe45cd026060930f509e619ce70afaac48f4511927992"
+    },
+    {
+      "path": "docs/design/M5-v9-marriage-target-candidates-plan.md",
+      "sha256": "3b6216413f793e9241682e00f0a5b87bc7f45fd30347577d15360ae7a10fd4f7"
+    },
+    {
+      "path": "docs/reports/M5-v9-marriage-target-candidates-evidence-2026-10-21.md",
+      "sha256": "213bc998ca23297a421924f2ce90bdf9519d81aac60f9b3f63361d51232411d9"
+    },
+    {
+      "path": "docs/CURRENT_TASK.md",
+      "sha256": "3cfefa3dae631f0b10302597ea7350d2df24cc46ddf85beb82e4d03c7b1aad36"
+    },
+    {
+      "path": "docs/DEVELOPMENT_HISTORY.md",
+      "sha256": "bab3f454a1238e021424f2806dfbc7270ef06972bf1336e336930a13ac45efe5"
+    }
+  ]
+}

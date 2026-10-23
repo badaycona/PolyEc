@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-22",
+  "task": "M5-core-estate-underfunded-claim",
+  "base_head": "dff2781a41ae52a4bd476b4b1460ad0f09ef5dc3",
+  "note": "Hashes describe shared working-tree files after the checks recorded in the report. Hashed source, test and CMake files also contain unrelated pre-existing dirty changes.",
+  "files": [
+    {
+      "path": "core/tests/test_realm.cpp",
+      "sha256": "02c0a4bbb04552d63fb0f5a21d58c09eef7f7ffe47c6d6594de47be1f29c9257"
+    },
+    {
+      "path": "docs/design/M5-core-estate-underfunded-claim-plan.md",
+      "sha256": "9e0df83b7c8cadcf6a85a75ee6047e373b4127723b47d95b019e68006075f35d"
+    },
+    {
+      "path": "docs/reports/M5-core-estate-underfunded-claim-evidence-2026-10-22.md",
+      "sha256": "985ba06248404c30f34ad25862e9718fae852dd6f48e9382a5733ae345a81d56"
+    },
+    {
+      "path": "docs/CURRENT_TASK.md",
+      "sha256": "5dd48428ef00d5abb2e292e4a43ede5b45dec196aac3022fe49a5845a3fa262e"
+    },
+    {
+      "path": "docs/DEVELOPMENT_HISTORY.md",
+      "sha256": "8e126b05d829fc58369bf9c7f6bd0f9d775896d2f63b290fd008d8ff2088c94d"
+    }
+  ]
+}

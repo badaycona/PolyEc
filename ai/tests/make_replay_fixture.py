@@ -15,3 +15,8 @@ for row in rows:
     steps.append({"index":int(step),"action":int(action),"fingerprint":fingerprint,"cash":int(cash)})
 assert len(steps)==64
 args.output.write_text(json.dumps({"seed":876543,"model_sha256":manifest["sha256"],"steps":steps},indent=2))
+
+
+
+
+

@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-22",
+  "scope": "M5: death releases an appointed office position to the appointing sovereign",
+  "platform": "Windows",
+  "build_directory": "build/m5-core",
+  "target": "polyec_realm_tests",
+  "release": {
+    "build": "pass",
+    "direct_run": "pass",
+    "checks": 20730,
+    "profile": "A: 10000 persons, 19743 sparse relations, 90 days"
+  },
+  "debug": {
+    "build": "pass",
+    "direct_run": "pass",
+    "checks": 20730,
+    "profile": "A: 10000 persons, 19743 sparse relations, 90 days",
+    "executable_wall_seconds_approx": 233
+  },
+  "full_ctest": {
+    "release": "19/19 passed before recent test-only additions",
+    "debug": "19/19 passed before recent test-only additions"
+  },
+  "not_rerun": [
+    "Python",
+    "native",
+    "GDExtension",
+    "Godot"
+  ],
+  "files": [
+    "core/tests/test_realm.cpp",
+    "docs/design/M5-core-estate-appointed-office-vacancy-plan.md",
+    "docs/reports/M5-core-estate-appointed-office-vacancy-evidence-2026-10-22.md",
+    "docs/CURRENT_TASK.md",
+    "docs/DEVELOPMENT_HISTORY.md"
+  ],
+  "sha256": {
+    "core/tests/test_realm.cpp": "cb1c7fd01d36d73920b7ae7e4a459a341e3afcf54e2d5b1e86070700030fb880",
+    "docs/design/M5-core-estate-appointed-office-vacancy-plan.md": "b2ed4168b600f732b74178e7a306ce18577f0600d3e7c1830f98401b9aa12920",
+    "docs/reports/M5-core-estate-appointed-office-vacancy-evidence-2026-10-22.md": "1a22909ffc1b7a3b743b4d3698acfa5fe69071415946e9e61cd13fc830acfd62",
+    "docs/CURRENT_TASK.md": "e849a4b53ab2f08a486945ba18121ad0050a2a4db56ecdead519e322faa76e46",
+    "docs/DEVELOPMENT_HISTORY.md": "5e2d185bd16010f30eb9186f5372b3c0435508bd6317dc0c447a4292f33a453b"
+  }
+}

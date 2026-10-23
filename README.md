@@ -14,6 +14,10 @@ Dự án đang ở **M5 — nền xã hội và mở rộng quốc gia**. Bản 
 
 | Bạn cần | Nguồn chuẩn |
 |---|---|
+| Sơ đồ toàn dự án và đường nối mục tiêu → bài toán → module/API → bằng chứng | [PROJECT_MAP](docs/PROJECT_MAP.md) |
+| Đặc tả các milestone M0–M7, bao gồm nền tảng đã làm trước M5 | [MILESTONE_BLUEPRINTS](docs/MILESTONE_BLUEPRINTS.md) |
+| Yêu cầu gameplay, dữ liệu đầu vào, điều kiện và phép kiểm còn thiếu | [PRODUCTION_BLUEPRINT](docs/PRODUCTION_BLUEPRINT.md) |
+| Tra cứu nhánh đã có triển khai cùng kế hoạch và báo cáo tương ứng | [IMPLEMENTED_BRANCH_CATALOG](docs/IMPLEMENTED_BRANCH_CATALOG.md) |
 | Toàn thể sản phẩm, tính năng phải xây, roadmap và tech stack | [IMPLEMENTATION_PLAN](docs/IMPLEMENTATION_PLAN.md) |
 | Cách chơi, điều khiển, tính năng bản thử và điều cần biết | [PLAYER_GUIDE](docs/PLAYER_GUIDE.md) |
 | Dev: từ bài toán lớn tới bài toán nhỏ, phương pháp và phép kiểm | [TECHNICAL_PROBLEMS](docs/TECHNICAL_PROBLEMS.md), rồi [DEVELOPER_GUIDE](docs/DEVELOPER_GUIDE.md) để đọc công thức/thuật toán sâu |

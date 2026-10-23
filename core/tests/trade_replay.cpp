@@ -13,3 +13,4 @@ int main() {
         std::cout<<t<<' '<<action<<' '<<world.fingerprint()<<' '<<r.reward<<' '<<v.cash<<' '<<v.region<<'\n';
     }
 }
+

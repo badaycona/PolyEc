@@ -1,0 +1,44 @@
+{
+  "record": "M5 estate and separate household funds integration evidence",
+  "date": "2026-10-22",
+  "platform": "Windows Release",
+  "result": {
+    "checks_passed": 20744,
+    "full_ctest_run": false,
+    "debug_run": false,
+    "python_native_godot_adapters_run": false,
+    "production_source_changed": false,
+    "profile_a": {
+      "persons": 10000,
+      "sparse_relations": 19743,
+      "days": 90
+    }
+  },
+  "files": {
+    "plan": {
+      "path": "docs/design/M5-estate-spouse-separate-household-funds-plan.md",
+      "sha256": "cadd6724493c734bcd89eee2fce67fa794a57a1b9b1ec2f1102f78662950dbb2",
+      "bytes": 2541
+    },
+    "report": {
+      "path": "docs/reports/M5-estate-spouse-separate-household-funds-evidence-2026-10-22.md",
+      "sha256": "b578e052246651d7f7561b749cd3138bdfb1968e14374ece7e7f8d1c602ad29e",
+      "bytes": 2859
+    },
+    "test_source": {
+      "path": "core/tests/test_realm.cpp",
+      "sha256": "ddc5fb0c149c68dc6a979deb61b6a9556676d8e63943f879af55e0f17c208aa9",
+      "bytes": 227571
+    },
+    "release_executable": {
+      "path": "build/m5-core/core/Release/polyec_realm_tests.exe",
+      "sha256": "d32837432c50ceba3223595e89e528f231d5ded674fa0ee58e91525765678412",
+      "bytes": 1083904
+    },
+    "current_task": {
+      "path": "docs/CURRENT_TASK.md",
+      "sha256": "4f22b56be02029cf3e1dda2e79d1695e0cc1108a9c7fb91fc4c3db5a22eeb006",
+      "bytes": 99716
+    }
+  }
+}

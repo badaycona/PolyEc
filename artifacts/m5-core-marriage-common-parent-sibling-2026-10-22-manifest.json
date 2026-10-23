@@ -1,0 +1,150 @@
+{
+  "date": "2026-10-22",
+  "topic": "Cấm kết hôn giữa anh chị em có cha hoặc mẹ chung, kể cả khi thiếu cạnh Sibling trực tiếp",
+  "files": {
+    "core/include/polyec/realm.hpp": {
+      "sha256": "10e4e89f869ac4cde169d7ba0c70c0e7b7b12eb068fc5ba9f607cca180942406",
+      "bytes": 17732
+    },
+    "core/src/realm.cpp": {
+      "sha256": "f9fed53f628a3f8397388084eb3f067dcdac5ee0265996174a8ca5a3d671167c",
+      "bytes": 107910
+    },
+    "core/src/realm_save.cpp": {
+      "sha256": "afb86d26eca29253d07c489cf68f2b855a3a6febd05477a628fff2148abec21f",
+      "bytes": 13565
+    },
+    "core/tests/test_realm_court.cpp": {
+      "sha256": "4010019a1af843375a3e8b3744aee508255ec7f6725427c11572b84ec55f8f0c",
+      "bytes": 64939
+    },
+    "core/tests/test_realm.cpp": {
+      "sha256": "50a476c4eeec2f75a28943b5ed9be106d519a324ec69ae2aa2defda1e581abc2",
+      "bytes": 242200
+    },
+    "docs/IMPLEMENTATION_PLAN.md": {
+      "sha256": "b51f460c3bee296c4d48c881f87ea8f1870c2a5ddf2fceee1f4260e5191845f5",
+      "bytes": 109659
+    },
+    "docs/design/M5-core-marriage-common-parent-sibling-plan.md": {
+      "sha256": "60b6a155aeb901e8a932db61e50d5e77cd5edcbd8e844e83c07fdc86f0215ae1",
+      "bytes": 2935
+    },
+    "docs/reports/M5-core-marriage-common-parent-sibling-evidence-2026-10-22.md": {
+      "sha256": "3c69ab39eb9c632acacec21c17ecaecb42b6b06e859be64141c153ae68b3593c",
+      "bytes": 9279
+    },
+    "docs/CURRENT_TASK.md": {
+      "sha256": "0cfb0615db64338e6cdc4a8e6bc212ef453dce05719dbd0ecc3dd1bfd75cf02c",
+      "bytes": 110243
+    },
+    "docs/DEVELOPMENT_HISTORY.md": {
+      "sha256": "97900820b13b6b5ac6c13e09f988a778891da0c4b1310dd0203046b0fb0c4c41",
+      "bytes": 90196
+    },
+    "native/realm_contracts.cpp": {
+      "sha256": "61bc725b20dfa96d0fe6c4b8aa4da694ec5ae5167b075b3918c15a77b960b836",
+      "bytes": 18375
+    },
+    "build/windows/core/Release/polyec_core.lib": {
+      "sha256": "5de3fbe16f43f2822828ae1d779036418d63c214923c23955f0c2edc2476a247",
+      "bytes": 18276932
+    },
+    "build/windows/core/Release/polyec_court_tests.exe": {
+      "sha256": "853d3940cf5978fdc23295c358b7097f1cbe69943df0831eaf088faddc1fa008",
+      "bytes": 836096
+    },
+    "build/windows/core/Release/polyec_realm_tests.exe": {
+      "sha256": "0ac39fabd221b75e5c8417e04cdce39eab0d4e0f4546ed1139bc99f5d552298b",
+      "bytes": 1111040
+    },
+    "build/windows/core/Release/polyec_manager_tests.exe": {
+      "sha256": "52fde73d78bdef33c019dab14bd6653aa4b95c83e12eb0560319d61fb15eea34",
+      "bytes": 545280
+    },
+    "build/windows/Release/polyec_ai.lib": {
+      "sha256": "7ca2deafb0e32bf9f2c97be6e08f7e3a3c13e99f3e3d91e2bae8892d4d1cef4e",
+      "bytes": 4000484
+    },
+    "build/windows/Release/polyec_realm_contracts.exe": {
+      "sha256": "eba9010787cdaf757f579a62684919e017fca15e59e52aab70400b370b646762",
+      "bytes": 940544
+    },
+    "bindings/python/realm_binding.cpp": {
+      "sha256": "5e3ed33166fc245142f13307f1fa7413a24695eb5069037e1c8a96b9c6206da5",
+      "bytes": 22552
+    },
+    "ai/tests/realm_binding_checks.py": {
+      "sha256": "c9c055c94738e4ffcf1f6bda09af0d58beff690f5af8228525838b3987aec1fc",
+      "bytes": 8653
+    },
+    "core/tests/realm_transition_replay.cpp": {
+      "sha256": "0a8ff959b9dc16e7109a9a30f049319c71325710b181ac2ae99c3decee73f8b2",
+      "bytes": 519
+    },
+    "gdext/polyec_session.cpp": {
+      "sha256": "f825ba502f17a8a8cd558cd9166cfc0a6891114303eafe924b117c67aa291197",
+      "bytes": 24562
+    },
+    "build/windows/CMakeCache.txt": {
+      "sha256": "2a8ed0e2c727e43030a943ecf4644b3f52fcccbacfb90eecaf12ddc8fcc89643",
+      "bytes": 17684
+    },
+    "godot_project/bin/polyec.windows.template_release.x86_64.dll": {
+      "sha256": "6f864ee6bd17d0fdbd4d45d78dd8d2a5cc1f599ef128def4d20ebb784c4aa6f6",
+      "bytes": 1270272
+    },
+    "build/m5-python-ai/CMakeCache.txt": {
+      "sha256": "7cc6751b06dba976ce216857f21f08f15e80f41797c0d74d8d55e1bd02685869",
+      "bytes": 17121
+    },
+    "build/m5-python-ai/core/Release/polyec_core.lib": {
+      "sha256": "f7831b6408a1d94ec95e227d46924dc933ad4395adc5509a8dca345dc796fc6e",
+      "bytes": 18277036
+    },
+    "build/m5-python-ai/core/Release/polyec_realm_transition_replay.exe": {
+      "sha256": "a0f725d0a4fe0c2620b164b51dc4a1fccd1355f119fd304e98e6eb5cdd4d5c43",
+      "bytes": 592896
+    },
+    "build/m5-python-ai/Release/polyec_env.cp312-win_amd64.pyd": {
+      "sha256": "8259b41d68c84901f8d6957d6bfd4988f2c1510ac0b23d9e1c9b3b15ca56ed75",
+      "bytes": 1292288
+    },
+    "godot_project/tests/realm_worksite_smoke.gd": {
+      "sha256": "0deda3e39b1a7add983ad066c5125bd143e79a6e3280d006fcda6a57b8096920",
+      "bytes": 1463
+    },
+    "godot_project/project.godot": {
+      "sha256": "9e0f440293c7713ec37a889ba5abb249e9bdc8e439435cae3157fc7c46d40fb7",
+      "bytes": 751
+    },
+    "build/tools/godot/Godot_v4.5.1-stable_win64_console.exe": {
+      "sha256": "f0336c8b2ae039d39767a64c416f01b1b49d95d8dde87724012874dd4be1c1a8",
+      "bytes": 197640
+    }
+  },
+  "result": {
+    "configuration": "Windows Release",
+    "court_checks": 565,
+    "realm_checks": 21081,
+    "realm_workload": "profile A: 10000 people, 19743 sparse relations, 90 days",
+    "manager_tests": "passed",
+    "native_runtime_contract_checks": 24,
+    "native_runtime_model_behavior": "v6 historical bundle rejected as expected; compatible trained v11 bundle absent, so neural inference not run",
+    "python_build_option": "POLYEC_BUILD_PYTHON=OFF; Python adapter not run",
+    "godot_run": false,
+    "full_ctest_run": false,
+    "debug_run": false,
+    "save_schema_changed": false,
+    "action_observation_dimensions_changed": false,
+    "realm_private_class_layout_changed": true,
+    "scenarios": [
+      "common-parent siblings rejected without a direct Sibling edge",
+      "rejected command preserves world fingerprint",
+      "adding another child updates sibling index incrementally",
+      "save/load rebuilds common-parent sibling index",
+      "explicit Sibling edges remain supported",
+      "direct and multi-generation lineal marriage cases remain covered"
+    ]
+  }
+}

@@ -75,3 +75,8 @@ report={"checks_passed":checks,"native_runtime":native.version(),"python_runtime
         "model_sha256":manifest["sha256"]}
 (args.model_dir/"native-parity.json").write_text(json.dumps(report,indent=2))
 print(json.dumps(report,indent=2))
+
+
+
+
+

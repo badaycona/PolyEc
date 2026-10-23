@@ -1,0 +1,116 @@
+{
+  "title": "M5 v31 extended training stop-state",
+  "date": "2026-10-22",
+  "status": "stopped on explicit user request; no training process remains running",
+  "completed": "Governance seeds 1-3: 75 updates and 76800 decisions per seed; training set lock verified",
+  "partial": "Civilian seed 1 checkpoint after update 28 of 75; 28672 cumulative decisions; seed 2 and 3 not started",
+  "resume_checkpoint": "build/m5-v31-extended-training/civilian/seed-1/checkpoint.pt",
+  "validation": "v31 validation not run; no v31 candidate selection or model export",
+  "file_hashes": [
+    {
+      "path": "build/m5-v31-extended-training/governance/seed-1/initial.pt",
+      "bytes": 156914,
+      "sha256": "4f13009577dee30a0fba86ab5cd930c06e74aef513171f57478625dac0921b78"
+    },
+    {
+      "path": "build/m5-v31-extended-training/governance/seed-1/manifest.json",
+      "bytes": 1578,
+      "sha256": "e6043e31256f4dd42b266163111eeaec52f5373d69eb71002ff3d0accd45659b"
+    },
+    {
+      "path": "build/m5-v31-extended-training/governance/seed-1/checkpoint.pt",
+      "bytes": 3771524,
+      "sha256": "c6c94383808054930f5a3d52620fdcee6f43329ae43247c500a455d8f699ddb4"
+    },
+    {
+      "path": "build/m5-v31-extended-training/governance/seed-1/history.jsonl",
+      "bytes": 654645,
+      "sha256": "f7350bd99e0ee531ad1d1638d5bbfefa26feb0685de390ab75063fedb5889d61"
+    },
+    {
+      "path": "build/m5-v31-extended-training/governance/seed-1/policy.pt",
+      "bytes": 156770,
+      "sha256": "6a8cbd357c5d801520c34403df396c3006343f8159fdd2b304dd6f16c463222c"
+    },
+    {
+      "path": "build/m5-v31-extended-training/governance/seed-2/initial.pt",
+      "bytes": 156914,
+      "sha256": "13914a0436b1fe81f6ccbcdfd915716ee30e4551edf1075e5eee8bd180f4070d"
+    },
+    {
+      "path": "build/m5-v31-extended-training/governance/seed-2/manifest.json",
+      "bytes": 1578,
+      "sha256": "02950e41ef42f0589a05e07f85252a2d1e8e061ce72ee2ea3694212ac37ec9f0"
+    },
+    {
+      "path": "build/m5-v31-extended-training/governance/seed-2/checkpoint.pt",
+      "bytes": 3703108,
+      "sha256": "f5925e663205b42dfaf3565a6e1edc054841d063a934cf94e52ee1c4ed3e21e0"
+    },
+    {
+      "path": "build/m5-v31-extended-training/governance/seed-2/history.jsonl",
+      "bytes": 654156,
+      "sha256": "4bd0f6ddcf7220e970567b5718d004d395301722f8c85ec4df5bac7ac897aa09"
+    },
+    {
+      "path": "build/m5-v31-extended-training/governance/seed-2/policy.pt",
+      "bytes": 156770,
+      "sha256": "10da5ace6e8d432119aafbc216b114ec73c3ddf2a34a52ffba39bc871eb04f8e"
+    },
+    {
+      "path": "build/m5-v31-extended-training/governance/seed-3/initial.pt",
+      "bytes": 156914,
+      "sha256": "d0241a724db54c2012fce8bc2dbedc921f4d53d54902b9b41f666cd53875185f"
+    },
+    {
+      "path": "build/m5-v31-extended-training/governance/seed-3/manifest.json",
+      "bytes": 1578,
+      "sha256": "d601c5cdcdd68ea8267de0917faa51e883aaa19fa6b36fade39d78843faae458"
+    },
+    {
+      "path": "build/m5-v31-extended-training/governance/seed-3/checkpoint.pt",
+      "bytes": 3374916,
+      "sha256": "57a4deaf978671aaa5dac12c77106c5b9ab44af2d9960e25bfaa6f035103da64"
+    },
+    {
+      "path": "build/m5-v31-extended-training/governance/seed-3/history.jsonl",
+      "bytes": 654307,
+      "sha256": "2d069c661035cb13aad6c8116e3b4899dc240e7d138181351731ad87f5ac43f9"
+    },
+    {
+      "path": "build/m5-v31-extended-training/governance/seed-3/policy.pt",
+      "bytes": 156770,
+      "sha256": "8bb1cb466ed7437c6f3472b7835aa1148d8aae85ff902d69d8049d414e1a578a"
+    },
+    {
+      "path": "build/m5-v31-extended-training/civilian/seed-1/initial.pt",
+      "bytes": 156914,
+      "sha256": "4f13009577dee30a0fba86ab5cd930c06e74aef513171f57478625dac0921b78"
+    },
+    {
+      "path": "build/m5-v31-extended-training/civilian/seed-1/manifest.json",
+      "bytes": 1498,
+      "sha256": "d72ee08452615751f6fbaaa02d7dcd41bb583bf63f0886d995e3007b79b85a69"
+    },
+    {
+      "path": "build/m5-v31-extended-training/civilian/seed-1/checkpoint.pt",
+      "bytes": 2580356,
+      "sha256": "6b082a7b19141fab343095a69acf8012c6fccc5ec2b12e1c62f449bee78062ce"
+    },
+    {
+      "path": "build/m5-v31-extended-training/civilian/seed-1/history.jsonl",
+      "bytes": 38917,
+      "sha256": "0dbf299922fd76c96fa52470844953f467f26929d8396f2cba38d5b0b71281cc"
+    },
+    {
+      "path": "build/m5-v31-extended-training/governance/TRAINING-SET.json",
+      "bytes": 2073,
+      "sha256": "6fc6181f3c164df86f851c6c42e605761089969aaf337e07d12096018eb91b7c"
+    },
+    {
+      "path": "docs/design/M5-v31-extended-governance-civilian-training-plan.md",
+      "bytes": 4042,
+      "sha256": "f3277771d48af483677a255c57e2c43374aba4e96a5a487429648271b59cc2fe"
+    }
+  ]
+}

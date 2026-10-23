@@ -11,11 +11,17 @@ func _initialize() -> void:
 
 func run() -> void:
     var session=ClassDB.instantiate("PolyEcSession")
-    check(session.realm_schema()=="realm-v6","native core schema")
+    check(session.realm_schema()=="realm-v29","native core schema")
+    var model_root="res://models/realm-v29"
+    var fixture_path="res://tests/realm_expected.json"
+    for arg in OS.get_cmdline_user_args():
+        if arg.begins_with("--model-root="): model_root=arg.trim_prefix("--model-root=")
+        if arg.begins_with("--fixture-file="): fixture_path=arg.trim_prefix("--fixture-file=")
     var paths=[]
     var hashes=[]
     for family in ["governance","economic","civilian"]:
-        var base=ProjectSettings.globalize_path("res://models/realm-v6/"+family+"/")
+        var base=model_root.trim_suffix("/")+"/"+family+"/"
+        if base.begins_with("res://"): base=ProjectSettings.globalize_path(base)
         var manifest=JSON.parse_string(FileAccess.get_file_as_string(base+"manifest.json"))
         paths.append(base+family+".onnx")
         hashes.append(manifest.sha256)
@@ -23,8 +29,11 @@ func run() -> void:
     check(session.realm_paused(),"interactive load starts paused")
     var v=session.realm_snapshot(1)
     check(v.persons==10000,"individual count")
+    check(v.person.sleep_debt==0 and v.person.exertion==0,"read-only body indicators are present in the selected-person snapshot")
     check(v.edges>19000,"real sparse relations")
     check(v.invariant,"opening accounting")
+    check(v.regions[2].military_supplementary_ration_stock==32 and v.regions[2].military_ration_stock==0,
+        "Atlas specialty market exposes its separate SupplementaryFood opening stock")
     check(not session.realm_step(1),"draft required")
     check(session.realm_draft(0,true),"reroll")
     check(not session.realm_draft(1,true),"only one reroll")
@@ -35,9 +44,6 @@ func run() -> void:
     check(not session.realm_paused(),"loaded realm resumed")
     var money=session.realm_snapshot(1).money
     session.set_active(true)
-    var fixture_path="res://tests/realm_expected.json"
-    for arg in OS.get_cmdline_user_args():
-        if arg.begins_with("--fixture-file="): fixture_path=arg.trim_prefix("--fixture-file=")
     var fixture=JSON.parse_string(FileAccess.get_file_as_string(fixture_path))
     check(fixture is Array and fixture.size()==64,"native64-day fixture loaded")
     for day in range(64):
@@ -49,6 +55,21 @@ func run() -> void:
         check(v.alive==fixture[day].alive,"native lifetime transition day "+str(day))
         check(v.money==fixture[day].money,"native ledger day "+str(day))
     check(v.inferences>10000,"actual per-person inference, not empty records")
+    var title_snapshot=session.realm_snapshot(1)
+    var use_grant=session.realm_land_use_grant(1,10001,2,str(title_snapshot.fingerprint))
+    check(use_grant.success,"Godot grants whole-holding use through C++ Realm command")
+    check(session.realm_land_use_rights().size()==1,"Godot reads active land-use registry")
+    var blocked_deed=session.realm_title_transfer(1,10001,2,str(use_grant.fingerprint))
+    check(not blocked_deed.success and blocked_deed.error=="Revoke land use right before title transfer",
+        "title transfer cannot carry an active use right silently")
+    var revoked=session.realm_land_use_revoke(1,10001,str(session.realm_snapshot(1).fingerprint))
+    check(revoked.success and session.realm_land_use_rights().is_empty(),"Godot revokes land use through C++ Realm command")
+    title_snapshot=session.realm_snapshot(1)
+    var deed=session.realm_title_transfer(1,10001,2,str(title_snapshot.fingerprint))
+    check(deed.success,"learned Realm session commits holder-authorized title transfer through C++ command")
+    var transferred_snapshot=session.realm_snapshot(1)
+    check(transferred_snapshot.fingerprint!=title_snapshot.fingerprint and transferred_snapshot.money==title_snapshot.money and transferred_snapshot.invariant,
+        "Godot title transfer changes world fingerprint while preserving money and invariant")
     var path=ProjectSettings.globalize_path("user://realm-smoke.polyec")
     check(session.realm_pause(),"pause before save")
     check(session.realm_save(path,false),"save world and policy memory")
@@ -105,6 +126,9 @@ func run() -> void:
     check(ui.loaded,"UI session loaded models")
     check(app.session.realm_draft(ui.cards[0],false),"UI session chooses draft")
     app.realm_panel.refresh()
+    check(app.realm_panel.profile.text.contains("Nợ ngủ 0 ngày quy đổi") and
+        app.realm_panel.profile.text.contains("Gắng sức 0/100 (chỉ số thử)"),
+        "selected-person profile explains sleep debt and provisional exertion")
     app.realm_panel.toggle_run()
     check(app.realm_panel.running,"run toggle resumes")
     check(not app.session.realm_paused(),"run toggle resumed core")

@@ -1,11 +1,13 @@
 #include "polyec/realm.hpp"
 #include "polyec/realm_clock.hpp"
+#include "polyec/clock_section_codec.hpp"
 #include <cmath>
 #include <cstdio>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 namespace {
@@ -641,6 +643,115 @@ int main() {
             check(r.pause_revision() == rev0, "horizon StepOneDay revision unchanged");
         }
 
+        // R4 CLOCK_1 codec checks.
+        {
+            // Exact canonical bytes.
+            {
+                std::ostringstream out;
+                polyec::detail::write_clock_section(out, true, 42);
+                check(out.str() == " CLOCK_1 1 42 ", "clock codec canonical bytes");
+            }
+            // Round trips, including 0 and UINT64_MAX.
+            {
+                struct Case { bool paused; uint64_t rev; };
+                Case cases[] = {{false, 0}, {true, 42}, {false, std::numeric_limits<uint64_t>::max()}, {true, std::numeric_limits<uint64_t>::max()}};
+                for (auto& c : cases) {
+                    std::ostringstream out;
+                    polyec::detail::write_clock_section(out, c.paused, c.rev);
+                    std::istringstream in(out.str());
+                    bool rp = !c.paused;
+                    uint64_t rr = c.rev ^ 1ULL;
+                    polyec::detail::read_clock_section(in, rp, rr);
+                    check(rp == c.paused, "clock codec roundtrip paused");
+                    check(rr == c.rev, "clock codec roundtrip revision");
+                }
+            }
+            // Failure cases preserve outputs.
+            auto expect_fail = [&](const std::string& input, bool pausedIn, uint64_t revIn) {
+                std::istringstream in(input);
+                bool p = pausedIn;
+                uint64_t r = revIn;
+                bool threw = false;
+                try {
+                    polyec::detail::read_clock_section(in, p, r);
+                } catch (const std::runtime_error& e) {
+                    threw = (std::string(e.what()) == "Save clock header");
+                } catch (...) {
+                    threw = false;
+                }
+                check(threw, "clock codec failure throws Save clock header");
+                check(p == pausedIn, "clock codec failure preserves paused");
+                check(r == revIn, "clock codec failure preserves revision");
+            };
+            expect_fail("CLOCK_X 1 0", false, 7);
+            expect_fail("CLOCK_1 2 0", false, 7);
+            expect_fail("CLOCK_1", false, 7);
+            expect_fail("CLOCK_1 1", false, 7);
+            expect_fail("CLOCK_1 1 not-a-number", false, 7);
+            expect_fail("CLOCK_1 1 18446744073709551616", false, 7);
+            expect_fail("", false, 7);
+            // Negative token parses to UINT64_MAX under MSVC extraction.
+            {
+                std::istringstream in("CLOCK_1 1 -1");
+                bool p = false;
+                uint64_t r = 7;
+                polyec::detail::read_clock_section(in, p, r);
+                check(p, "clock codec negative token paused");
+                check(r == std::numeric_limits<uint64_t>::max(), "clock codec negative token UINT64_MAX");
+            }
+        }
+
+        // R4 CLOCK_1 Realm-level malformed checks.
+        {
+            const std::string bundle = "test";
+            Realm base(18, 1, 128);
+            RealmClockController c(base, 1.0);
+            check(c.set_paused(false), "resume");
+            check(c.set_paused(true), "pause");
+            std::string data = base.serialize(bundle);
+            // tag mutation
+            {
+                std::string bad = data;
+                size_t pos = bad.find("CLOCK_1");
+                check(pos != std::string::npos, "clock tag present");
+                bad.replace(pos, 7, "CLOCK_X");
+                Realm dest(1, 1, 128);
+                auto fp = dest.fingerprint();
+                std::string err;
+                check(!dest.deserialize(bad, bundle, err), "realm clock tag rejected");
+                check(err == "Save clock header", "realm clock tag error text");
+                check(dest.fingerprint() == fp, "realm clock tag dest fingerprint unchanged");
+            }
+            // flag mutation to 2
+            {
+                std::string bad = data;
+                size_t pos = bad.find("CLOCK_1");
+                check(pos != std::string::npos, "clock tag present");
+                size_t digit = bad.find_first_of("01", pos + 7);
+                check(digit != std::string::npos, "clock flag digit present");
+                bad[digit] = '2';
+                Realm dest(1, 1, 128);
+                auto fp = dest.fingerprint();
+                std::string err;
+                check(!dest.deserialize(bad, bundle, err), "realm clock flag rejected");
+                check(err == "Save clock header", "realm clock flag error text");
+                check(dest.fingerprint() == fp, "realm clock flag dest fingerprint unchanged");
+            }
+            // revision truncated
+            {
+                std::string bad = data;
+                size_t pos = bad.find("CLOCK_1");
+                check(pos != std::string::npos, "clock tag present");
+                bad = bad.substr(0, pos + 9);
+                Realm dest(1, 1, 128);
+                auto fp = dest.fingerprint();
+                std::string err;
+                check(!dest.deserialize(bad, bundle, err), "realm clock revision truncated rejected");
+                check(err == "Save clock header", "realm clock revision truncated error text");
+                check(dest.fingerprint() == fp, "realm clock revision truncated dest fingerprint unchanged");
+            }
+        }
+
         std::cout << "realm clock checks=" << checks << "\n";
         return 0;
     } catch (const std::exception& e) {
@@ -648,3 +759,9 @@ int main() {
         return 1;
     }
 }
+
+
+
+
+
+

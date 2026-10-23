@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-22",
+  "task": "M5-core-estate-household-authority-continuity",
+  "base_head": "dff2781a41ae52a4bd476b4b1460ad0f09ef5dc3",
+  "note": "Snapshot of shared dirty working tree for a test-only Realm fixture. Other source and documentation work already present is preserved. No commit or push.",
+  "files": [
+    {
+      "sha256": "4f20705578945a19be135415583f78eab8abeb4ad8bb86bde4d0713dc9d2e4c5",
+      "path": "core/tests/test_realm.cpp"
+    },
+    {
+      "sha256": "d50a67bde710b9116afb4c414a6cc6c157117d00c9092c851dcba5b27ca51604",
+      "path": "docs/design/M5-core-estate-household-authority-continuity-plan.md"
+    },
+    {
+      "sha256": "822c1cdf06948dc40541cb1e1aac3dfc2029690230b1ad1bfc0d763803946c7e",
+      "path": "docs/reports/M5-core-estate-household-authority-continuity-evidence-2026-10-22.md"
+    },
+    {
+      "sha256": "435d98a5979ad004d8fc76e63f721ef1229ace55dc6172cb376f3ca829c722b2",
+      "path": "docs/CURRENT_TASK.md"
+    },
+    {
+      "sha256": "469c8f71c719fc6a19d87a5a8a5835d270b01e8c7fd7b437ce13243aadac7769",
+      "path": "docs/DEVELOPMENT_HISTORY.md"
+    }
+  ]
+}

@@ -17,16 +17,23 @@ func run() -> void:
     root.add_child(app)
     await process_frame
     expect(app.session.snapshot().selected==7,"Initial selection is a native command")
-    expect(app.title_label.text=="Thanh Điền","Inspector reads native name")
-    var at: Vector2=app.map.pan+Vector2(731,328)*app.map.zoom
-    expect(app.map.region_at(at)==8,"Polygon picking at settlement")
+    expect(app.title_label.text=="Xích Nham","Inspector reads Atlas name")
+    expect(app.map.regions.size()==27,"Main map loads all 27 Atlas territories")
+    for id in range(27):
+        var geometry=app.map.region_for_id(id)
+        var anchor: Vector2=geometry.anchor
+        var screen=app.map.pan+anchor*app.map.zoom
+        expect(app.map.region_at(screen)==id,"Polygon picking matches Atlas ID %d" % id)
+    expect(app.map.region_at(Vector2(0,0))==-1,"Outside map is not mistaken for territory zero")
+    var at: Vector2=app.map.pan+app.map.region_for_id(8).anchor*app.map.zoom
+    expect(app.map.region_at(at)==8,"Polygon picking at Atlas anchor")
     var click=InputEventMouseButton.new()
     click.button_index=MOUSE_BUTTON_LEFT
     click.pressed=true
     click.position=at
     app.map._gui_input(click)
     expect(app.session.snapshot().selected==8,"Map click sends native select")
-    expect(app.title_label.text=="Hắc Sơn","Inspector follows selection")
+    expect(app.title_label.text=="Nam Cảng","Inspector follows Atlas selection")
     var wheel=InputEventMouseButton.new()
     wheel.button_index=MOUSE_BUTTON_WHEEL_UP
     wheel.pressed=true
@@ -34,8 +41,11 @@ func run() -> void:
     app.map._gui_input(wheel)
     expect(app.map.region_at(at)==8,"Cursor-anchored zoom preserves picking")
     app.map.pan+=Vector2(-37,25)
-    var shifted=app.map.pan+Vector2(289,349)*app.map.zoom
+    var shifted=app.map.pan+app.map.region_for_id(7).anchor*app.map.zoom
     expect(app.map.region_at(shifted)==7,"Picking follows pan")
+    app._select_territory(0)
+    expect(app.session.snapshot().selected==0,"Atlas territory zero survives native ID translation")
+    expect(app.title_label.text=="Thanh Điền","Territory zero opens its matching inspector")
     app._set_speed(2)
     expect(app.session.snapshot().speed==2,"Speed button reaches core controller")
     app._open_help()

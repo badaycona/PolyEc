@@ -1,0 +1,15 @@
+{
+  "schema": "m5-core-person-day-phase-extraction-v1",
+  "date": "2026-10-21",
+  "scope": "Move Realm::day_people unchanged into realm_lifecycle.cpp",
+  "configuration": "Windows Release, Visual Studio 18 2026",
+  "all_build": "pass",
+  "ctest": {"passed": 19, "total": 19, "elapsed_seconds": 674.66},
+  "diff_check": "pass",
+  "source_sha256": {
+    "core/src/realm_lifecycle.cpp": "CA7FB9FF5F6D3F1793729BD2C2630B048D5460CFFEA06A91B851D955AB1B0AA9",
+    "core/CMakeLists.txt": "5E160727B6716F0177FBB50EA4CC3EA7401862EED3D98A39A93FD3E9AE62DB9C"
+  },
+  "review": {"self_review": true, "independent_review": false},
+  "limits": ["Debug and runtime-specific Python/native/GDExt/Godot checks were not run.", "No performance claim was measured."]
+}

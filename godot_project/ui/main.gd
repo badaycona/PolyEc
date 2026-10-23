@@ -131,6 +131,7 @@ func _build_ui() -> void:
     state_label.name="State"
     map=MapCanvas.new()
     map.name="Map"
+    map.configure(session.atlas_map_data())
     add_child(map)
     map.territory_selected.connect(_select_territory)
     var map_frame=_panel(self,"MapBorder")
@@ -166,7 +167,7 @@ func _build_ui() -> void:
     content.add_child(spacer)
     var note=_panel(content,"Note")
     note.custom_minimum_size.y=84
-    var note_text=_label(note,"Hai miền đất trong cùng một thế giới.\nChọn vùng trên bản đồ để đổi hồ sơ;\nđồng hồ chỉ chạy khi bạn tiếp tục.",11,MUTED)
+    var note_text=_label(note,"Hai mươi bảy miền đất trong Atlas.\nChọn vùng để xem tên, địa thế và\nđặc sản đã ghi nhận.",11,MUTED)
     note_text.position=Vector2(14,13)
     note_text.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
     note_text.size=Vector2(254,64)
@@ -412,26 +413,17 @@ func _close_campaign() -> void:
     _refresh()
 
 func _refresh_inspector(id: int,view: Dictionary) -> void:
-    var name_value="Chọn một lãnh địa"
-    for territory in view.get("territories",[]):
-        if int(territory.get("id",0))==id: name_value=str(territory.get("name",""))
-    title_label.text=name_value
-    file_label.text="HỒ SƠ %03d  /  LÃNH ĐỊA" % id
-    if id==7:
-        region_tag.text="ĐỒNG BẰNG PHÍA TÂY  /  LƯU VỰC SÔNG"
-        region_description.text="Những thửa ruộng ôm lấy bờ tây sông Thanh. Rừng thấp lùi dần về thượng nguồn, nhường chỗ cho bến nước và đường nối miền núi."
-        terrain_value.text="Đồng bằng, ruộng thấp và rừng ven sông"
-        water_value.text="Bờ tây sông Thanh · Bến Lúa"
-        settlement_value.text="Bến Lúa · đầu đường thiên lý"
-    elif id==8:
-        region_tag.text="MIỀN NÚI PHÍA ĐÔNG  /  ĐƯỜNG ĐÈO"
-        region_description.text="Dãy Hắc Sơn án ngữ miền đông. Những triền đá xếp lớp dẫn về Ải Đá; con đường thiên lý vượt sông và nối hai miền qua cửa núi."
-        terrain_value.text="Núi đá, triền dốc và rừng sườn đồi"
-        water_value.text="Thượng lưu sông Thanh · khe núi"
-        settlement_value.text="Ải Đá · cửa ngõ đường đèo"
-    else:
+    var territory: Dictionary=map.region_for_id(id)
+    if territory.is_empty():
+        title_label.text="Chọn một lãnh địa"
         region_tag.text="ĐỊA ĐỒ VƯƠNG QUỐC"
-        region_description.text="Chọn một miền đất trên bản đồ để xem địa thế và hồ sơ."
-        terrain_value.text="—"
-        water_value.text="—"
-        settlement_value.text="—"
+        region_description.text="Chọn một miền đất trên bản đồ để xem thông tin được ghi trong Atlas."
+        terrain_value.text="—";water_value.text="—";settlement_value.text="—"
+        return
+    title_label.text=str(territory.get("name", "Lãnh địa"))
+    file_label.text="ATLAS %02d  /  %s" % [id, "KHU TRIỀU ĐÌNH" if territory.get("royal", false) else "LÃNH ĐỊA"]
+    region_tag.text=str(territory.get("group", "")).to_upper()
+    region_description.text=str(territory.get("description", ""))
+    terrain_value.text="Được xếp vào nhóm: "+str(territory.get("group", "chưa phân nhóm"))
+    water_value.text="Dữ liệu địa hình chi tiết chưa được hiệu chuẩn"
+    settlement_value.text="Đặc sản ghi trong Atlas: "+str(territory.get("specialty", "chưa ghi nhận"))

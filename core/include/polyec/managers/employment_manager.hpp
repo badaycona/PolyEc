@@ -26,7 +26,7 @@ public:
                                int target, int term, int day) noexcept {
         return person.family != Family::Governance &&
                person.age_days >= 14 * 365 && target == person.region &&
-               (province.employed < province.jobs || person.job == person.region) &&
+               (province.employed < province.jobs || person.work_assignment.job == person.region) &&
                term > 0 && term <= 30 &&
                day <= std::numeric_limits<int>::max() - term;
     }
@@ -55,11 +55,11 @@ public:
     }
 
     static bool can_resign(const Person &person, int day) noexcept {
-        return person.hired_by != 0 && day >= person.office_notice;
+        return person.office_appointment.hired_by != 0 && day >= person.office_appointment.office_notice;
     }
 
     static bool has_active_work(const Person &person, int day) noexcept {
-        return person.job >= 0 && person.busy_until >= day;
+        return person.work_assignment.job >= 0 && person.busy_until >= day;
     }
 
     // Exact production teacher rule: age/skill, one teacher per 20 school
@@ -81,26 +81,26 @@ public:
     // Returns 0 for an active worker (production path), 1 for an active
     // teacher, and -1 after clearing an expired assignment.
     static int account_day(Person &person, Province &province, int day) noexcept {
-        if (person.job >= 0 && person.busy_until >= day) {
+        if (person.work_assignment.job >= 0 && person.busy_until >= day) {
             ++province.employed;
-            if (person.job_kind == 1) {
+            if (person.work_assignment.job_kind == 1) {
                 ++province.teachers;
                 province.teacher_skill_sum += person.skill;
                 return 1;
             }
             return 0;
         }
-        person.job = -1;
+        person.work_assignment.job = -1;
         return -1;
     }
 
     // Exact legacy pre-switch clear: decrement counters whenever a job was
     // assigned, even if busy_until has already expired, and clamp at zero.
     static void clear_work(Person &person, Province &province) noexcept {
-        if (person.job < 0) return;
+        if (person.work_assignment.job < 0) return;
         province.employed = std::max(0, province.employed - 1);
-        if (person.job_kind == 1) province.teachers = std::max(0, province.teachers - 1);
-        person.job = -1;
+        if (person.work_assignment.job_kind == 1) province.teachers = std::max(0, province.teachers - 1);
+        person.work_assignment.job = -1;
     }
 
     static void start_work(Person &person, std::vector<Province> &provinces,
@@ -121,8 +121,8 @@ public:
         clear_work(person, province);
 
         const int kind = teacher_eligible(person, province) ? 1 : 0;
-        person.job = region;
-        person.job_kind = kind;
+        person.work_assignment.job = region;
+        person.work_assignment.job_kind = kind;
         person.busy_until = day + term;
         ++province.employed;
         if (kind == 1) ++province.teachers;
@@ -147,14 +147,14 @@ public:
         // Appointment clears the selected person's prior work assignment; the
         // employer's own clearsJob block is handled by Realm before the switch.
         clear_work(person, province);
-        person.job = -1;
+        person.work_assignment.job = -1;
         person.school_days = 0;
         person.busy_until = day;
         person.candidate = false;
-        person.office = true;
-        person.hired_by = employer;
-        person.salary_due = day + kOfficeSalaryPeriod;
-        person.office_notice = day + kOfficeNoticeDays;
+        person.office_appointment.office = true;
+        person.office_appointment.hired_by = employer;
+        person.office_appointment.salary_due = day + kOfficeSalaryPeriod;
+        person.office_appointment.office_notice = day + kOfficeNoticeDays;
         person.family = Family::Governance;
         person.taxing_authority = false;
         FinanceManager::transfer(employer_treasury, person.cash, kAppointmentFee);
@@ -162,13 +162,13 @@ public:
 
     // Shared by voluntary resignation and failed office salary payment.
     static void end_office(Person &person) noexcept {
-        person.office = false;
-        person.hired_by = 0;
+        person.office_appointment.office = false;
+        person.office_appointment.hired_by = 0;
         person.family = Family::Civilian;
     }
 
     static void resign(Person &person) {
-        if (person.hired_by == 0) throw std::logic_error("resign without office");
+        if (person.office_appointment.hired_by == 0) throw std::logic_error("resign without office");
         end_office(person);
     }
 };

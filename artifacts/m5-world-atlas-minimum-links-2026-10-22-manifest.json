@@ -1,0 +1,57 @@
+{
+  "result": {
+    "direct_runner_exit_code": 0,
+    "target": "polyec_world_atlas_tests",
+    "debug_run": false,
+    "link_counts_by_corridor": [
+      3,
+      2,
+      3,
+      6,
+      5,
+      7,
+      5
+    ],
+    "realm_or_tradeplay_changed": false,
+    "links_verified": 31,
+    "all_corridor_paths_and_royal_links_checked": true,
+    "full_ctest_run": false
+  },
+  "record": "M5.4 static atlas minimum links evidence",
+  "platform": "Windows Release",
+  "date": "2026-10-22",
+  "files": {
+    "core/include/polyec/world_atlas.hpp": {
+      "bytes": 12588,
+      "sha256": "7221dd32662f31f1bb9253ad34a08db0ab67d695c5f01682efcbd8a9372a2442"
+    },
+    "docs/design/M5-world-atlas-minimum-links-plan.md": {
+      "bytes": 2412,
+      "sha256": "26d71cc9b02b204f094ce9ce2bd2ffc3901c3505a3ae6fcfac5cb42c7da1e283"
+    },
+    "build/windows/core/Release/polyec_world_atlas_tests.exe": {
+      "bytes": 224768,
+      "sha256": "7d1b691ea5849ceb81d609049fccc8364a24e41996c65a07175535dd7f0c2947"
+    },
+    "core/CMakeLists.txt": {
+      "bytes": 6224,
+      "sha256": "3fca61a637deb91c2b96b559d987a8abc93ee2c285002458d0242e6151218eae"
+    },
+    "core/tests/test_world_atlas.cpp": {
+      "bytes": 6318,
+      "sha256": "a17c60b86c0da85c54850f6920b2a91f6711fdd24564609ef942349d544184ed"
+    },
+    "docs/reports/M5-world-atlas-minimum-links-evidence-2026-10-22.md": {
+      "bytes": 5165,
+      "sha256": "a42a13fce32e9caa924b6fd18cb5c2ae2fbff2990b319899addaa7fdfe0fb1e4"
+    },
+    "docs/CURRENT_TASK.md": {
+      "bytes": 103541,
+      "sha256": "afa070fc7db7a63749c057d872b2a672dd66e7a108572f54704c228acc454ec2"
+    },
+    "docs/DEVELOPMENT_HISTORY.md": {
+      "bytes": 84812,
+      "sha256": "8aa634be1e501dff2382cedac47ee20f433d65ede5b0673fc7e458cba53c0760"
+    }
+  }
+}

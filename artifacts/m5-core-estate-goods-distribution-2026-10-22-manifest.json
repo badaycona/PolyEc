@@ -1,0 +1,40 @@
+{
+  "task": "M5 estate cash, goods distribution, and end-of-phase settlement",
+  "date": "2026-10-22",
+  "scope": "Windows Release manager and Realm C++ estate distribution; save schema unchanged",
+  "note": "Hashes cover whole shared working-tree files and do not attribute all pre-existing changes in those files to this task. No commit created.",
+  "files": [
+    {
+      "path": "core/include/polyec/managers/estate_manager.hpp",
+      "sha256": "11e2522ddc91e71103cbd43fca45e544b996f11d7610401d5f9df4a14e99111c"
+    },
+    {
+      "path": "core/src/realm_lifecycle.cpp",
+      "sha256": "6597011c13457cc2f8963ce67f7cd8f5a09fa2846b5148998c71c3cca5d27a0a"
+    },
+    {
+      "path": "core/tests/test_managers.cpp",
+      "sha256": "a67f0966c33330571b17899855c01a2dc2c848c28e58dd1cb4cca701ca4ff809"
+    },
+    {
+      "path": "core/tests/test_realm.cpp",
+      "sha256": "fabc1415195c8dcaa6a300d1d8c0cf1b81f88f99af01eee0e868a3b27575d460"
+    },
+    {
+      "path": "docs/CURRENT_TASK.md",
+      "sha256": "5fab565602f27fd33d4adc2e4786be0f0703df69c400c90253cfb2fe09ccd899"
+    },
+    {
+      "path": "docs/DEVELOPMENT_HISTORY.md",
+      "sha256": "2701a05c8ef653da6720e9c5eecdc756ef1f8ef31ffa28e96d427abb3f001650"
+    },
+    {
+      "path": "docs/design/M5-core-estate-goods-distribution-plan.md",
+      "sha256": "2b04897fec724e2b7615b31a3d59972c1d9c22a83ebadffd7d53797c6fc47d3e"
+    },
+    {
+      "path": "docs/reports/M5-core-estate-goods-distribution-evidence-2026-10-22.md",
+      "sha256": "32cc9ac9abbdba77e0474a1b74622fce5d17da18c0d9ac4407faaf66eeee6d4e"
+    }
+  ]
+}

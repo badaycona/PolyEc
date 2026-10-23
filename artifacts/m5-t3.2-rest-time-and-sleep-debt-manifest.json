@@ -1,0 +1,63 @@
+{
+  "baseline_head": "dff2781a41ae52a4bd476b4b1460ad0f09ef5dc3",
+  "checkpoint_date": "2026-10-21",
+  "note": "Hashes cover complete working-tree files; files include prior dirty M5/core changes and are not isolated patches.",
+  "files": [
+    {
+      "path": "core/include/polyec/realm.hpp",
+      "sha256": "8BA254C7F8CE78B5A576D6A01584A084C02292F485BDFC4F816F1ABD489F698E"
+    },
+    {
+      "path": "core/include/polyec/body_state_section_codec.hpp",
+      "sha256": "6D219400BE79439A1BD63155AD7FFBA3DEF6FCF0DC1F94C31B718B31B0ACC52C"
+    },
+    {
+      "path": "core/include/polyec/schedule_section_codec.hpp",
+      "sha256": "3D6BE07C801E2AB7DD0E2ED63A92BC58369D7614D86193D20CF3C9D289EF4CD3"
+    },
+    {
+      "path": "core/src/realm.cpp",
+      "sha256": "838AD34EE707B8C71B486B2C1E640FE3A371B6E8AC677F29C4E23FEDD3BA4875"
+    },
+    {
+      "path": "core/tests/test_realm.cpp",
+      "sha256": "EEDBDD21C9C6F5FD9AF59FDB6C37E18FD4A1C5B73019E00CEADCFC4BD52CFB26"
+    },
+    {
+      "path": "core/tests/test_schedule.cpp",
+      "sha256": "752520C8931ADE3327A53B80A983620F9B9BBF2B7108F2C5873377480B3B7B49"
+    },
+    {
+      "path": "core/tests/test_campaign.cpp",
+      "sha256": "12E2FD2341698E3A5DA964E75674F5EFDF12B6725E3662AB1800BE6E0EF2E5B5"
+    },
+    {
+      "path": "core/tests/work_authorization_fixture.hpp",
+      "sha256": "C1C6066C5FC83F8E99F96D741153E9775A05049BFBEA707BFA403EE516E65EDD"
+    },
+    {
+      "path": "bindings/python/realm_binding.cpp",
+      "sha256": "98D8E6A83CC5034E3BDE1D6E5BDCD4451DEE41DB27EEEA314FDF166D37557E8C"
+    },
+    {
+      "path": "ai/tests/realm_clock_binding_checks.py",
+      "sha256": "9120F10A3857DDBA11E773F4EC6DD3CB9B66F85F4617F73EB73A7BAD352A1BF5"
+    },
+    {
+      "path": "docs/design/M5-T3.2-rest-time-and-sleep-debt-plan.md",
+      "sha256": "BB960F109F02136FC7ABBD2FA7C0F807BCD5B1BC8098924C95FDB7F2A3673CB1"
+    },
+    {
+      "path": "docs/reports/M5-T3.2-rest-time-and-sleep-debt-evidence-2026-10-21.md",
+      "sha256": "211611CADA2463424B30A3B2A6AB660AAE077689370B893D984D74B8702FAAC2"
+    },
+    {
+      "path": "docs/CURRENT_TASK.md",
+      "sha256": "B98BB5A78CA67521355B72663AD9E0F2F7DE1DCEFFDA5EE7973FCA56517439C0"
+    },
+    {
+      "path": "docs/DEVELOPMENT_HISTORY.md",
+      "sha256": "ED85967A917E899D51D86F45214EE3881182A9C34E5C7DA6535F1695230C185A"
+    }
+  ]
+}

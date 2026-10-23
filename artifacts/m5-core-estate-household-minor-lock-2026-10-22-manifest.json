@@ -1,0 +1,39 @@
+{
+  "date": "2026-10-22",
+  "scope": "M5 estate: household fund remains separate and locked when only a minor survives",
+  "platform": "Windows",
+  "build_directory": "build/m5-core",
+  "target": "polyec_realm_tests",
+  "release": {
+    "build": "pass",
+    "direct_run": "pass",
+    "checks": 20695
+  },
+  "debug": {
+    "build": "pass",
+    "direct_run": "pass",
+    "checks": 20695
+  },
+  "full_ctest": {
+    "release": "19/19 passed before this test-only addition",
+    "debug": "19/19 passed before this test-only addition"
+  },
+  "not_rerun": [
+    "Python",
+    "native",
+    "GDExtension",
+    "Godot"
+  ],
+  "files": [
+    "core/tests/test_realm.cpp",
+    "docs/design/M5-core-estate-household-minor-lock-plan.md",
+    "docs/reports/M5-core-estate-household-minor-lock-evidence-2026-10-22.md"
+  ],
+  "sha256": {
+    "core/tests/test_realm.cpp": "05c4394d9cf63b8a3e612eaee969ebcb6c93f84404f648610b914a1e435e9d86",
+    "docs/design/M5-core-estate-household-minor-lock-plan.md": "0f9c981bff047046a6c95276c66386881f2e92ef657a377a8f79bf2b5aedf041",
+    "docs/reports/M5-core-estate-household-minor-lock-evidence-2026-10-22.md": "7517d854bb62264de366feeea2e0ad54eb3f2d983da745fe72b3fe743c3bdaa7",
+    "docs/CURRENT_TASK.md": "0c8eaa12e3969759ebd19e1cc5cb663bcc726cc5067946acd45a74ff9bab50db",
+    "docs/DEVELOPMENT_HISTORY.md": "54dbb260d2496cd25e85f48bc06368c00e63d19586b737ec9c80a03355320538"
+  }
+}

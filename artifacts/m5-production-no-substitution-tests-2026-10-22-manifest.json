@@ -1,0 +1,52 @@
+{
+  "record": "M5.2 production exact GoodId no-substitution tests",
+  "date": "2026-10-22",
+  "platform": "Windows Visual Studio Release",
+  "result": {
+    "target": "polyec_production_tests",
+    "checks_passed": 43,
+    "substitution_cases": [
+      "Beeswax for Fiber",
+      "Copper for Iron",
+      "Silver for Iron",
+      "Gold for Iron",
+      "Silk for Cloth"
+    ],
+    "full_ctest_run": false,
+    "debug_run": false,
+    "python_native_godot_run": false,
+    "production_source_changed": false
+  },
+  "files": {
+    "plan": {
+      "path": "docs/design/M5-production-no-substitution-tests-plan.md",
+      "sha256": "46ff6021b392844775d5068d09645d0f9ab98063a5b244cc99b0d41ab222bf02",
+      "bytes": 2151
+    },
+    "report": {
+      "path": "docs/reports/M5-production-no-substitution-tests-evidence-2026-10-22.md",
+      "sha256": "e1aca0da980c701d593611aa9dc356fa1f5b1d656b64db7d800957cbe78f301f",
+      "bytes": 2467
+    },
+    "test_source": {
+      "path": "core/tests/test_production.cpp",
+      "sha256": "d8435cab0d679bbea098e440348eb513fbeb9c2084ea31c5c14cacadb6bbad92",
+      "bytes": 15255
+    },
+    "production_manager": {
+      "path": "core/include/polyec/production_manager.hpp",
+      "sha256": "b12bba1875643f67767ddecf7cf8c5227724d5cdad00c4a232fc520a54fed6b5",
+      "bytes": 14899
+    },
+    "release_executable": {
+      "path": "build/m5-core/core/Release/polyec_production_tests.exe",
+      "sha256": "a841770b7879858ff803931fcb7a7c16efa428f2f8e59e2de6be0cf32f16b699",
+      "bytes": 314368
+    },
+    "current_task": {
+      "path": "docs/CURRENT_TASK.md",
+      "sha256": "4f22b56be02029cf3e1dda2e79d1695e0cc1108a9c7fb91fc4c3db5a22eeb006",
+      "bytes": 99716
+    }
+  }
+}

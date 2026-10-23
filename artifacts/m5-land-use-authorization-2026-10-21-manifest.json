@@ -1,0 +1,114 @@
+{
+  "task": "M5.0/1 land-use authorization on abstract holding clusters",
+  "baselineCommit": "dff2781a41ae52a4bd476b4b1460ad0f09ef5dc3",
+  "createdAt": "2026-10-21",
+  "review": "self-review only; no independent reviewer",
+  "git": "no commit or push",
+  "scopeNote": "SHA-256 covers full files in the shared dirty worktree. Some source files overlap subsequent authorized core-estate refactoring; test results in the land-use report are the schema22 acceptance run. The 64-day fixture was regenerated after schema22 at the historical transfer path.",
+  "files": [
+    {
+      "path": "core/include/polyec/land_holding.hpp",
+      "sha256": "96e3fe5453002eaa35ac20e2d46725ffd6f08a2fecaf0ea1f06103373db36e8b"
+    },
+    {
+      "path": "core/include/polyec/land_use_section_codec.hpp",
+      "sha256": "ccc65b8999ee43dda7c57dced187a805c6506ab2d8ec9831f656bf12efa7a066"
+    },
+    {
+      "path": "core/include/polyec/realm.hpp",
+      "sha256": "f5971aba1f5ccbd048b2d52bd017bb369a174c6df6e3b84e931ba784f93c612f"
+    },
+    {
+      "path": "core/include/polyec/schedule_section_codec.hpp",
+      "sha256": "bba724b0fbdb4706d3c0ba81ffe18c77537601b4f2aa5044a2fef731dc9dff32"
+    },
+    {
+      "path": "core/src/realm.cpp",
+      "sha256": "2e5e23e572fb15e9ececcd067a47792d3eb5891fe289b3565bd0ed6ab0f3afc6"
+    },
+    {
+      "path": "core/src/realm_land.cpp",
+      "sha256": "994e5985c2587070b1cdbfd8334b4e381ee8185db9454d4c5e53218be89b266e"
+    },
+    {
+      "path": "core/tests/test_land_title.cpp",
+      "sha256": "35f09b246d296612b5e6d514e1768950686a84a636d1e38ff00c87bc46244eec"
+    },
+    {
+      "path": "core/tests/test_campaign.cpp",
+      "sha256": "44c2bc54bea9da7dd5328440a05937350d5715cfaa2e350f7b6044e2c0bda451"
+    },
+    {
+      "path": "core/tests/test_household_fund.cpp",
+      "sha256": "96f3da7073f1c8351987ab888ae011f0ed0f4712185494df9d95550a05f43bc9"
+    },
+    {
+      "path": "core/tests/test_realm.cpp",
+      "sha256": "1e2c8a7812cd45d956b806f7fb2a74fc5b9c2e8dc6e9e5d5b7742dad937dfb7e"
+    },
+    {
+      "path": "core/tests/test_schedule.cpp",
+      "sha256": "c652ef0a76398795eb1bfc01f2c36152ef51fca4335bed6141c09461d4e3072f"
+    },
+    {
+      "path": "core/tests/work_authorization_fixture.hpp",
+      "sha256": "07831bc2b028723dda12ff14d85f1fdaec56c679c13f00831edd0fe4045f9c9e"
+    },
+    {
+      "path": "bindings/python/realm_binding.cpp",
+      "sha256": "59f841ca14bfc0cc1e001d1d72cc76069550026885c82484c3d74802aa57fd89"
+    },
+    {
+      "path": "native/include/polyec/realm_runtime.hpp",
+      "sha256": "6da6ccc755bbe8343b12b70c643088534ecd4435d7058ef9d1ff1c5b88a40ada"
+    },
+    {
+      "path": "native/realm_runtime.cpp",
+      "sha256": "85529e9c971b8921ea531209c97fb555300249b9bb9635228a7a88d63219c434"
+    },
+    {
+      "path": "native/realm_contracts.cpp",
+      "sha256": "224ebb6f593f817a9eda2715540ec742050ddb98820b269c3ecd3c85ec4d1911"
+    },
+    {
+      "path": "gdext/polyec_session.cpp",
+      "sha256": "ec24c5aeb287b3e5fdb83464e8871c82f4ac95a47e12de93c812a1d96e2b779d"
+    },
+    {
+      "path": "godot_project/tests/realm_smoke.gd",
+      "sha256": "6afce6fc83652a4307188ad63a42a9e5098550dbac06c586740bc24c5e97e085"
+    },
+    {
+      "path": "ai/tests/realm_binding_checks.py",
+      "sha256": "7d4a3e7c9f839b27818225e3bcb9a29020f10e247c4eab36c5eec28dc4fe6483"
+    },
+    {
+      "path": "ai/tests/realm_clock_binding_checks.py",
+      "sha256": "19b45ec9bd509dc5f4df54e47e6cf6a8022c9f02fcf562f2a8aab0b8238b66e5"
+    },
+    {
+      "path": "docs/design/M5-land-use-authorization-plan.md",
+      "sha256": "7bb5e8f35f362c13c59fd3bb33bde0f14d99d3f95f9894ae9bc849838e4d1e51"
+    },
+    {
+      "path": "docs/reports/M5-land-use-authorization-evidence-2026-10-21.md",
+      "sha256": "d7009feff049d7585e163897d2e4d0f7cb981c817126054952a8cffa4cd76a4e"
+    },
+    {
+      "path": "docs/CURRENT_TASK.md",
+      "sha256": "f580f707370b721089f8921f10356199e7d90149ad1ef94ebb20245b3c758b7c"
+    },
+    {
+      "path": "docs/IMPLEMENTATION_PLAN.md",
+      "sha256": "2a3ca1f56df0ec686ae6b9c0f031036b7ea043b8c6f17942cc38fe694143d2d4"
+    },
+    {
+      "path": "docs/DEVELOPMENT_HISTORY.md",
+      "sha256": "3417ceb5480cc787ad3db0a803ccf477bcfab49e7f46f896d92aa13e6be7d92e"
+    },
+    {
+      "path": "artifacts/m5-land-title-transfer-realm-expected-2026-10-21.json",
+      "sha256": "f5619d0a42f67a40a10162f8149a76366a49b6dd742c4287b1bee808a72528d4"
+    }
+  ]
+}

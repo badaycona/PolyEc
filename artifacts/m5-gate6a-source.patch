@@ -1,0 +1,319 @@
+--- a/core/include/polyec/managers/finance_manager.hpp
++++ b/core/include/polyec/managers/finance_manager.hpp
+@@ -7,6 +7,7 @@
+ #include <unordered_map>
+ #include <utility>
+ #include <vector>
++#include <span>
+ #include "../realm.hpp"
+ 
+ namespace polyec {
+@@ -68,6 +69,7 @@
+     int region = 0;
+     bool public_employer = false;
+     std::vector<std::pair<uint64_t,int64_t>> claims;
++    uint64_t establishment_id = 0; // zero: legacy Province source
+ };
+ 
+ // Opaque staged batch. Only FinanceManager::prepare_batch may construct it;
+@@ -83,6 +85,8 @@
+     uint64_t claim_id(size_t i) const { return claims_.at(i).id; }
+     int claim_region(size_t i) const { return claims_.at(i).region; }
+     bool claim_public(size_t i) const { return claims_.at(i).public_employer; }
++    uint64_t claim_establishment(size_t i) const { return claims_.at(i).establishment_id; }
++    size_t establishment_count() const { return establishments_.size(); }
+     int64_t paid(size_t i) const { return claims_.at(i).paid; }
+     int64_t tax(size_t i) const { return claims_.at(i).tax; }
+ 
+@@ -93,6 +97,7 @@
+         uint64_t id = 0;
+         int region = 0;
+         bool public_employer = false;
++        uint64_t establishment_id = 0;
+         int64_t paid = 0;
+         int64_t tax = 0;
+     };
+@@ -115,11 +120,18 @@
+         int64_t receipts_initial = 0;
+         int64_t receipts_final = 0;
+     };
++    struct EstablishmentDelta {
++        size_t index=0;
++        uint64_t id=0;
++        int region=0;
++        int64_t cash_initial=0,cash_final=0;
++    };
+     bool noop_ = false;
+     int day_ = 0;
+     std::vector<ProvinceDelta> groups_;
+     std::vector<ClaimPaid> claims_;
+     std::vector<Recipient> recipients_;
++    std::vector<EstablishmentDelta> establishments_;
+ };
+ 
+ // Pure helper over Realm-owned containers. Realm stays the sole owner; these
+@@ -304,7 +316,8 @@
+     static PayrollBatchPlan prepare_batch(
+             int day, const std::vector<PayrollBatchGroup> &groups,
+             const std::vector<Person> &people,
+-            const std::vector<Province> &provinces) {
++            const std::vector<Province> &provinces,
++            std::span<const Establishment> establishments={}) {
+         PayrollBatchPlan plan;
+         plan.day_ = day;
+         std::vector<Province> staged = provinces;
+@@ -312,12 +325,24 @@
+         std::vector<char> region_seen(provinces.size(), 0);
+         std::unordered_map<size_t, size_t> recip_slot;
+         std::vector<PayrollBatchPlan::Recipient> recip;
++        std::unordered_map<uint64_t,size_t> establishment_slots;
+ 
+         for (const auto &group : groups) {
+             if (group.claims.empty()) continue;
++            if(group.establishment_id&&group.public_employer)
++                throw std::logic_error("ambiguous payroll source");
+             const int region = group.region;
+             if (region < 0 || size_t(region) >= provinces.size())
+                 throw std::out_of_range("province region");
++            size_t input_establishment_index=0;
++            if(group.establishment_id){
++                const auto source=std::lower_bound(establishments.begin(),establishments.end(),group.establishment_id,
++                    [](const Establishment& site,uint64_t id){return site.id<id;});
++                if(source==establishments.end()||source->id!=group.establishment_id)
++                    throw std::out_of_range("establishment payroll source");
++                if(source->region!=region)throw std::logic_error("payroll establishment region mismatch");
++                input_establishment_index=size_t(source-establishments.begin());
++            }
+             for (const auto &claim : group.claims) {
+                 if (claim.first == 0 || claim.first > people.size())
+                     throw std::out_of_range("person ID");
+@@ -333,6 +358,7 @@
+                     cp.id = claim.first;
+                     cp.region = region;
+                     cp.public_employer = group.public_employer;
++                    cp.establishment_id = group.establishment_id;
+                     plan.claims_.push_back(cp);
+                 }
+                 continue;
+@@ -358,18 +384,32 @@
+                 region_seen[size_t(region)] = 1;
+             }
+             PayrollBatchPlan::ProvinceDelta &delta = deltas[size_t(region)];
++            size_t establishment_slot=0;
++            if(group.establishment_id){
++                const auto known=establishment_slots.find(group.establishment_id);
++                if(known==establishment_slots.end()){
++                    const auto& source=establishments[input_establishment_index];
++                    if(source.cash<0)throw std::logic_error("negative payroll account");
++                    establishment_slot=plan.establishments_.size();
++                    plan.establishments_.push_back({input_establishment_index,source.id,region,source.cash,source.cash});
++                    establishment_slots.emplace(source.id,establishment_slot);
++                }else establishment_slot=known->second;
++                if(plan.establishments_[establishment_slot].region!=region)
++                    throw std::logic_error("payroll establishment region mismatch");
++            }
+             if (group.public_employer) {
+                 if (staged[size_t(region)].treasury < 0)
+                     throw std::logic_error("negative payroll account");
+-            } else {
++            } else if(!group.establishment_id) {
+                 if (staged[size_t(region)].firm < 0)
+                     throw std::logic_error("negative payroll account");
+                 delta.firm_read = true;
+             }
+ 
+             const Province &v = staged[size_t(region)];
+-            const int64_t account =
+-                group.public_employer ? v.treasury : v.firm;
++            const int64_t account = group.establishment_id
++                ? plan.establishments_[establishment_slot].cash_final
++                : group.public_employer ? v.treasury : v.firm;
+             int64_t budget = std::min(account, due), left = budget;
+             std::vector<int64_t> paid(group.claims.size());
+             for (size_t i = 0; i < group.claims.size(); ++i) {
+@@ -431,12 +471,16 @@
+                 cp.id = group.claims[i].first;
+                 cp.region = region;
+                 cp.public_employer = group.public_employer;
++                cp.establishment_id = group.establishment_id;
+                 cp.paid = pay;
+                 cp.tax = tax;
+                 plan.claims_.push_back(cp);
+             }
+ 
+-            if (group.public_employer) {
++            if(group.establishment_id){
++                plan.establishments_[establishment_slot].cash_final=acct;
++                staged[size_t(region)].treasury=tres;
++            }else if (group.public_employer) {
+                 staged[size_t(region)].treasury = acct;
+             } else {
+                 staged[size_t(region)].firm = acct;
+@@ -459,7 +503,8 @@
+     // point only precomputed scalar assignments and no throwing operations run.
+     static void apply_batch(const PayrollBatchPlan &plan, int64_t current_day,
+                             std::vector<Person> &people,
+-                            std::vector<Province> &provinces) {
++                            std::vector<Province> &provinces,
++                            std::span<Establishment> establishments={}) {
+         if (plan.noop_) return;
+         if (current_day != plan.day_)
+             throw std::logic_error("stale payroll batch day");
+@@ -476,6 +521,12 @@
+             if (v.tax_receipts != delta.receipts_initial)
+                 throw std::logic_error("stale payroll batch receipts");
+         }
++        for(const auto& source:plan.establishments_){
++            if(source.index>=establishments.size())throw std::out_of_range("establishment payroll source");
++            const auto& site=establishments[source.index];
++            if(site.id!=source.id||site.region!=source.region||site.cash!=source.cash_initial)
++                throw std::logic_error("stale payroll establishment");
++        }
+         for (const auto &r : plan.recipients_) {
+             if (r.index >= people.size())
+                 throw std::out_of_range("payroll recipient");
+@@ -492,6 +543,7 @@
+             v.treasury = delta.treasury_final;
+             v.tax_receipts = delta.receipts_final;
+         }
++        for(const auto& source:plan.establishments_)establishments[source.index].cash=source.cash_final;
+         for (const auto &r : plan.recipients_) {
+             people[r.index].cash = r.final_cash;
+             people[r.index].tax_remainder = r.final_remainder;
+--- a/core/tests/test_managers.cpp
++++ b/core/tests/test_managers.cpp
+@@ -19,6 +19,7 @@
+ 
+ using polyec::EmploymentManager;
+ using polyec::Family;
++using polyec::Establishment;
+ using polyec::FinanceManager;
+ using polyec::HouseholdIndex;
+ using polyec::PayrollBatchGroup;
+@@ -1103,6 +1104,115 @@
+     check(ProjectManager::active_projects_count({}, 1, 2) == 0, "empty projects is zero");
+ }
+ 
++std::vector<Establishment> payroll_sites(int64_t first=100,int64_t second=50){
++    std::vector<Establishment> sites(2);
++    sites[0].id=10;sites[0].owner_id=1;sites[0].cash=first;
++    sites[1].id=20;sites[1].owner_id=2;sites[1].cash=second;
++    return sites;
++}
++
++void test_site_payroll_hand_calculated(){
++    World w;w.provinces[0].treasury=100;auto sites=payroll_sites();
++    const int64_t opening=w.money()+150;
++    const std::vector<PayrollBatchGroup> groups{{0,false,{{1,80},{2,80}},10},{0,false,{{2,60},{3,40}},20}};
++    const auto plan=FinanceManager::prepare_batch(1,groups,w.people,w.provinces,sites);
++    check(sites[0].cash==100&&sites[1].cash==50&&w.people[0].cash==0&&w.provinces[0].treasury==100,"site payroll prepare is pure");
++    check(plan.establishment_count()==2&&plan.claim_establishment(0)==10&&plan.claim_establishment(3)==20,"opaque payroll plan retains stable site source IDs");
++    check(plan.paid(0)==50&&plan.paid(1)==50&&plan.paid(2)==30&&plan.paid(3)==20,"site budgets allocate 50/50 then 30/20 gross");
++    check(plan.tax(0)==5&&plan.tax(1)==5&&plan.tax(2)==3&&plan.tax(3)==2,"site payroll shares the exact tax calculation");
++    FinanceManager::apply_batch(plan,1,w.people,w.provinces,sites);
++    check(sites[0].cash==0&&sites[1].cash==0&&w.provinces[0].firm==1000,"site payroll debits its accounts without spending Province firm");
++    check(w.people[0].cash==45&&w.people[1].cash==72&&w.people[2].cash==18,"multiple sites sharing a recipient accumulate exact net pay");
++    check(w.provinces[0].treasury==115&&w.provinces[0].tax_receipts==15,"site taxes reach Province once");
++    check(w.money()+sites[0].cash+sites[1].cash==opening,"site payroll conserves money across every source");
++    bool threw=false;try{FinanceManager::apply_batch(plan,1,w.people,w.provinces,sites);}catch(const std::logic_error&){threw=true;}
++    check(threw&&w.people[1].cash==72,"applying the same site plan twice rejects before mutation");
++}
++
++void test_site_payroll_shared_sources_and_tax_remainder(){
++    {
++        World w;auto sites=payroll_sites(100,0);
++        const std::vector<PayrollBatchGroup> groups{{0,false,{{1,80}},10},{0,false,{{2,40}},10}};
++        const auto plan=FinanceManager::prepare_batch(1,groups,w.people,w.provinces,sites);
++        check(plan.establishment_count()==1&&plan.paid(0)==80&&plan.paid(1)==20,"repeated site groups cannot spend the same budget twice");
++        FinanceManager::apply_batch(plan,1,w.people,w.provinces,sites);
++        check(sites[0].cash==0&&w.people[0].cash==72&&w.people[1].cash==18,"shared underfunded source pays exactly its initial cash");
++    }
++    {
++        World w;auto sites=payroll_sites(6,6);
++        const std::vector<PayrollBatchGroup> groups{{0,false,{{1,6}},10},{0,false,{{1,6}},20}};
++        const auto plan=FinanceManager::prepare_batch(1,groups,w.people,w.provinces,sites);
++        FinanceManager::apply_batch(plan,1,w.people,w.provinces,sites);
++        check(w.people[0].cash==11&&w.people[0].tax_remainder==20&&w.provinces[0].tax_receipts==1,"recipient tax remainder carries across employers");
++    }
++    {
++        World w;w.provinces[0].treasury=100;auto sites=payroll_sites(50,0);
++        const std::vector<PayrollBatchGroup> groups{{0,false,{{1,100}}},{0,false,{{1,80}},10},{0,true,{{2,200}}}};
++        const auto plan=FinanceManager::prepare_batch(1,groups,w.people,w.provinces,sites);
++        check(plan.paid(0)==100&&plan.paid(1)==50&&plan.paid(2)==115,"mixed sources preserve explicit ordering and earlier tax availability");
++        FinanceManager::apply_batch(plan,1,w.people,w.provinces,sites);
++        check(w.provinces[0].firm==900&&w.provinces[0].treasury==11&&sites[0].cash==0,"mixed Province and site accounts commit exact final balances");
++        check(w.people[0].cash==135&&w.people[1].cash==104&&w.people[1].tax_remainder==50,"mixed payroll gives hand-calculated net pay and tax remainder");
++        check(w.money()+sites[0].cash+sites[1].cash==1150,"mixed-source payroll conserves every monetary account");
++    }
++}
++
++void test_site_payroll_stale_read_set_atomicity(){
++    for(int mutation=0;mutation<5;++mutation){
++        World w;auto sites=payroll_sites();
++        const std::vector<PayrollBatchGroup> groups{{0,false,{{1,80}},10},{0,false,{{2,40}},20}};
++        const auto plan=FinanceManager::prepare_batch(1,groups,w.people,w.provinces,sites);
++        switch(mutation){
++        case 0:++sites[1].cash;break;
++        case 1:sites[1].region=1;break;
++        case 2:sites[1].id=21;break;
++        case 3:std::swap(sites[0],sites[1]);break;
++        case 4:sites.pop_back();break;
++        }
++        const auto expected=sites;const auto money=w.money();bool threw=false;
++        try{FinanceManager::apply_batch(plan,1,w.people,w.provinces,sites);}catch(const std::logic_error&){threw=true;}
++        bool unchanged=sites.size()==expected.size();
++        for(size_t i=0;i<sites.size();++i)unchanged=unchanged&&sites[i].id==expected[i].id&&sites[i].region==expected[i].region&&sites[i].cash==expected[i].cash;
++        check(threw&&unchanged&&w.money()==money&&w.people[0].cash==0&&w.people[1].cash==0&&w.provinces[0].tax_receipts==0,"late stale site read rejects the complete batch before any payout");
++    }
++    World w;auto sites=payroll_sites();
++    const auto plan=FinanceManager::prepare_batch(1,{{0,false,{{1,1}},10}},w.people,w.provinces,sites);
++    bool threw=false;try{FinanceManager::apply_batch(plan,1,w.people,w.provinces);}catch(const std::out_of_range&){threw=true;}
++    check(threw&&w.people[0].cash==0&&sites[0].cash==100,"legacy apply overload cannot silently omit site accounts");
++}
++
++void test_site_payroll_prepare_failure_is_pure(){
++    {
++        World w;auto sites=payroll_sites(-1,0);
++        const auto zero=FinanceManager::prepare_batch(1,{{0,false,{{1,0}},10}},w.people,w.provinces,sites);
++        check(zero.paid(0)==0&&zero.claim_establishment(0)==10&&zero.establishment_count()==0,"zero-due site claims validate identity without reading an unused account balance");
++        bool threw=false;
++        try{FinanceManager::prepare_batch(1,{{0,false,{{1,0}},999}},w.people,w.provinces,sites);}catch(const std::out_of_range&){threw=true;}
++        check(threw,"zero-due site claims still reject an unknown source ID");
++    }
++    for(int bad=0;bad<4;++bad){
++        World w;auto sites=payroll_sites();
++        std::vector<PayrollBatchGroup> groups{{0,false,{{1,80}},10},{0,false,{{2,40}},20}};
++        if(bad==0)sites[1].cash=-1;
++        if(bad==1)groups[1].establishment_id=999;
++        if(bad==2)groups[1].region=1;
++        if(bad==3)groups[1].public_employer=true;
++        const auto before=sites;const auto money=w.money();bool threw=false;
++        try{FinanceManager::prepare_batch(1,groups,w.people,w.provinces,sites);}catch(const std::logic_error&){threw=true;}
++        check(threw&&sites[0].cash==before[0].cash&&sites[1].cash==before[1].cash&&w.money()==money&&w.people[0].cash==0,"invalid later site group leaves all live inputs unchanged");
++    }
++    {
++        World w;auto sites=payroll_sites(std::numeric_limits<int64_t>::max(),0);bool threw=false;
++        try{FinanceManager::prepare_batch(1,{{0,false,{{1,std::numeric_limits<int64_t>::max()}},10}},w.people,w.provinces,sites);}catch(const std::overflow_error&){threw=true;}
++        check(threw&&sites[0].cash==std::numeric_limits<int64_t>::max()&&w.people[0].cash==0,"site pro-rata multiplication overflow rejects without mutation");
++    }
++    {
++        World w;w.people[0].cash=std::numeric_limits<int64_t>::max();auto sites=payroll_sites(1,0);bool threw=false;
++        try{FinanceManager::prepare_batch(1,{{0,false,{{1,1}},10}},w.people,w.provinces,sites);}catch(const std::overflow_error&){threw=true;}
++        check(threw&&sites[0].cash==1&&w.people[0].cash==std::numeric_limits<int64_t>::max(),"site recipient cash overflow rejects without mutation");
++    }
++}
++
+ } // namespace
+ 
+ int main() {
+@@ -1127,6 +1237,10 @@
+     test_batch_shared_underfunding_pro_rata();
+     test_batch_apply_is_atomic_after_stale_read();
+     test_batch_prepare_failure_leaves_inputs_unchanged();
++    test_site_payroll_hand_calculated();
++    test_site_payroll_shared_sources_and_tax_remainder();
++    test_site_payroll_stale_read_set_atomicity();
++    test_site_payroll_prepare_failure_is_pure();
+     test_employment_boundaries();
+     test_employment_daily_helpers();
+     test_employment_appointment_and_office();

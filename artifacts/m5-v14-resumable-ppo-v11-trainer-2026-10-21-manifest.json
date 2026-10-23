@@ -1,0 +1,31 @@
+{
+  "task": "M5 v14 resumable PPO v11 trainer",
+  "date": "2026-10-21",
+  "schema": "realm-v11",
+  "self_review_only": true,
+  "working_tree": "shared dirty checkout; hashes identify this snapshot, not an isolated commit",
+  "smoke": {
+    "role": "economic",
+    "regions": 2,
+    "envs": 16,
+    "rollout_steps": 64,
+    "updates": 2,
+    "decisions": 2048,
+    "peer_decisions_per_update": [33250, 33257],
+    "uninterrupted_decisions_per_second": [167.2569, 172.5092],
+    "resumed_update_2_decisions_per_second": 167.0705,
+    "peak_rss_bytes": [396558336, 401629184, 396636160],
+    "resume_matches_uninterrupted": true
+  },
+  "limitations": [
+    "Two PPO updates are only implementation smoke, not model quality evidence.",
+    "No ONNX export, evaluation-based peer eligibility, R1, cross-family learned partner or profile-B benchmark.",
+    "No long training run."
+  ],
+  "files_sha256": {
+    "ai/training/realm_train_v11.py": "46552B323825CFCF45345A5E4300D976626F8A588510E55B9D28D35C5FF86A9D",
+    "ai/training/realm_coplay_env_v11.py": "7B2DABD75E0B8C80296E497402DB02384296F3F9957DA10C9FCCFB373565D55A",
+    "docs/design/M5-v14-resumable-ppo-v11-trainer-plan.md": "973D73812C3C163D522886EEA7CFBEC85A7C377322512D507DD6CC23D01D4627",
+    "docs/reports/M5-v14-resumable-ppo-v11-trainer-evidence-2026-10-21.md": "085F44CE3E20B378B62426C24B5AD85808A9F7171B3F3C080BDF7DD423F31980"
+  }
+}

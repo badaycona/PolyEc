@@ -22,8 +22,8 @@ for name,config in variants.items():
     worlds=[core.Realm.scenario(seed,129,**config) for seed in range(180000,180100)]
     obs=np.asarray([w.observe(129) for w in worlds],dtype='float32');masks=np.asarray([w.mask(129) for w in worlds],dtype='float32')
     logits,_=policy.predict(obs,np.zeros((100,64),dtype='float32'));logits=np.where(masks>.5,logits,-1e9);probs=np.exp(logits-logits.max(1,keepdims=True));probs/=probs.sum(1,keepdims=True);all_probs[name]=probs
-    rng=np.random.default_rng(719);draws=np.array([[rng.choice(32,p=probs[i]) for _ in range(64)] for i in range(100)])
-    counts=np.bincount(draws.ravel(),minlength=32);invalid=int((masks[np.arange(100)[:,None],draws]<.5).sum());assert invalid==0
+    rng=np.random.default_rng(719);draws=np.array([[rng.choice(core.REALM_ACTIONS,p=probs[i]) for _ in range(64)] for i in range(100)])
+    counts=np.bincount(draws.ravel(),minlength=core.REALM_ACTIONS);invalid=int((masks[np.arange(100)[:,None],draws]<.5).sum());assert invalid==0
     report['variants'][name]={'mean_distribution':probs.mean(0).tolist(),'unique_actions':int((counts>0).sum()),'invalid':invalid,'work_probability':float(probs[:,1:8].sum(1).mean()),'school_probability':float(probs[:,15].mean()),'same_state_distinct_actions_mean':float(np.mean([len(set(row)) for row in draws]))}
 report['mean_total_variation_vs_adult']={name:float(np.abs(prob-all_probs['adult_school']).sum(1).mean()/2) for name,prob in all_probs.items()}
 report['age_and_capacity_masks_pass']=report['variants']['child_school']['work_probability']==0 and report['variants']['child_no_school']['school_probability']==0 and report['variants']['adult_no_jobs']['work_probability']==0

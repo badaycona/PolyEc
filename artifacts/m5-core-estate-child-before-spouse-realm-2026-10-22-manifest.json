@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-22",
+  "scope": "M5 Realm estate priority: verified legal child before spouse",
+  "platform": "Windows Visual Studio",
+  "build_directory": "build/m5-core",
+  "target": "polyec_realm_tests",
+  "release": {
+    "build": "pass",
+    "direct_run": "pass",
+    "checks": 20741,
+    "profile": "A: 10000 persons, 19743 sparse relations, 90 days",
+    "profile_seconds": 5.76705
+  },
+  "debug": {
+    "build": "pass",
+    "direct_run": "pass",
+    "checks": 20741,
+    "profile": "A: 10000 persons, 19743 sparse relations, 90 days",
+    "profile_seconds": 23.0234
+  },
+  "full_ctest": "Release 19/19 passed before this test-only assertion; does not include it",
+  "not_run": [
+    "Python",
+    "native",
+    "GDExtension",
+    "Godot"
+  ],
+  "review": "Codex self-review; no independent reviewer",
+  "sha256": {
+    "docs/DEVELOPMENT_HISTORY.md": "e5dae52977a6e845181f758be95e5be0ccc88e122dca33230b5dabfc9a52fc4d",
+    "docs/design/M5-core-estate-child-before-spouse-realm-plan.md": "21ed5ddbf942d590a047f9725a2f41d117fd34a4382611ffdb23829c8362b46e",
+    "docs/CURRENT_TASK.md": "65dce2248d1f78a657ab605e6b84f30bf7fdd597dc6e5ca7e86808f4f724e642",
+    "core/tests/test_realm.cpp": "5910756ee75b218c5de47cb5178053019211c37d606fd4f257240a271d7d2af7",
+    "docs/reports/M5-core-estate-child-before-spouse-realm-evidence-2026-10-22.md": "ea9ca3fb113dd08484a3f032e5b182781f39ca50e7bd611cfdef16eb94cd9ff2"
+  }
+}

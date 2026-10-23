@@ -14,10 +14,10 @@ def sessions_canonical(w):
     out = []
     for s in rows:
         out.append(
-            "actor=%d id=%d begin=%d end=%d priority=%d demand_rate=%d requested=%d delivered=%d unmet=%d capacity_unmet=%d unresolved_unmet=%d retired=%d retired_tick=%d retired_cause=%d;" % (
+            "actor=%d id=%d begin=%d end=%d priority=%d demand_rate=%d requested=%d delivered=%d unmet=%d capacity_unmet=%d unresolved_unmet=%d retired=%d retired_tick=%d retired_cause=%d kind=%d region=%d establishment_id=%d;" % (
                 s["actor"], s["id"], s["begin"], s["end"], s["priority"], s["demand_rate"],
                 s["requested"], s["delivered"], s["unmet"], s["capacity_unmet"], s["unresolved_unmet"],
-                int(s["retired"]), s["retired_tick"], s["retired_cause"]))
+                int(s["retired"]), s["retired_tick"], s["retired_cause"], int(s["kind"]), s["region"], s["establishment_id"]))
     return "".join(out)
 
 def parse_checkpoints(output):
@@ -45,6 +45,19 @@ def main():
     # Fixture A
     a = core.Realm(7, 2, 128)
     actor = 1
+    body = a.person(actor)
+    check(body["sleep_debt"] == 0 and body["exertion"] == 0 and body["rest_until_tick"] == 0,
+          "body state read-only defaults")
+    body_observation = a.observe(actor)
+    check(body_observation[108] == body["sleep_debt"] / 100 and
+          body_observation[109] == body["exertion"] / 100,
+          "observation slots 108/109 match the actor's own normalized body values")
+    rest_world = core.Realm.scenario(7, 129, 30, -1, -1, -1, -1, -1, 100, 50)
+    rest_actor = rest_world.person(129)
+    ok, reason, _ = rest_world.intent_command(129, rest_actor["decisions"] + 1, 16,
+                                               rest_actor["region"], 0, 0, 1)
+    check(ok and reason == "Committed" and rest_world.person(129)["rest_until_tick"] == 64,
+          "Rest deadline is exposed read-only through Python binding")
     seq = a.person(actor)["decisions"] + 1
     ok, reason, sid1 = a.schedule_command(0, actor, seq, 0, 0, 64, 0, 600)
     check(ok and reason == "Committed", "A submit 1")
@@ -103,7 +116,7 @@ def main():
     p = core.Realm(7, 2, 128)
     for attr in ("paused", "pause_revision", "game_tick", "timeline_contract",
                  "pilot_policy_compatible", "model_contract", "schedule_cursor",
-                 "schedule_next_session_id"):
+                 "schedule_next_session_id", "settled_day"):
         try:
             setattr(p, attr, 1)
             check(False, "readonly assignment rejected: " + attr)
@@ -148,16 +161,15 @@ def main():
     detached["actor"] = 999
     check(p.serialize("binding-check") == before_mutation, "detached session mutation unchanged")
 
-    # Timeline contract makes old pilot legacy observation/mask pathways reject.
+    # Timeline contract keeps the current candidate surface usable for v11 agents.
     check(p.timeline_contract, "timeline contract true")
     check(not p.pilot_policy_compatible, "pilot compatibility false")
-    check(p.model_contract == "realm-timeline-v1", "model contract timeline")
-    for legacy in (lambda: p.observe(actor), lambda: p.mask(actor)):
-        try:
-            legacy()
-            check(False, "legacy pathway rejected")
-        except RuntimeError:
-            check(True, "legacy pathway rejected")
+    check(p.model_contract == "realm-worksite-payroll-goods30-config-v35",
+          "model contract timeline/worksite/catalog action surface with configured gameplay values")
+    observed_after_timeline = p.observe(actor)
+    mask_after_timeline = p.mask(actor)
+    check(len(observed_after_timeline) == core.REALM_OBS, "observation available after timeline contract")
+    check(len(mask_after_timeline) == core.REALM_ACTIONS, "candidate mask available after timeline contract")
 
     # Fixture C
     c = core.Realm(7, 2, 128)
@@ -247,11 +259,119 @@ def main():
     check(unpaused_max.pause_revision == 2**64 - 1, "D unpaused resume revision")
     py_checkpoints.append((paused_max.serialize("binding-check"), sessions_canonical(paused_max)))
 
+    # Fixture E: typed Work sessions, union attendance, mid-day continuation.
+    # Existing eight-argument calls stay valid and must remain Generic.
+    e = core.Realm(7, 2, 128)
+    e_region = e.person(actor)["region"]
+    other_region = (e_region + 1) % 3
+    check(other_region != e_region, "E alternate region")
+    est_owner = actor if e_region == 2 else e_region + 2
+    ok, reason, e_site = e.establishment_command(est_owner, e.person(est_owner)["decisions"] + 1,
+                                                 1, e_region, e_region, 1, 1, 20)
+    check(ok and reason == "Committed" and e_site > 0, "E work establishment")
+    seq = e.person(actor)["decisions"] + 1
+    ok, reason, e_generic = e.schedule_command(0, actor, seq, 0, 0, 160, 0, 5)
+    check(ok and reason == "Committed", "E legacy generic submit")
+    seq = e.person(actor)["decisions"] + 1
+    ok, reason, _ = e.schedule_command(0, actor, seq, 0, 96, 128, 0, 5, 1, other_region, e_site)
+    check(not ok and reason == "Work establishment region mismatch", "E foreign-region work rejected")
+    seq = e.person(actor)["decisions"] + 1
+    ok, reason, e_work1 = e.schedule_command(0, actor, seq, 0, 0, 64, 0, 5, 1, e_region, e_site)
+    check(ok and reason == "Committed", "E work 1 submit")
+    seq = e.person(actor)["decisions"] + 1
+    ok, reason, e_work2 = e.schedule_command(0, actor, seq, 0, 32, 96, 0, 5, 1, e_region, e_site)
+    check(ok and reason == "Committed", "E overlap work 2 submit")
+    typed = {s["id"]: s for s in e.schedule_sessions(actor)}
+    check(typed[e_generic]["kind"] == 0 and typed[e_generic]["region"] == -1, "E generic typing")
+    check(typed[e_work1]["kind"] == 1 and typed[e_work1]["region"] == e_region, "E work 1 typing")
+    check(typed[e_work2]["kind"] == 1 and typed[e_work2]["region"] == e_region, "E work 2 typing")
+    check(typed[e_work1]["establishment_id"] == e_site and typed[e_work2]["establishment_id"] == e_site, "E work site binding")
+    # Invalid typed fields reject atomically before any state is committed.
+    before_typed_reject = e.serialize("binding-check")
+    for kind, region, expected in ((2, e_region, "Invalid activity kind"),
+                                   (1, -1, "Invalid work region"),
+                                   (1, 3, "Invalid work region"),
+                                   (0, e_region, "Invalid generic region")):
+        seq = e.person(actor)["decisions"] + 1
+        ok, reason, _ = e.schedule_command(0, actor, seq, 0, 0, 64, 0, 5, kind, region)
+        check(not ok and reason == expected, "E typed reject %d/%d" % (kind, region))
+    check(e.serialize("binding-check") == before_typed_reject, "E typed rejects unchanged")
+    # Physical presence credits the interval union once, not the overlap sum.
+    e.advance_ticks(40)
+    check(e.game_tick == 40, "E tick 40")
+    check(e.work_present_ticks(actor) == 40, "E attendance 40 union")
+    check(e.work_present_ticks(other_actor) == 0, "E other actor attendance zero")
+    check(e.work_wage_per_unit == 1, "E wage unit")
+    check(e.work_present_ticks_by_region(actor, e_region) == 40, "E regional attendance 40 union")
+    check(e.work_present_ticks_by_region(actor, other_region) == 0, "E foreign region attendance zero")
+    check(e.work_present_ticks_by_establishment(actor, e_site) == 40, "E site attendance 40 union")
+    check(e.paid_work_units_by_region(actor, e_region) == 0, "E no mid-day regional pay")
+    check(e.settled_day == 0 and e.settled_work_units(actor) == 0, "E no mid-day settlement")
+    # Mid-day checkpoint: restore resumes without losing or repeating credit.
+    e_saved = e.serialize("binding-check")
+    e_restored = core.Realm(1, 1, 128)
+    ok, err = e_restored.deserialize(e_saved, "binding-check")
+    check(ok and err == "", "E restore")
+    check(e_restored.serialize("binding-check") == e_saved, "E restore serialized")
+    check(e_restored.work_present_ticks(actor) == 40, "E restore attendance")
+    check(e_restored.settled_day == 0 and e_restored.settled_work_units(actor) == 0, "E restore no settlement")
+    e.advance_ticks(120)
+    e_restored.advance_ticks(120)
+    check(e.game_tick == 160 and e_restored.game_tick == 160, "E tick 160")
+    e_body = e.person(actor)
+    e_observation = e.observe(actor)
+    check(e_body["sleep_debt"] > 0 and
+          abs(e_observation[108] - e_body["sleep_debt"] / 100) < 1e-7 and
+          abs(e_observation[109] - e_body["exertion"] / 100) < 1e-7,
+          "non-default body values are projected to matching Python observation slots")
+    check(e.work_present_ticks(actor) == 96, "E attendance 96")
+    check(e_restored.work_present_ticks(actor) == 96, "E restored attendance 96")
+    check(e.work_present_ticks_by_region(actor, e_region) == 96, "E regional attendance 96")
+    check(e_restored.work_present_ticks_by_region(actor, e_region) == 96, "E restored regional attendance 96")
+    check(e.establishments()[0]["paid_work_units"].get(actor, 0) == 6, "E site paid 6")
+    check(e_restored.establishments()[0]["paid_work_units"].get(actor, 0) == 6, "E restored site paid 6")
+    check(e.paid_work_units_by_region(actor, other_region) == 0, "E foreign region paid zero")
+    check(e.settled_day == 2 and e.settled_work_units(actor) == 6, "E settlement day 2 units 6")
+    check(e_restored.settled_day == 2 and e_restored.settled_work_units(actor) == 6, "E restored settlement")
+    check(e.serialize("binding-check") == e_restored.serialize("binding-check"), "E continuation")
+    # The same fixture advanced one-shot must serialise identically.
+    e_one_shot = core.Realm(7, 2, 128)
+    ok, reason, one_shot_site = e_one_shot.establishment_command(est_owner, e_one_shot.person(est_owner)["decisions"] + 1,
+                                                                  1, e_region, e_region, 1, 1, 20)
+    check(ok and reason == "Committed" and one_shot_site == e_site, "E one-shot work establishment")
+    seq = e_one_shot.person(actor)["decisions"] + 1
+    ok, reason, _ = e_one_shot.schedule_command(0, actor, seq, 0, 0, 160, 0, 5)
+    check(ok and reason == "Committed", "E one-shot generic submit")
+    seq = e_one_shot.person(actor)["decisions"] + 1
+    ok, reason, _ = e_one_shot.schedule_command(0, actor, seq, 0, 0, 64, 0, 5, 1, e_region, e_site)
+    check(ok and reason == "Committed", "E one-shot work 1 submit")
+    seq = e_one_shot.person(actor)["decisions"] + 1
+    ok, reason, _ = e_one_shot.schedule_command(0, actor, seq, 0, 32, 96, 0, 5, 1, e_region, e_site)
+    check(ok and reason == "Committed", "E one-shot work 2 submit")
+    e_one_shot.advance_ticks(160)
+    check(e_one_shot.work_present_ticks(actor) == 96, "E one-shot attendance 96")
+    check(e_one_shot.work_present_ticks_by_region(actor, e_region) == 96, "E one-shot regional attendance 96")
+    check(e_one_shot.work_present_ticks_by_establishment(actor, e_site) == 96, "E one-shot site attendance 96")
+    check(e_one_shot.establishments()[0]["paid_work_units"].get(actor, 0) == 6, "E one-shot site paid 6")
+    check(e_one_shot.serialize("binding-check") == e.serialize("binding-check"), "E one-shot equivalence")
+    # A Generic-only timeline never earns Work attendance.
+    e_generic_only = core.Realm(7, 2, 128)
+    seq = e_generic_only.person(actor)["decisions"] + 1
+    ok, reason, _ = e_generic_only.schedule_command(0, actor, seq, 0, 0, 64, 0, 5)
+    check(ok and reason == "Committed", "E generic-only submit")
+    e_generic_only.advance_ticks(64)
+    check(e_generic_only.work_present_ticks(actor) == 0, "E generic-only attendance zero")
+    check(e_generic_only.work_present_ticks_by_region(actor, e_region) == 0, "E generic-only regional attendance zero")
+    check(e_generic_only.paid_work_units_by_region(actor, e_region) == 0, "E generic-only regional paid zero")
+    check(e_generic_only.settled_day == 1 and e_generic_only.settled_work_units(actor) == 0, "E generic-only no units")
+
     # Compare exact serialized state and sorted session fields to C++.
     check(len(cpp_checkpoints) == len(py_checkpoints), "checkpoint count")
     for i, (cpp, py) in enumerate(zip(cpp_checkpoints, py_checkpoints)):
         check(cpp["serialized"] == py[0], "serialized mismatch at %d" % i)
         check(cpp["sessions"] == py[1], "sessions mismatch at %d" % i)
+        check(py[0].startswith("POLYEC_REALM_52 "), "serialized current schema 52 magic at %d" % i)
+        check(" SCHEDULE_7 " in py[0], "serialized current schedule tag at %d" % i)
 
     print("REALM CLOCK BINDING CHECKS: %d Python checks passed" % CHECKS)
     print("REALM CLOCK REPLAY: %d checkpoints matched" % len(py_checkpoints))

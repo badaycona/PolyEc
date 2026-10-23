@@ -1,0 +1,82 @@
+{
+  "revision": "M5-v18",
+  "date": "2026-10-21",
+  "family": "economic",
+  "schema": "realm-v11",
+  "model_contract": "realm-household-fund-goods27-v5",
+  "regions": 6,
+  "training_seed": 1,
+  "updates": 25,
+  "decisions": 25600,
+  "peer_fallback_version": "realm-v11-observation-dev-v2",
+  "baseline_lr": 0.0003,
+  "baseline_policy_sha256": "221907b95978b84d1fd1a29ef28d82cf8a32821b644e93d5b1a2ba2a293aa876",
+  "baseline_policy_matches_validated_run": true,
+  "baseline_post_step_kl_min_median_max": [
+    1.3461491713921228e-07,
+    1.968098028252522e-06,
+    1.0712149863441786e-05
+  ],
+  "baseline_clip_fraction_min_median_max": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "higher_lr": 0.0012,
+  "higher_lr_policy_sha256": "ccbb3216332cefac1116e77121339a467c8b984d4cd40f1ae4417bdf1c577c05",
+  "higher_lr_utility_vs_baseline": {
+    "mean": -0.5536363636,
+    "ci95": [
+      -0.6209960868,
+      -0.4862766404
+    ]
+  },
+  "higher_lr_utility_vs_initial": {
+    "mean": 0.0258181818,
+    "ci95": [
+      -0.0522728439,
+      0.1039092076
+    ]
+  },
+  "higher_lr_cash_delta_vs_baseline": {
+    "mean": -367.55,
+    "ci95": [
+      -392.4173659706,
+      -342.6826340294
+    ]
+  },
+  "higher_lr_debt_delta_vs_baseline": {
+    "mean": 119.8,
+    "ci95": [
+      82.6574216126,
+      156.9425783874
+    ]
+  },
+  "higher_lr_insolvency_delta_vs_baseline": {
+    "mean": 0.6,
+    "ci95": [
+      0.3797150171,
+      0.8202849829
+    ]
+  },
+  "higher_lr_post_step_kl_min_median_max": [
+    6.617e-06,
+    3.2538383190209665e-05,
+    0.000149678
+  ],
+  "higher_lr_clip_fraction_min_median_max": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "diagnostic_worlds": 20,
+  "diagnostic_days": 128,
+  "r1_pass": false,
+  "peer_eligible": false,
+  "source_sha256": {
+    "ai/training/realm_train_v11.py": "b8e2fabc3810048a14e9eebd9207ff48b51c39aea6f08407e896bf753012c9b7",
+    "training_manifest": "9709e3eb121d76ad56e20b6114397332c900bed7f68c242a92ce1b8df6886c65",
+    "diagnostic_holdout": "1d7b4d7e7974902fdbe815c8ea552a35f3f80926b9867b8f3c0b48a1d6b9b242"
+  },
+  "self_review_only": true
+}

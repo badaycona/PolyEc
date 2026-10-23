@@ -1,0 +1,70 @@
+{
+  "record": "T3.2 Realm integration checks for signed partial-day sleep balance",
+  "date": "2026-10-22",
+  "platform": "Windows Visual Studio Release",
+  "result": {
+    "target": "polyec_realm_tests",
+    "checks_passed": 20844,
+    "scenario": {
+      "tick_units_per_day": 64,
+      "initial_awake_days": 1,
+      "mixed_day": {
+        "awake_ticks": 16,
+        "rest_ticks": 48,
+        "expected_sleep_debt_days": 1,
+        "expected_signed_remainder": -32,
+        "existing_health_recovery_applied_at_rest_completion": true
+      },
+      "save_load_at_mixed_day_end": true,
+      "next_awake_days": [
+        {"sleep_debt_days": 1, "signed_remainder": 32},
+        {"sleep_debt_days": 2, "signed_remainder": 32}
+      ],
+      "continued_fingerprints_match": true,
+      "lower_clamp": {"input_debt": 0, "input_remainder": -32, "after_rest_debt": 0, "after_rest_remainder": 0},
+      "upper_clamp": {"input_debt": 100, "input_remainder": 32, "after_awake_debt": 100, "after_awake_remainder": 0},
+      "realm_invariant": true
+    },
+    "profile_a": {
+      "persons": 10000,
+      "sparse_relations": 19743,
+      "days": 90
+    },
+    "full_ctest_run": false,
+    "debug_run": false,
+    "python_native_godot_run": false,
+    "production_source_changed": false
+  },
+  "files": {
+    "source_test": {
+      "path": "core/tests/test_realm.cpp",
+      "sha256": "b2d1bef483a35e8b34e5efadc8b7d48c289aeec3f6476c7ee1eaa5d2790d9248",
+      "bytes": 241732
+    },
+    "plan": {
+      "path": "docs/design/M5-T3.2-partial-sleep-balance-integration-plan.md",
+      "sha256": "3b340e8d8a4c4062727fc219e0f710b9cd2a07f8a26723ed67e5fb65e821557c",
+      "bytes": 2547
+    },
+    "report": {
+      "path": "docs/reports/M5-T3.2-partial-sleep-balance-evidence-2026-10-22.md",
+      "sha256": "55068e85a3bd2991bda16e19a915bc7836560e686b858c4770f76957cee18a99",
+      "bytes": 2877
+    },
+    "current_task": {
+      "path": "docs/CURRENT_TASK.md",
+      "sha256": "b3cd8f177ecbd4b515651872206df9ef93ec8c00cfa34fc3d949f51dfc774e66",
+      "bytes": 102419
+    },
+    "development_history": {
+      "path": "docs/DEVELOPMENT_HISTORY.md",
+      "sha256": "eb8d37422d931d6d17dd02244318754596842734d0406ae7f8128ef2db5c793a",
+      "bytes": 83831
+    }
+  },
+  "limits": [
+    "Both directions of the 0 and 100 clamps were checked for one day; longer repeated sequences at the clamps were not exercised.",
+    "This verifies abstract game-time sleep accounting and is not a health or medical model.",
+    "Exertion, Work effort, Python parity, Godot integration and full T3 remain open."
+  ]
+}

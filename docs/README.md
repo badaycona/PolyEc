@@ -35,6 +35,20 @@ Thiết kế lại ngày 2026-10-18 theo nhu cầu người đọc. Bộ docs kh
 | Kết quả một run/revision | docs/reports và artifacts | History tóm tắt có nguồn, không chứng nhận HEAD |
 | Vấn đề/mốc/giải pháp theo thời gian | DEVELOPMENT_HISTORY | Thêm đính chính thay vì xóa kết quả xấu |
 
+## `docs/design/` bổ trợ thế nào và tài liệu nào cần thận trọng
+
+`TECHNICAL_PROBLEMS` và `DEVELOPER_GUIDE` là tài liệu giải thích dùng lâu dài: một tài liệu phân rã câu hỏi cần giải, tài liệu kia giải thích phương pháp, thuật toán, công thức và giới hạn. Thông tin khái quát về kiến trúc core từ `core-architecture-refactor.md` đã được đưa vào DEVELOPER_GUIDE mục 2–3; phương pháp chọn truy vấn, index và thuật toán từ `core-query-algorithms.md` đã được đưa vào DEVELOPER_GUIDE mục 7.3 và TECHNICAL_PROBLEMS P14. `docs/design/` không phải phần tiếp nối bắt buộc của hai tài liệu này và không phải roadmap thứ hai. Phần còn lại của thư mục chủ yếu là kế hoạch/contract cho từng lát, cộng tài liệu tham khảo kiến trúc có mốc đối chiếu cụ thể. Chỉ dùng một plan làm căn cứ triển khai khi `CURRENT_TASK` dẫn tới nó và trạng thái review của plan đã rõ; sau khi xong, report và HISTORY giữ bằng chứng, còn plan giải thích phạm vi/ý định của lát đó.
+
+Một số file trong `docs/design/` đã hoàn thành vai trò ban đầu hoặc chỉ mô tả một ảnh chụp code cũ. Chúng vẫn có ích để truy nguyên, nhưng không tự mô tả trạng thái hiện tại:
+
+- `implementation-plan.md`, `M5-draft.md`, `M5-simulation-design-decisions.md`, `realm-domain.md` và `simulation-complexity-scope.md` là đường dẫn chuyển hướng; nội dung lịch sử nằm trong `docs/archive/design/`. Không dùng chúng thay `IMPLEMENTATION_PLAN`.
+- `core-class-reference.md` ghi rõ baseline Git `6cc55ab` và ngày đối chiếu 2026-10-19. Đây là ảnh chụp có thay đổi chưa commit, không phải danh mục class đã đối chiếu với code hiện tại. Những nguyên tắc sở hữu, composition, record và ranh giới Realm/Campaign đã được tổng hợp ở DEVELOPER_GUIDE mục 2.3; không chép danh sách class cũ vào guide như thể nó còn khớp source. Kiểm tra source khi cần tên class/trách nhiệm hiện tại.
+- `core-architecture-refactor.md` là bản giải thích thiết kế ngày 2026-10-19, không báo cáo tiến độ. Các nguyên tắc tổng quát đã được tổng hợp ở DEVELOPER_GUIDE mục 2–3; kết quả R1–R4 có report tích hợp riêng, còn trạng thái tiếp theo lấy từ `CURRENT_TASK` và `IMPLEMENTATION_PLAN`.
+- `core-query-algorithms.md` là ghi chú phương pháp ngày 2026-10-19. Các hướng truy vấn, index và thuật toán dùng lâu dài đã được hợp nhất vào DEVELOPER_GUIDE mục 7.3 và TECHNICAL_PROBLEMS P14; bản trong `docs/design/` giữ xuất xứ và ví dụ cũ, không là hướng dẫn cập nhật độc lập.
+- Các file `M5-*`, `M5.*-*` và `R4-*` khác thường là contract hoặc kế hoạch cho một lát cụ thể. File không được CURRENT_TASK dẫn có thể là kế hoạch đã hoàn tất, bị thay thế hoặc chỉ giữ lịch sử; xem report/HISTORY tương ứng trước khi xem là yêu cầu đang mở.
+
+Không xóa các file này chỉ vì đã cũ: kế hoạch và ảnh chụp cũ giúp giải thích quyết định và xuất xứ kết quả. Khi phát hiện một file có chỉ dẫn mâu thuẫn, ưu tiên thứ bậc nguồn ở phần “Quy tắc đọc và cập nhật”, rồi sửa nhãn hoặc thêm liên kết thay vì âm thầm sửa nội dung lịch sử.
+
 Mỗi tài liệu kỹ thuật phải phân biệt **đích thiết kế**, **phương án chưa chốt**, **baseline pilot** và **kết quả có evidence**. Đây là cách đọc trạng thái của phát biểu, không thêm bốn bảng tiến độ mới. Tham số kế thừa sáu stat/XP không tự thành schema capability mới.
 
 ## Quy tắc đọc và cập nhật

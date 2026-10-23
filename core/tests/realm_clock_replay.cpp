@@ -39,7 +39,10 @@ std::string sessionsCanonical(const polyec::Realm& w) {
             << " unresolved_unmet=" << s.unresolved_unmet
             << " retired=" << (s.retired ? 1 : 0)
             << " retired_tick=" << s.retired_tick
-            << " retired_cause=" << s.retired_cause << ";";
+            << " retired_cause=" << s.retired_cause
+            << " kind=" << int(s.kind)
+            << " region=" << s.region
+            << " establishment_id=" << s.establishment_id << ";";
     }
     return out.str();
 }
@@ -227,3 +230,4 @@ int main() {
         return 1;
     }
 }
+

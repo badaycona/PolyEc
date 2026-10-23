@@ -19,9 +19,9 @@ func run() -> void:
     var session: RefCounted=ClassDB.instantiate("PolyEcSession")
     var initial: Dictionary=session.snapshot()
     expect(initial.paused and initial.day==0,"Starts paused on day zero")
-    expect(initial.territories.size()==2,"Exactly two core territories")
-    expect(initial.territories[0].id==7 and initial.territories[1].id==8,"Stable IDs")
-    expect(initial.territories[0].name=="Thanh Điền","Vietnamese names from native core")
+    expect(initial.territories.size()==27,"All Atlas territories are selectable")
+    expect(initial.territories[0].id==0 and initial.territories[26].id==26,"Canonical Atlas IDs")
+    expect(initial.territories[0].name=="Thanh Điền","Vietnamese names from Atlas catalog")
     initial.territories[0].name="modified copy"
     expect(session.snapshot().territories[0].name=="Thanh Điền","Snapshot mutation cannot mutate core")
     expect(session.command("select",8).success,"Select valid native ID")

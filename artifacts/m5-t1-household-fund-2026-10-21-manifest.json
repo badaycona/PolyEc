@@ -1,0 +1,90 @@
+{
+  "task": "M5-T1 household fund account",
+  "created_utc": "2026-10-20T18:36:39Z",
+  "files": [
+    {
+      "path": "core/CMakeLists.txt",
+      "sha256": "7a806508f467da8347b9f673d8753648c689e31a2e18acebd54bc3bd949a9cad"
+    },
+    {
+      "path": "core/include/polyec/household_fund.hpp",
+      "sha256": "6a7609642740579d58d910e6c1878adbb70b83b272490cccba91c0a188f9f9f8"
+    },
+    {
+      "path": "core/include/polyec/household_fund_section_codec.hpp",
+      "sha256": "ba55a275ca0d9e63049d0875ac9da7221d89447c8e1d24c17fd15484068e3f39"
+    },
+    {
+      "path": "core/include/polyec/realm.hpp",
+      "sha256": "723cc05d99bd2714ae63fdbc28e73c8955bc65d550bd98d32445f75da8cd93f6"
+    },
+    {
+      "path": "core/src/realm.cpp",
+      "sha256": "79d0ae193b83ceb0a3988e021d46eca3d6123c9b4ffa6d6f5a15e82adc3af640"
+    },
+    {
+      "path": "core/src/realm_household.cpp",
+      "sha256": "ee0bc899618bb3b70633a216017b48e49d7724856b6a25a81f4cb6e7a2c46207"
+    },
+    {
+      "path": "core/include/polyec/schedule_section_codec.hpp",
+      "sha256": "2ae7fe45380598f109a7e9146371c4ad79e71112ca5c2da30d137ffeb15ca4a6"
+    },
+    {
+      "path": "core/tests/test_campaign.cpp",
+      "sha256": "4ff79ad8ba14b1c0e9e8f839eabb9c863c7721410e31dd633c74b311c0d66149"
+    },
+    {
+      "path": "core/tests/test_household_fund.cpp",
+      "sha256": "0cfccf45681cbfa1c24f1e9d622d1ec26359dd6b402311c82774f8770df6239d"
+    },
+    {
+      "path": "core/tests/test_realm.cpp",
+      "sha256": "2b3e405b0a32bc0016f5b7a4dd38f25439bd280b4b361b004300f3bc07ba1641"
+    },
+    {
+      "path": "core/tests/test_schedule.cpp",
+      "sha256": "6b968dd336573214d663d2561fe392b873f200d4ebd709a631066ac28f0e4e7e"
+    },
+    {
+      "path": "core/tests/work_authorization_fixture.hpp",
+      "sha256": "bcbbe1f2aac24c8657875cabc3ae547aad1eb798d507aabf1047f1eb1aca1933"
+    },
+    {
+      "path": "bindings/python/realm_binding.cpp",
+      "sha256": "ca81f36f2b082869c2c5d5b450f8246e362c1c9e7a377cc41d5513f969f3101c"
+    },
+    {
+      "path": "ai/tests/household_fund_binding_checks.py",
+      "sha256": "d6f0460bba8af05438249abc5911d89d1b6363642a3a69ab00abe3c3e1fb6fe6"
+    },
+    {
+      "path": "ai/tests/realm_clock_binding_checks.py",
+      "sha256": "7afd992e1c22dfad9b2635ba7d1f4b1ed4a45db0c5e72f1aa18e6ea621b95040"
+    },
+    {
+      "path": "docs/IMPLEMENTATION_PLAN.md",
+      "sha256": "be39a373edcfca3f58107d7e4a39f687cee53917bd77c14d4b86173c81f7d4e7"
+    },
+    {
+      "path": "docs/CURRENT_TASK.md",
+      "sha256": "5368430f2d86b071a2192277effb14d9b16b0ff28454534c7363e74f52e53252"
+    },
+    {
+      "path": "docs/DEVELOPMENT_HISTORY.md",
+      "sha256": "33a776d0f57c69ec09e7676a06003eb7b0df2759cb28fb0a9d37a55441b86ec2"
+    },
+    {
+      "path": "docs/design/core-class-reference.md",
+      "sha256": "f731956ad30a0902d1095c8611ed971dae05a40ef650808e376c556bd98c6782"
+    },
+    {
+      "path": "docs/design/M5-T1-household-fund-account-plan.md",
+      "sha256": "82f91e420154c6f96281b93798debfaca16cd1ab05d1fb3bee4e324985b1f4f4"
+    },
+    {
+      "path": "docs/reports/M5-T1-household-fund-evidence-2026-10-21.md",
+      "sha256": "b54e75acd99f9185b41244239cba41b6863875705771b4b784538b0f7390ad94"
+    }
+  ]
+}

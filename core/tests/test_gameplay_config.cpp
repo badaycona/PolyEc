@@ -195,6 +195,24 @@ military_supply_output = 1
     check(resumed.land_holdings().empty(),
           "v14 migration does not fabricate land titles");
     check(resumed.invariant(),"v14 migrated world satisfies Realm invariants");
+    Realm atlasHistorical(73,int(kAtlasTerritoryCount)-1,128);
+    auto atlasOld=test_fixtures::save_as_v15(atlasHistorical.serialize("config-test"));
+    atlasOld.replace(0,15,"POLYEC_REALM_14");
+    const auto atlasConfig=atlasOld.find(" CONFIG_1 ");
+    check(atlasConfig!=std::string::npos,"Atlas v14 fixture locates config tail");
+    atlasOld.erase(atlasConfig);
+    {
+        std::istringstream header(atlasOld);std::string magic,bundle;int day=0,regions=0;uint64_t seed=0,next=0;
+        header>>magic>>std::quoted(bundle)>>day>>regions>>seed;const auto seedEnd=header.tellg();header>>next;
+        const auto begin=static_cast<size_t>(seedEnd)+1;const auto end=atlasOld.find(' ',begin);
+        check(end!=std::string::npos&&next>=atlasHistorical.land_holdings().size(),
+              "Atlas v14 fixture locates pre-land identifier watermark");
+        atlasOld.replace(begin,end-begin,std::to_string(next-atlasHistorical.land_holdings().size()));
+    }
+    Realm atlasResumed(1,1,128);
+    check(atlasResumed.deserialize(atlasOld,"config-test",error),error.c_str());
+    check(atlasResumed.invariant()&&atlasResumed.municipal_councils().size()==kAtlasTerritoryCount,
+          "Atlas v14 migration initializes housing capacity and empty councils for every settlement");
     const auto file=std::filesystem::temp_directory_path()/("polyec-config-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count())+".toml");
     struct Cleanup{std::filesystem::path path;~Cleanup(){std::error_code ignored;std::filesystem::remove(path,ignored);}} cleanup{file};
     {std::ofstream out(file);out<<defaults;}

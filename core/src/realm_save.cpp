@@ -233,6 +233,19 @@ bool Realm::deserialize(const std::string&data,const std::string&bundle,std::str
         const auto read_position=s.tellg();
         s.str(data.substr(0,config_at));s.clear();s.seekg(read_position);
     }
+    // Schemas before 15 have no gameplay-config tail, so they skip the block
+    // above entirely. Initialize the housing/council data introduced later
+    // for those saves as well; otherwise the staged Realm keeps constructor
+    // sized arrays from its temporary one-region world and fails invariants
+    // after loading older geographies.
+    if(schema<15){
+        if(schema<64)w.initialize_urban_housing_baseline();
+        if(schema<65&&w.regions_==int(kAtlasTerritoryCount)-1){
+            w.municipal_councils_.resize(kAtlasTerritoryCount);
+            for(size_t site=0;site<w.municipal_councils_.size();++site)
+                w.municipal_councils_[site].site_id=uint8_t(site);
+        }
+    }
     if(schema<27&&w.regions_!=int(kAtlasTerritoryCount)-1)
         w.national_transport_routes_.clear();
     if(schema<26){

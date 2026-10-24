@@ -12,6 +12,16 @@ Khi báo tiến độ cho người đọc, không chỉ nêu mã như `R1`, `M5.
 4. Mở source/tests liên quan để xác nhận behavior thực. Report cũ không chứng nhận HEAD.
 5. Chỉ mở archive khi cần truy nguyên một quyết định cụ thể; chữ APPROVED trong archive không là quyền triển khai hiện tại.
 
+### Chuẩn bị danh mục trước code và gộp tài liệu cùng phạm vi — yêu cầu 2026-10-23
+
+Trước khi thêm một loại hàng, nghề, cơ sở, hoạt động, dịch vụ hoặc tổ chức, đối chiếu [IMPLEMENTATION_PLAN §22.4–22.6](IMPLEMENTATION_PLAN.md#content-definitions-v1). Điền trước mã, đơn vị, nguồn, quyền, đầu vào/đầu ra, nơi sử dụng, vòng đời và liên kết. Không coi việc có enum/class/tên hiển thị là hoàn thành hành vi. Cấu trúc dữ liệu chung nhận các định nghĩa có cùng cơ chế; chỉ thêm class/thành phần xử lý cho trách nhiệm và hành vi thực sự khác nhau.
+
+Một chủ đề có một nơi sở hữu nội dung: phạm vi/luật/danh mục đích trong IMPLEMENTATION_PLAN; phương pháp chung trong DEVELOPER_GUIDE hoặc TECHNICAL_PROBLEMS theo vai trò đã quy định; trạng thái hiện tại trong CURRENT_TASK; lệnh/kết quả theo phiên bản trong report. Các file còn lại dẫn tới nơi đó thay vì sao chép bảng hiện hành. Bảng danh mục mới không được khiến báo cáo kiểm kê cũ trông như đã kiểm source mới.
+
+Khi hai file cùng mô tả một nhóm đã kết thúc và có thể đọc hợp lý trong một file hiện có, gộp nội dung đầy đủ vào file đó thay vì tạo thêm file tổng hợp. Kế hoạch và báo cáo của một cuộc kiểm kê chỉ đọc có thể cùng nằm trong report, chia rõ phương pháp trước kiểm kê và kết quả theo ngày. Trước khi bỏ file cũ, chuyển đủ quyết định, giả định, danh sách source, phép kiểm, giới hạn và bằng chứng, ghi đường dẫn gốc/ngày gộp rồi sửa đường dẫn trong các tài liệu liên quan. Giữ nguyên kết quả, raw artifact và hash lịch sử; không chạy lại hoặc sửa hash để làm việc gộp có vẻ là một lần kiểm mới.
+
+Không gộp chỉ vì tên gần nhau khi các file thuộc phiên bản/run khác nhau, có người đang sửa hoặc có mục đích riêng cần truy nguyên. Với file đang được nhóm khác sửa, chọn phần khác không chồng lấn hoặc chờ ranh giới an toàn; đọc lại nội dung mới nhất ngay trước khi chỉnh. Không mở đợt dọn toàn kho archive. Sau sửa docs, kiểm liên kết, mục dẫn, bảng/ID và nội dung đã chuyển; không build game hay chạy lại RL cho thay đổi chỉ là tài liệu.
+
 ## 2. Phân vai và vòng công việc
 
 **Áp dụng hiện tại (2026-10-22):** theo AGENTS, tab chính Codex trực tiếp lập kế hoạch, triển khai và kiểm tra core/M5; OpenCode là tùy chọn. Các vai OpenCode bắt buộc trong bảng và đoạn bên dưới là quy trình cũ, không chặn đợt này. Vẫn tách lượt triển khai và lượt rà soát kết quả; tự review phải ghi đúng giới hạn.

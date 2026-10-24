@@ -36,24 +36,26 @@ void Realm::apply_augment(int card){
     if(card==10)crown.school+=8;
     if(card==11)bonus_offices_=2;
 }
-bool Realm::project_materials(int region,int kind)const{auto&v=provinces_[region];return kind<2?v.stock[realm_good(3)]>=4&&v.stock[realm_good(5)]>=2:v.stock[realm_good(0)]>=10&&v.stock[realm_good(2)]>=1;}
+bool Realm::project_materials(int region,int kind)const{auto&v=provinces_[region];if(kind==4)return v.stock[size_t(GoodId::ConstructionMaterial)]>=4&&v.stock[size_t(GoodId::Tools)]>=2;return kind<2?v.stock[realm_good(3)]>=4&&v.stock[realm_good(5)]>=2:v.stock[realm_good(0)]>=10&&v.stock[realm_good(2)]>=1;}
 void Realm::start_project(uint64_t owner,int region,int kind,int64_t budget,int term,bool from_escrow,uint64_t cause){
     auto&p=mutable_person(owner);auto&v=provinces_[region];
-    if(!from_escrow){auto&funds=p.family==Family::Governance?provinces_[p.region].treasury:p.cash;int64_t match=p.sovereign&&kind<2?std::min(restricted_fund_,budget/2):0;transfer(restricted_fund_,v.firm,match);transfer(funds,v.firm,budget-match);}
+    if(kind==4){transfer(municipal_funds_[size_t(region)],v.firm,budget);v.stock[size_t(GoodId::ConstructionMaterial)]-=4;v.stock[size_t(GoodId::Tools)]-=2;consumed_[size_t(GoodId::ConstructionMaterial)]+=4;consumed_[size_t(GoodId::Tools)]+=2;}
+    else if(!from_escrow){auto&funds=p.family==Family::Governance?provinces_[p.region].treasury:p.cash;int64_t match=p.sovereign&&kind<2?std::min(restricted_fund_,budget/2):0;transfer(restricted_fund_,v.firm,match);transfer(funds,v.firm,budget-match);}
     if(kind<2){if(!from_escrow){v.stock[realm_good(3)]-=4;v.stock[realm_good(5)]-=2;}consumed_[realm_good(3)]+=4;consumed_[realm_good(5)]+=2;}
     else {v.stock[realm_good(0)]-=10;v.stock[realm_good(2)]-=1;consumed_[realm_good(0)]+=10;consumed_[realm_good(2)]+=1;}
     bool engineer=p.sovereign&&draft_.chosen==5&&kind==0;for(auto&j:projects_)if(!j.completed&&j.engineer)engineer=false;
     int productivity=100+std::min(50,capability_value(owner,LegacyCapability::Administration)/5+(engineer?20:0));
-    int duration=term*100/productivity;
+    int duration=kind==4?kUrbanHousingProjectTermDays:term*100/productivity;
     if(kind==2&&p.sovereign&&draft_.chosen==1)duration=(duration*85+99)/100;
     if(kind==3&&p.sovereign&&draft_.chosen==10)duration=(duration*100+124)/125;
     // Economic expertise reduces procurement preparation, never the bill/materials.
-    duration+=std::max(1,5-capability_value(owner,LegacyCapability::EconomicPlanning)/25);
+    if(kind!=4)duration+=std::max(1,5-capability_value(owner,LegacyCapability::EconomicPlanning)/25);
     Project j{next_id_++,owner,region,day_+std::max(1,duration),kind,budget};j.engineer=engineer;j.cause=cause?cause:next_fact_;projects_.push_back(j);
 }
 void Realm::finish_projects(){for(auto&j:projects_)if(!j.completed&&j.due<=day_){
     auto&v=provinces_[j.region];bool ready=true;
     if(j.kind<2){if(j.kind==0)v.road=std::min(4,v.road+1);else v.school+=4;}
+    else if(j.kind==4){if(regions_!=int(kAtlasTerritoryCount)-1||urban_housing_capacity_[size_t(j.region)]>std::numeric_limits<int64_t>::max()-kUrbanHousingBedsPerBlock)throw std::logic_error("housing project capacity overflow or non-Atlas project");urban_housing_capacity_[size_t(j.region)]+=kUrbanHousingBedsPerBlock;}
     else {ready=false;if(v.teachers>0)for(auto&p:people_)if(p.alive&&p.region==j.region&&((j.kind==2&&p.school_days>0)||(j.kind==3&&p.work_assignment.job>=0&&p.work_assignment.job_kind==1))){p.skill=std::min(100,p.skill+10);ready=true;}}
     j.stalled=!ready;if(!ready){j.due=day_+7;continue;}j.completed=true;event(j.owner,j.region,int(Intent::Project),j.budget,j.id,false,j.cause);
 }}

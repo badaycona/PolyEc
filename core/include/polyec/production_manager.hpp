@@ -22,10 +22,10 @@ namespace polyec {
 struct ProductionGoodAmount { size_t good = 0; int64_t amount = 0; };
 
 // Immutable recipe descriptor keyed by typed, validated industries. One output
-// product per batch, at most two inventory goods and one optional site resource.
+// product per batch, up to three inventory goods and one optional site resource.
 struct ProductionRecipe {
     EstablishmentIndustry industry = EstablishmentIndustry::ClothWorkshop;
-    std::array<ProductionGoodAmount, 2> inputs{};
+    std::array<ProductionGoodAmount, 3> inputs{};
     size_t input_count = 0;
     size_t output_good = 0;
     int64_t output_amount = 1;
@@ -37,9 +37,9 @@ inline constexpr int64_t kProductionTicksPerUnit = kAttendanceTicksPerWorkUnit;
 inline constexpr int64_t kProductionShortageForfeit = 1; // no labor debt or carryover
 inline constexpr int64_t kLaborProductivityDenominator = 200;
 
-inline constexpr std::array<ProductionRecipe, 15> kProductionRecipes{{
+inline constexpr std::array<ProductionRecipe, 18> kProductionRecipes{{
     {EstablishmentIndustry::ClothWorkshop, {{ProductionGoodAmount{9, 1}}}, 1, 11},
-    {EstablishmentIndustry::ToolWorkshop, {{ProductionGoodAmount{5, 1}, ProductionGoodAmount{4, 1}}}, 2, 16},
+    {EstablishmentIndustry::ToolWorkshop, {{ProductionGoodAmount{5, 1}, ProductionGoodAmount{6, 1}, ProductionGoodAmount{4, 1}}}, 3, 16},
     {EstablishmentIndustry::MilitarySupplyWorkshop, {{ProductionGoodAmount{16, 1}, ProductionGoodAmount{11, 1}}}, 2, 17},
     {EstablishmentIndustry::Saltworks, {{ProductionGoodAmount{4, 1}}}, 1, 2},
     {EstablishmentIndustry::Forestry, {}, 0, 3, 1, int(GoodId::Timber), 1},
@@ -53,6 +53,9 @@ inline constexpr std::array<ProductionRecipe, 15> kProductionRecipes{{
     {EstablishmentIndustry::Glassworks, {{ProductionGoodAmount{4, 1}}}, 1, size_t(GoodId::PlainGlass), 1, int(GoodId::PlainGlass), 1},
     {EstablishmentIndustry::PotteryKiln, {{ProductionGoodAmount{4, 1}}}, 1, size_t(GoodId::Pottery), 1, int(GoodId::Pottery), 1},
     {EstablishmentIndustry::Tannery, {}, 0, size_t(GoodId::Leather), 1, int(GoodId::Leather), 1},
+    {EstablishmentIndustry::MedicinalGarden, {}, 0, size_t(GoodId::Medicine), 1, int(GoodId::Medicine), 1},
+    {EstablishmentIndustry::SeedPressWorks, {}, 0, size_t(GoodId::SupplementaryFood), 1, int(GoodId::SupplementaryFood), 1},
+    {EstablishmentIndustry::SawmillWorks, {{ProductionGoodAmount{3, 1}}}, 1, size_t(GoodId::ConstructionMaterial), 1},
 }};
 
 inline ProductionRecipe production_recipe(EstablishmentIndustry industry,const GameplayConfig& config={},
@@ -62,12 +65,14 @@ inline ProductionRecipe production_recipe(EstablishmentIndustry industry,const G
         const auto& v=config.values();
         switch(industry){
         case EstablishmentIndustry::ClothWorkshop:r.inputs[0].amount=v[3];r.output_amount=v[4];break;
-        case EstablishmentIndustry::ToolWorkshop:r.inputs[0].amount=v[5];r.inputs[1].amount=v[6];r.output_amount=v[7];break;
+        case EstablishmentIndustry::ToolWorkshop:r.inputs[0].amount=v[5];r.inputs[2].amount=v[6];r.output_amount=v[7];break;
         case EstablishmentIndustry::MilitarySupplyWorkshop:r.inputs[0].amount=v[8];r.inputs[1].amount=v[9];r.output_amount=v[10];break;
         case EstablishmentIndustry::Saltworks:r.inputs[0].amount=v[16];r.output_amount=v[17];break;
         case EstablishmentIndustry::Forestry:case EstablishmentIndustry::Mining:case EstablishmentIndustry::PaperMill:
         case EstablishmentIndustry::TeaGarden:case EstablishmentIndustry::IncenseWorks:case EstablishmentIndustry::WarhorseStable:case EstablishmentIndustry::WeaponForge:
-        case EstablishmentIndustry::Glassworks:case EstablishmentIndustry::PotteryKiln:case EstablishmentIndustry::Tannery:break;
+        case EstablishmentIndustry::Glassworks:case EstablishmentIndustry::PotteryKiln:case EstablishmentIndustry::Tannery:
+        case EstablishmentIndustry::MedicinalGarden:case EstablishmentIndustry::SeedPressWorks:break;
+        case EstablishmentIndustry::SawmillWorks:break;
         }
         return r;
     }

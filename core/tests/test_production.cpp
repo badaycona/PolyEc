@@ -92,11 +92,24 @@ int main() {
             std::vector<Establishment> sites{make_site(20, EstablishmentIndustry::ToolWorkshop)};
             sites[0].stock[good(GoodId::Iron)] = 1;
             sites[0].stock[good(GoodId::Fuel)] = 1;
+            const auto missing_copper=plan(sites,attendance,people,1);
+            check(missing_copper.site_batches(0)==0&&
+                  missing_copper.site_stock_delta(0,good(GoodId::Iron))==0&&
+                  missing_copper.site_stock_delta(0,good(GoodId::Fuel))==0&&
+                  missing_copper.site_stock_delta(0,good(GoodId::Tools))==0,
+                  "ToolWorkshop requires Copper as a third, independent input");
+            sites[0].stock[good(GoodId::Copper)]=1;
             auto result = plan(sites, attendance, people, 1);
             check(result.site_batches(0) == 1 &&
                   result.site_stock_delta(0, good(GoodId::Iron)) == -1 &&
+                  result.site_stock_delta(0, good(GoodId::Copper)) == -1 &&
                   result.site_stock_delta(0, good(GoodId::Fuel)) == -1 &&
                   result.site_stock_delta(0, good(GoodId::Tools)) == 1, "tool exact recipe");
+            check(result.consumed()[good(GoodId::Iron)]==1&&
+                  result.consumed()[good(GoodId::Copper)]==1&&
+                  result.consumed()[good(GoodId::Fuel)]==1&&
+                  result.produced()[good(GoodId::Tools)]==1,
+                  "one Tools batch records each of its three exact inputs once");
         }
         {
             std::vector<Person> people{make_person(1)};
@@ -252,6 +265,9 @@ int main() {
         no_substitution(EstablishmentIndustry::ToolWorkshop, 104,
                         GoodId::Gold, GoodId::Fuel, true, GoodId::Tools,
                         "Gold cannot replace Iron in the tool recipe");
+        no_substitution(EstablishmentIndustry::ToolWorkshop, 106,
+                        GoodId::Iron, GoodId::Copper, true, GoodId::Tools,
+                        "Copper cannot replace Fuel in the tool recipe");
         no_substitution(EstablishmentIndustry::MilitarySupplyWorkshop, 105,
                         GoodId::Silk, GoodId::Tools, true, GoodId::MilitarySupply,
                         "Silk cannot replace Cloth in the military supply recipe");

@@ -51,7 +51,10 @@ RealmResult Realm::execute(const EstablishmentCommand& cmd){
         cmd.industry != EstablishmentIndustry::WeaponForge &&
         cmd.industry != EstablishmentIndustry::Glassworks &&
         cmd.industry != EstablishmentIndustry::PotteryKiln &&
-        cmd.industry != EstablishmentIndustry::Tannery) return {false, "Invalid industry"};
+        cmd.industry != EstablishmentIndustry::Tannery &&
+        cmd.industry != EstablishmentIndustry::MedicinalGarden &&
+        cmd.industry != EstablishmentIndustry::SeedPressWorks &&
+        cmd.industry != EstablishmentIndustry::SawmillWorks) return {false, "Invalid industry"};
     if(cmd.industry==EstablishmentIndustry::Saltworks&&cmd.region!=8)return {false,"Saltworks requires atlas region 8"};
     if(cmd.industry==EstablishmentIndustry::Forestry){
         if(cmd.region!=6)return {false,"Forestry requires atlas region 6"};
@@ -112,6 +115,24 @@ RealmResult Realm::execute(const EstablishmentCommand& cmd){
         if(std::any_of(establishments_.begin(),establishments_.end(),[](const Establishment& site){
             return site.industry==EstablishmentIndustry::Tannery&&site.region==17;
         }))return {false,"Tannery source site already exists in region 17"};
+    }
+    if(cmd.industry==EstablishmentIndustry::MedicinalGarden){
+        if(cmd.region!=20)return {false,"Medicinal Garden requires Atlas region 20"};
+        if(std::any_of(establishments_.begin(),establishments_.end(),[](const Establishment& site){
+            return site.industry==EstablishmentIndustry::MedicinalGarden&&site.region==20;
+        }))return {false,"Medicinal source site already exists in region 20"};
+    }
+    if(cmd.industry==EstablishmentIndustry::SeedPressWorks){
+        if(cmd.region!=2)return {false,"Seed Press Works requires Atlas region 2"};
+        if(std::any_of(establishments_.begin(),establishments_.end(),[](const Establishment& site){
+            return site.industry==EstablishmentIndustry::SeedPressWorks&&site.region==2;
+        }))return {false,"SupplementaryFood source site already exists in region 2"};
+    }
+    if(cmd.industry==EstablishmentIndustry::SawmillWorks){
+        if(regions_!=int(kAtlasTerritoryCount)-1||cmd.region!=6)return {false,"Sawmill Works requires Atlas region 6"};
+        if(std::any_of(establishments_.begin(),establishments_.end(),[](const Establishment& site){
+            return site.industry==EstablishmentIndustry::SawmillWorks&&site.region==6;
+        }))return {false,"Sawmill source site already exists in region 6"};
     }
     const int cap = cmd.capacity==-1?config_.default_capacity():cmd.capacity;
     if (cap < 1 || cap > kEstablishmentCapacityMax) return {false, "Invalid capacity"};

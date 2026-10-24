@@ -28,7 +28,9 @@ assert world.military_raids == [{
     "salt_looted": 0,
     "status": 0,
     "defenders": [],
+    "supplied_defenders": [],
 }]
+assert core.REALM_SCHEMA == "realm-v34"
 
 pending_save = world.serialize("military-battle-binding")
 restored = core.Realm(1, 1, 128)
@@ -52,7 +54,24 @@ assert world.military_raids[0]["defenders"] == []
 assert world.invariant()
 
 closed = core.Realm(41402, 26, 128)
-assert closed.route(1, 9, 8, False)
+coastal_import_route = next(
+    index for index, route in enumerate(closed.transport_routes)
+    if route["from"] == 9 and route["to"] == 8
+)
+assert closed.transport_routes[coastal_import_route]["open"]
+sovereign = next(
+    person_id for person_id in range(1, 129)
+    if closed.person(person_id)["family"] == 0
+    and closed.person(person_id)["alive"]
+    and closed.person(person_id)["taxing_authority"]
+    and closed.person(person_id)["region"] == 26
+)
+person = closed.person(sovereign)
+route_closed, reason, _, _ = closed.transport_route_command(
+    sovereign, person["decisions"] + 1, coastal_import_route, False
+)
+assert route_closed, reason
+assert not closed.transport_routes[coastal_import_route]["open"]
 before = closed.fingerprint()
 ok, reason, _, _ = closed.military_raid_command(0, 1, 1)
 assert not ok and reason and closed.fingerprint() == before

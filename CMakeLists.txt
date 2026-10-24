@@ -76,13 +76,15 @@ if(POLYEC_BUILD_APP)
   endif()
   target_compile_features(polyec PRIVATE cxx_std_20)
   target_compile_options(polyec PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+  set(POLYEC_GDEXT_OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/godot_project/bin" CACHE PATH
+      "Output directory for the Godot extension; override to build without replacing a DLL loaded by Godot")
   set_target_properties(polyec PROPERTIES
     PREFIX ""
     OUTPUT_NAME "polyec.windows.template_release.x86_64"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/godot_project/bin"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/godot_project/bin"
-    RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_SOURCE_DIR}/godot_project/bin"
-    RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_CURRENT_SOURCE_DIR}/godot_project/bin")
+    RUNTIME_OUTPUT_DIRECTORY "${POLYEC_GDEXT_OUTPUT_DIR}"
+    LIBRARY_OUTPUT_DIRECTORY "${POLYEC_GDEXT_OUTPUT_DIR}"
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE "${POLYEC_GDEXT_OUTPUT_DIR}"
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG "${POLYEC_GDEXT_OUTPUT_DIR}")
   if(UNIX AND NOT APPLE)
     set_target_properties(polyec PROPERTIES OUTPUT_NAME "polyec.linux.template_release.x86_64")
   endif()

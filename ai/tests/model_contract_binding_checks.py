@@ -12,15 +12,19 @@ def main() -> None:
     args = parser.parse_args()
     checks = 0
     world = core.Realm(37, 6, 128)
-    assert world.model_contract == "realm-household-fund-goods30-config-v33", world.model_contract
-    assert core.REALM_SCHEMA == "realm-v31" and core.REALM_ACTIONS == 282 and core.REALM_OBS == 3766
+    assert world.model_contract == "realm-household-fund-goods30-config-v40", world.model_contract
+    assert core.REALM_SCHEMA == "realm-v34" and core.REALM_ACTIONS == 336 and core.REALM_OBS == 4414
     checks += 2
+    civilians_without_tea = [actor for actor in range(1, 129)
+                             if world.person(actor)["family"] == 2 and world.person(actor)["alive"]]
+    assert civilians_without_tea and all(world.mask(actor)[24] == 0.0 for actor in civilians_without_tea)
+    checks += 1
     assert world.observe(1)[88:90] == [0.0, 0.0]
     checks += 1
     timeline = core.Realm(37, 6, 128)
     ok, reason, _ = timeline.schedule_command(0, 1, 1, 0, 0, 1, 0, 5)
     assert ok, reason
-    assert timeline.model_contract == "realm-worksite-payroll-goods30-config-v35", timeline.model_contract
+    assert timeline.model_contract == "realm-worksite-payroll-goods30-config-v41", timeline.model_contract
     assert timeline.observe(1)[108:110] == [0.0, 0.0]
     assert timeline.observe(1)[88:90] == [0.0, 0.0]
     traits = world.observe(1)[110:116]

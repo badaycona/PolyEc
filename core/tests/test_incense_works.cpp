@@ -22,7 +22,7 @@ int main(){try{
     const uint64_t buyer=find_person(world,region,Family::Economic,true);
     check(world.person(governor).taxing_authority&&worker&&buyer,"region 11 has authority, worker and buyer actors");
     const auto candidates=world.candidates(governor);
-    check(realm_incense_works_candidate_begin==164&&realm_actions==282&&realm_obs==3766,
+    check(realm_incense_works_candidate_begin==164&&realm_actions==336&&realm_obs==4414,
           "Incense choices are appended after existing actions and match observation size");
     for(int tier=0;tier<3;++tier)
         check(candidates[size_t(164+tier)].kind==Intent::CreateEstablishment&&
@@ -56,7 +56,7 @@ int main(){try{
     check(world.establishments()[0].source_units==99,"Incense source does not regenerate as game days pass");
 
     const std::string saved=world.serialize("incense-works-trial-1");
-    check(saved.rfind("POLYEC_REALM_58 ",0)==0&&saved.find(" ESTABLISH_14 1 ")!=std::string::npos,
+    check(saved.rfind("POLYEC_REALM_67 ",0)==0&&saved.find(" ESTABLISH_14 1 ")!=std::string::npos,
           "save uses schema 41 and the new establishment section");
     Realm resumed(1,1,128);std::string error;
     check(resumed.deserialize(saved,"incense-works-trial-1",error),error.c_str());

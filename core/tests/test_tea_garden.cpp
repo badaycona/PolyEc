@@ -49,7 +49,7 @@ int main(){try{
     const uint64_t buyer=traveler;
     check(world.person(governor).taxing_authority&&worker&&buyer&&traveler,"region 14 authority, adult worker and economic traveler are available");
     const auto candidates=world.candidates(governor);
-    check(realm_tea_garden_candidate_begin==161&&realm_actions==282&&realm_obs==3766,
+    check(realm_tea_garden_candidate_begin==161&&realm_actions==336&&realm_obs==4414,
           "Tea Garden uses three appended choices without moving actions 0 through 160");
     for(int tier=0;tier<3;++tier)
         check(candidates[size_t(161+tier)].kind==Intent::CreateEstablishment&&
@@ -86,7 +86,7 @@ int main(){try{
           "one complete Work batch consumes one source unit and creates Tea only");
 
     const std::string saved=world.serialize("tea-garden-trial-1");
-    check(saved.rfind("POLYEC_REALM_58 ",0)==0&&saved.find(" ESTABLISH_14 1 ")!=std::string::npos,
+    check(saved.rfind("POLYEC_REALM_67 ",0)==0&&saved.find(" ESTABLISH_14 1 ")!=std::string::npos,
           "the new Tea industry is written in save schema 40");
     Realm resumed(1,1,128);std::string error;
     check(resumed.deserialize(saved,"tea-garden-trial-1",error),error.c_str());
@@ -144,7 +144,7 @@ int main(){try{
     const size_t tag=schema39.find("ESTABLISH_13");schema39.replace(tag,std::string("ESTABLISH_13").size(),"ESTABLISH_9");
     Realm migrated(1,1,128);
     check(migrated.deserialize(schema39,"tea-garden-trial-1",error)&&migrated.establishments().empty()&&
-          migrated.serialize("tea-garden-trial-1").rfind("POLYEC_REALM_58 ",0)==0,
+          migrated.serialize("tea-garden-trial-1").rfind("POLYEC_REALM_67 ",0)==0,
           "schema 39 migrates to 40 without inventing a Tea Garden or Tea stock");
     std::cout<<"Tea Garden checks="<<checks<<'\n';return 0;
 }catch(const std::exception& error){

@@ -10,6 +10,7 @@ var regular: Font = preload("res://fonts/BeVietnamPro-Regular.ttf")
 var serif: Font = preload("res://fonts/Newsreader.ttf")
 var regions: Array[Dictionary] = []
 var links: Array[Dictionary] = []
+var settlements: Array[Dictionary] = []
 var selected_id: int = 7
 var hovered_id: int = -1
 var zoom: float = 1.0
@@ -27,8 +28,10 @@ func _ready() -> void:
 func configure(atlas_data: Dictionary) -> void:
     regions.clear()
     links.clear()
+    settlements.clear()
     for item in atlas_data.get("regions", []): regions.append(item)
     for item in atlas_data.get("links", []): links.append(item)
+    for item in atlas_data.get("settlements", []): settlements.append(item)
     queue_redraw()
 
 func reset_view() -> void:
@@ -45,6 +48,11 @@ func set_selected(id: int) -> void:
 func region_for_id(id: int) -> Dictionary:
     for item in regions:
         if int(item.get("id", -1)) == id: return item
+    return {}
+
+func settlement_for_territory(id: int) -> Dictionary:
+    for item in settlements:
+        if int(item.get("territory_id", -1)) == id: return item
     return {}
 
 func region_at(local_position: Vector2) -> int:
@@ -75,7 +83,9 @@ func _gui_input(event: InputEvent) -> void:
         if dragging: pan += event.relative
         hovered_id = region_at(event.position)
         var hovered = region_for_id(hovered_id)
-        tooltip_text = "%s · %s · Chọn để xem hồ sơ" % [hovered.get("name", "Bản đồ Atlas27"), hovered.get("group", "Kéo để di chuyển bản đồ")]
+        var site = settlement_for_territory(hovered_id)
+        var site_label = "%s · %s" % [site.get("name", ""), site.get("kind", "")] if not site.is_empty() else "chưa có địa điểm trung tâm"
+        tooltip_text = "%s · %s · %s · Chọn để xem hồ sơ" % [hovered.get("name", "Bản đồ Atlas27"), hovered.get("group", "Kéo để di chuyển bản đồ"), site_label]
         queue_redraw()
 
 func _draw() -> void:
@@ -101,6 +111,13 @@ func _draw() -> void:
         _label(center + Vector2(0, 17), str(item.get("id", 0)).pad_zeros(2) + " · " + group.to_upper(), 7, Color("bdc9bb"), regular)
         if bool(item.get("royal", false)):
             draw_circle(center + Vector2(0, -28), 3, GOLD)
+    for site in settlements:
+        var territory_id := int(site.get("territory_id", -1))
+        var position: Vector2 = site.get("position", Vector2.ZERO)
+        var color := Color("71c1ae") if str(site.get("kind", "")) == "Cảng" else GOLD
+        draw_circle(position, 4.0 if territory_id == selected_id else 3.0, color)
+        if territory_id == hovered_id or territory_id == selected_id:
+            draw_string(regular, position + Vector2(7, 4), str(site.get("name", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, PAPER)
     if show_routes:
         for link in links:
             var source = region_for_id(int(link.get("from", -1)))

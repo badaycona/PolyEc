@@ -97,5 +97,55 @@ func _initialize() -> void:
 	assert(supply.contains("đã được gia hạn một lần"))
 	checks += 4
 
-	print("MILITARY, SUPPLY AND FOREIGN TRADE POLICY UI SMOKE: %d checks passed" % checks)
+	var pending_raid := RealmPanel.military_raid_text({
+		"partner_id": 0, "force_units": 2, "status": 0,
+	})
+	assert(pending_raid.contains("Đối tác A đã đưa 2 đơn vị tới Nam Cảng"))
+	assert(pending_raid.contains("đang chờ Lãnh chủ trả lời"))
+	var repelled_raid := RealmPanel.military_raid_text({
+		"partner_id": 1, "force_units": 3, "status": 1,
+		"attacker_losses": 3, "defender_casualties": 0, "supplied_defenders": [21, 22], "defense_score": 5,
+	})
+	assert(repelled_raid.contains("Đối tác B bị đẩy lui"))
+	assert(repelled_raid.contains("3 đơn vị bị mất"))
+	assert(repelled_raid.contains("Điểm phòng thủ 5"))
+	assert(repelled_raid.contains("mỗi người mang Leather cá nhân được thêm 1 điểm và không mất món đó"))
+	assert(repelled_raid.contains("2 người đã dùng một quân nhu cá nhân"))
+	var successful_raid := RealmPanel.military_raid_text({
+		"partner_id": 2, "force_units": 4, "status": 2,
+		"defender_casualties": 2, "salt_looted": 3, "supplied_defenders": [21], "defense_score": 2,
+	})
+	assert(successful_raid.contains("Đối tác C vượt qua phòng thủ"))
+	assert(successful_raid.contains("2 tình nguyện viên bị đánh gục"))
+	assert(successful_raid.contains("1 người đã dùng một quân nhu cá nhân"))
+	assert(successful_raid.contains("lấy 3 Salt"))
+	var withdrawn_raid := RealmPanel.military_raid_text({
+		"partner_id": 0, "force_units": 2, "status": 3, "salt_looted": 1,
+	})
+	assert(withdrawn_raid.contains("Lãnh chủ rút quân trước đợt đột kích của đối tác A"))
+	assert(withdrawn_raid.contains("đối phương lấy 1 Salt"))
+	checks += 8
+	var local_census := RealmPanel.urban_census_text([{
+		"site_id": 8, "site_name": "Nam Cảng", "urban_residents": 20,
+		"housing_capacity": 24, "unhoused_residents": 0, "available_beds": 4,
+		"rural_residents": 80, "unknown_residence": 3,
+	}], false)
+	assert(local_census.contains("Nam Cảng · đô thị 20 · sức chứa 24 · còn thiếu chỗ 0 · giường trống 4 · nông thôn 80 · chưa rõ 3"))
+	assert(local_census.contains("Chỉ hiện vùng cư trú của cá thể đang xem."))
+	assert(local_census.contains("save cũ chưa lưu địa chỉ"))
+	var sovereign_census := RealmPanel.urban_census_text([
+		{"site_id": 0, "site_name": "Long Phố", "urban_residents": 1},
+		{"site_id": 1, "site_name": "Hà Trạch", "urban_residents": 2},
+	], true)
+	assert(sovereign_census.contains("Long Phố") and sovereign_census.contains("Hà Trạch"))
+	assert(not sovereign_census.contains("Chỉ hiện vùng cư trú"))
+	assert(RealmPanel.urban_census_text([], true).is_empty())
+	checks += 6
+	assert(RealmPanel.GOODS[21] == "thuốc")
+	assert(RealmPanel.ESTABLISHMENT_NAMES[15] == "vườn dược liệu")
+	assert(RealmPanel.ESTABLISHMENT_NAMES[16] == "cơ sở ép và sấy hạt")
+	assert(RealmPanel.fact_kind_name(237) == "Tự dùng Medicine để điều trị")
+	checks += 4
+
+	print("MILITARY, SUPPLY, TRADE, URBAN CENSUS AND MEDICINE UI SMOKE: %d checks passed" % checks)
 	quit(0)

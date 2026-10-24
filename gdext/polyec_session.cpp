@@ -1,6 +1,7 @@
 #include "polyec/sim.hpp"
 #include "polyec/campaign.hpp"
 #include "polyec/atlas_cartography.hpp"
+#include "polyec/atlas_settlements.hpp"
 #include <godot_cpp/godot.hpp>
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/core/class_db.hpp>
@@ -111,11 +112,31 @@ public:
             row["direction"] = int(link.direction);
             links.push_back(row);
         }
+        Array settlements;
+        for (const auto& site : polyec::kAtlasUrbanSites) {
+            const char* kind = "Trung tâm vùng";
+            switch (site.kind) {
+                case polyec::AtlasUrbanSiteKind::RegionalCenter: kind = "Trung tâm vùng"; break;
+                case polyec::AtlasUrbanSiteKind::Port: kind = "Cảng"; break;
+                case polyec::AtlasUrbanSiteKind::RoyalCenter: kind = "Trung tâm triều đình"; break;
+                case polyec::AtlasUrbanSiteKind::RoyalGranary: kind = "Khu kho triều đình"; break;
+                case polyec::AtlasUrbanSiteKind::RoyalWorks: kind = "Khu xưởng triều đình"; break;
+            }
+            Dictionary row;
+            row["id"] = int(site.id);
+            row["territory_id"] = int(site.territory_id);
+            row["name"] = String::utf8(site.name.data());
+            row["kind"] = String::utf8(kind);
+            row["position"] = Vector2(site.position.x, site.position.y);
+            settlements.push_back(row);
+        }
         Dictionary result;
         result["version"] = "atlas-cartography-v1";
+        result["site_version"] = "atlas-urban-sites-v1";
         result["unit"] = "map_unit";
         result["regions"] = regions;
         result["links"] = links;
+        result["settlements"] = settlements;
         return result;
     }
     Array capability_catalog() const {
@@ -263,6 +284,7 @@ public:
         Array regions;for(int region=0;region<int(v.provinces.size());++region){auto&p=v.provinces[size_t(region)];Dictionary r;r["treasury"]=p.treasury;r["urban_fund"]=w->municipal_funds()[size_t(region)];r["firm"]=p.firm;r["unrest"]=p.unrest;r["road"]=p.road;r["jobs"]=p.jobs;r["workers"]=p.employed;r["school"]=p.school;r["students"]=p.school_used;r["tax"]=p.tax;r["military_ration_stock"]=w->military_ration_stock(region);r["military_supplementary_ration_stock"]=w->military_ration_stock(region,int(polyec::GoodId::SupplementaryFood));Array prices,stock;for(int good=0;good<polyec::kGoodIdCount;++good){prices.push_back(p.price[size_t(good)]);stock.push_back(p.stock[size_t(good)]);}r["prices"]=prices;r["stock"]=stock;regions.push_back(r);}d["regions"]=regions;
         Array establishments;for(const auto&site:w->establishments()){Dictionary row;row["id"]=int64_t(site.id);row["region"]=site.region;row["owner_kind"]=int(site.owner_kind);row["owner_id"]=int64_t(site.owner_id);row["industry"]=int(site.industry);row["cash"]=site.cash;row["capacity"]=site.capacity;row["source_good"]=site.source_good;row["source_units"]=site.source_units;Array stock;for(const auto quantity:site.stock)stock.push_back(quantity);row["stock"]=stock;establishments.push_back(row);}d["establishments"]=establishments;
         auto&p=w->person(actor);Dictionary person;person["id"]=actor;person["age"]=p.age_days/365;person["role"]=int(p.family);person["sovereign"]=p.sovereign;person["cash"]=p.cash;person["region"]=p.region;person["health"]=p.health;person["nutrition"]=p.nutrition;person["sleep_debt"]=p.body_state.sleep_debt;person["exertion"]=p.body_state.exertion;person["authority"]=p.taxing_authority;person["office"]=p.office_appointment.office;person["candidate"]=p.candidate;person["job_kind"]=p.work_assignment.job_kind;person["skill"]=p.skill;person["goal"]=p.goal;person["alive"]=p.alive;person["debt"]=w->debt(actor);person["decisions"]=int64_t(p.decisions);person["household"]=int64_t(p.household_membership.household_id);const auto&service=p.military_service;Dictionary serviceView;serviceView["active"]=service.active;serviceView["combat_consent"]=service.combat_consent;serviceView["commander"]=int64_t(service.commander);serviceView["start_day"]=service.start_day;serviceView["end_day"]=service.end_day;serviceView["source_region"]=service.source_region;serviceView["wage_per_day"]=service.wage_per_day;serviceView["escrow"]=service.escrow;serviceView["paid_total"]=service.paid_total;person["military_service"]=serviceView;Array stats;Dictionary namedStats;Array activeCapabilities;for(size_t i=0;i<polyec::kLegacyCapabilities.size();++i){const int value=p.stats.get(polyec::kLegacyCapabilities[i]);stats.push_back(value);namedStats[String::utf8(polyec::kLegacyCapabilityKeys[i])]=value;if(w->capability_active(polyec::kLegacyCapabilities[i]))activeCapabilities.push_back(String::utf8(polyec::kLegacyCapabilityKeys[i]));}person["stats"]=stats;person["legacy_capabilities"]=namedStats;person["active_capabilities"]=activeCapabilities;Dictionary capabilities;for(size_t i=0;i<polyec::kCapabilityCount;++i)capabilities[String::utf8(polyec::kCapabilityKeys[i])]=w->capability_value(actor,static_cast<polyec::CapabilityId>(i));Array capabilitySchema;for(const auto capabilityId:w->capability_schema())capabilitySchema.push_back(String::utf8(polyec::kCapabilityKeys[static_cast<size_t>(capabilityId)]));person["capabilities"]=capabilities;person["capability_schema"]=capabilitySchema;d["person"]=person;
+        Array census;const auto councils=w->municipal_councils();for(const auto& row:w->urban_census())if(p.sovereign||row.territory_id==p.region){Dictionary item;item["site_id"]=int(row.site_id);item["territory_id"]=int(row.territory_id);item["site_name"]=String::utf8(polyec::kAtlasUrbanSites[row.site_id].name.data());item["urban_residents"]=int64_t(row.urban_residents);item["rural_residents"]=int64_t(row.rural_residents);item["unknown_residence"]=int64_t(row.unknown_residence);item["housing_capacity"]=row.housing_capacity;item["unhoused_residents"]=row.unhoused_residents;item["available_beds"]=row.available_beds;if(row.site_id<councils.size()){const auto&council=councils[row.site_id];item["council_representative_id"]=int64_t(council.representative);item["council_nominee_id"]=int64_t(council.nominee);item["council_nomination_day"]=council.nomination_day;item["council_term_end_day"]=council.term_end_day;}census.push_back(item);}d["urban_census"]=census;
         if(v.provinces.size()>8&&(p.sovereign||(p.family==polyec::Family::Economic&&p.region==8))){
             Dictionary trade;Array partners;int partnerId=0;for(const auto&partner:w->foreign_trade_partners()){
                 Dictionary ledger;ledger["partner_id"]=partnerId;
@@ -314,12 +336,15 @@ public:
             row["defender_casualties"]=raid.defender_casualties;row["salt_looted"]=raid.salt_looted;
             row["status"]=int(raid.status);Array defenderIds;
             for(const auto id:raid.defenders)defenderIds.push_back(int64_t(id));
-            row["defenders"]=defenderIds;militaryRaids.push_back(row);
+            row["defenders"]=defenderIds;Array suppliedDefenderIds;
+            for(const auto id:raid.supplied_defenders)suppliedDefenderIds.push_back(int64_t(id));
+            row["supplied_defenders"]=suppliedDefenderIds;militaryRaids.push_back(row);
         }d["military_raids"]=militaryRaids;
         Array battleCandidates;if(p.sovereign)for(const auto id:w->military_battle_candidates(polyec::kMilitaryRaidTargetRegion)){
             Dictionary row;const auto&volunteer=w->person(id);row["id"]=int64_t(id);row["health"]=volunteer.health;
             row["military_capability"]=w->capability_value(id,polyec::LegacyCapability::Military);
             row["has_weapon"]=volunteer.inventory[size_t(polyec::GoodId::Weapon)]>0;
+            row["has_military_supply"]=volunteer.inventory[size_t(polyec::GoodId::MilitarySupply)]>0;
             battleCandidates.push_back(row);
         }d["military_battle_candidates"]=battleCandidates;
         Array militaryObligations;for(const auto&item:w->military_obligations()){const bool is_member=std::find(item.member_ids.begin(),item.member_ids.end(),actor)!=item.member_ids.end();if(item.obligor!=actor&&item.recipient!=actor&&!is_member&&!(p.family==polyec::Family::Governance&&(p.region==item.source_region||p.region==item.destination_region)))continue;Dictionary row;row["id"]=int64_t(item.id);row["obligor"]=int64_t(item.obligor);row["recipient"]=int64_t(item.recipient);row["source_region"]=item.source_region;row["destination_region"]=item.destination_region;row["created_day"]=item.created_day;row["first_due_day"]=item.first_due_day;row["due_day"]=item.due_day;row["completed_day"]=item.completed_day;row["extensions"]=item.extensions;row["required_members"]=item.required_members;row["delivered_at_first_deadline"]=item.delivered_at_first_deadline;row["shortage_at_first_deadline"]=item.shortage_at_first_deadline;row["delivered_at_last_deadline"]=item.delivered_at_last_deadline;row["shortage_at_last_deadline"]=item.shortage_at_last_deadline;row["first_deadline_checked"]=item.first_deadline_checked;row["due_checked"]=item.due_checked;Array members;for(auto id:item.member_ids)members.push_back(int64_t(id));row["members"]=members;Array delivered;for(auto id:item.delivered_member_ids)delivered.push_back(int64_t(id));row["delivered_members"]=delivered;militaryObligations.push_back(row);}d["military_obligations"]=militaryObligations;

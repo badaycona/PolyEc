@@ -13,13 +13,15 @@ int checks=0;void check(bool ok,const char*s){++checks;if(!ok)throw std::runtime
 std::vector<std::array<float,64>> memories(const std::string&path){std::ifstream in(std::filesystem::u8path(path));uint64_t checksum,seed,count;double latency;std::string magic,bundle;size_t n;in>>checksum>>magic>>seed>>count>>latency>>std::quoted(bundle)>>n;check(magic=="POLYEC_RUNTIME_1"&&n==256,"runtime memory format");std::vector<std::array<float,64>> result(n);for(auto&m:result)for(auto&v:m)in>>v;check(bool(in),"complete memory snapshot");return result;}
 int main(int argc,char**argv){if(argc!=6)return 2;try{
  {const auto root=std::filesystem::temp_directory_path()/"polyec-model-manifest-contract-test";std::filesystem::remove_all(root);const auto familyDir=root/"civilian";std::filesystem::create_directories(familyDir);const auto model=familyDir/"civilian.onnx";
-  {std::ofstream manifest(familyDir/"manifest.json");manifest<<R"({"family":"civilian","schema":"realm-v31","model_contract":"realm-household-fund-goods30-v33","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","observation":3766,"actions":282,"hidden":64,"trained_with_rl":true,"imitation":false})";}
+  {std::ofstream manifest(familyDir/"manifest.json");manifest<<R"({"family":"civilian","schema":"realm-v34","model_contract":"realm-household-fund-goods30-v40","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","observation":4414,"actions":336,"hidden":64,"trained_with_rl":true,"imitation":false})";}
  ModelManifest parsed;std::string manifestError;check(read_model_manifest(model,parsed,manifestError),"read current model manifest");bool legacy=false;
-  check(compatible_model_manifest(parsed,"civilian","realm-household-fund-goods30-v33",false,legacy,manifestError)&&!legacy,"accept current multi-partner foreign trade contract");
+  check(compatible_model_manifest(parsed,"civilian","realm-household-fund-goods30-v40",false,legacy,manifestError)&&!legacy,"accept current supplementary civilian meal contract");
+ ModelManifest priorSupplementaryMeal=parsed;priorSupplementaryMeal.model_contract="realm-household-fund-goods30-v39";
+  check(!compatible_model_manifest(priorSupplementaryMeal,"civilian","realm-household-fund-goods30-v40",false,legacy,manifestError),"reject v39 because a Civilian's personal SupplementaryFood now changes weekly nutrition");
   ModelManifest oldSchema=parsed;oldSchema.schema="realm-v28";
-  check(!compatible_model_manifest(oldSchema,"civilian","realm-household-fund-goods30-v33",true,legacy,manifestError),"reject an older Realm schema rather than relabeling its action meanings");
+  check(!compatible_model_manifest(oldSchema,"civilian","realm-household-fund-goods30-v40",true,legacy,manifestError),"reject an older Realm schema rather than relabeling its action meanings");
  ModelManifest priorMunicipalRelief=parsed;priorMunicipalRelief.model_contract="realm-household-fund-goods27-v26";
-  check(!compatible_model_manifest(priorMunicipalRelief,"civilian","realm-household-fund-goods30-v33",false,legacy,manifestError),"reject household v26 because candidate meanings changed after municipal aid");
+  check(!compatible_model_manifest(priorMunicipalRelief,"civilian","realm-household-fund-goods30-v40",false,legacy,manifestError),"reject household v26 because candidate meanings changed after municipal aid");
  ModelManifest priorTimelineRelief=parsed;priorTimelineRelief.model_contract="realm-worksite-payroll-goods27-config-v29";
   check(!compatible_model_manifest(priorTimelineRelief,"civilian","realm-worksite-payroll-goods27-config-v30",false,legacy,manifestError),"reject timeline v29 because foreign trade now depends on live route state");
   const auto customCapabilityContract=Realm::scenario(1,1,-1,-1,-1,-1,-1,-1,-1,-1,0b101001).model_contract();

@@ -88,11 +88,11 @@ inline bool compatible_model_manifest(const ModelManifest& manifest,
                                       bool& legacy_pilot,
                                       std::string& error) {
     legacy_pilot = false;
-    if (manifest.family != expected_family || manifest.schema != "realm-v31" ||
-        manifest.observation != 3766 || manifest.actions != 282 || manifest.hidden != 64 ||
+    if (manifest.family != expected_family || manifest.schema != "realm-v34" ||
+        manifest.observation != 4414 || manifest.actions != 336 || manifest.hidden != 64 ||
         !manifest.trained_with_rl || manifest.imitation) {
         error = "Model manifest contract mismatch for " + expected_family +
-            ": requires realm-v31 with 3766 observation values, 282 actions, hidden size 64, and an RL-trained model";
+            ": requires realm-v34 with 4414 observation values, 336 actions, hidden size 64, and an RL-trained model";
         return false;
     }
     if (manifest.declares_model_contract) {

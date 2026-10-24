@@ -1,5 +1,6 @@
 #include "polyec/world_atlas.hpp"
 #include "polyec/atlas_cartography.hpp"
+#include "polyec/atlas_settlements.hpp"
 
 #include <algorithm>
 #include <array>
@@ -11,12 +12,18 @@
 int main() {
     if (!polyec::atlas_map_catalog_is_well_formed() ||
         polyec::kAtlasMapPolygons.size() != polyec::kWorldAtlas.size()) return 26;
+    if (!polyec::atlas_urban_sites_are_well_formed() ||
+        polyec::kAtlasUrbanSites.size() != polyec::kWorldAtlas.size() ||
+        polyec::atlas_urban_site(27) != nullptr) return 31;
     for (std::size_t i = 0; i < polyec::kWorldAtlas.size(); ++i) {
         const auto& geometry = polyec::kAtlasMapPolygons[i];
         if (geometry.territory_id != polyec::kWorldAtlas[i].id ||
             geometry.label_anchor.x != (geometry.vertices[0].x + geometry.vertices[3].x) / 2.0 ||
             geometry.label_anchor.y != (geometry.vertices[0].y + geometry.vertices[3].y) / 2.0)
             return 27;
+        const auto* site = polyec::atlas_urban_site(static_cast<uint8_t>(i));
+        if (!site || site->id != i || site->territory_id != geometry.territory_id ||
+            !polyec::atlas_point_in_polygon(site->position, geometry)) return 32;
         for (std::size_t edge = 0; edge < geometry.vertices.size(); ++edge) {
             const auto& a = geometry.vertices[edge];
             const auto& b = geometry.vertices[(edge + 1) % geometry.vertices.size()];

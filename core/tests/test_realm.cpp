@@ -1225,7 +1225,7 @@ void test_complex_actor_population_parameter(){
     check(profile->invariant()&&profile->total_money()==balanceTotal,
           "512 actor profile preserves Realm ledger invariant");
     const auto serialized=profile->serialize("complex-actor-profile");
-    check(serialized.rfind("POLYEC_REALM_60 ",0)==0,"current save includes typed knowledge and the established relationship, market, work and capability sections");
+    check(serialized.rfind("POLYEC_REALM_67 ",0)==0,"current save includes typed knowledge, world state and urban housing capacity");
     auto restored=std::make_unique<Realm>(1,1,128);std::string error;
     const bool profileLoaded=restored->deserialize(serialized,"complex-actor-profile",error);
     check(profileLoaded,error.c_str());
@@ -1247,7 +1247,7 @@ void test_complex_actor_population_parameter(){
         Realm migrated(1, 1, 128); std::string migrationError;
         const bool migrationLoaded=migrated.deserialize(legacySave.str(), "legacy-estate-migration", migrationError);
         check(migrationLoaded, migrationError.c_str());
-    check(migrated.invariant() && migrated.serialize("legacy-estate-migration").rfind("POLYEC_REALM_60 ", 0) == 0,
+    check(migrated.invariant() && migrated.serialize("legacy-estate-migration").rfind("POLYEC_REALM_67 ", 0) == 0,
               "schema 23 aggregate estate cash migrates to unassigned legacy balance");
     }
 
@@ -1468,7 +1468,7 @@ int main(){try{
     };
     Realm rejected(9201,6,128);
     const auto offer=offer_action(rejected,30);
-    check(realm_actions==282&&realm_obs==3766&&offer.kind==Intent::Offer&&offer.good==3&&
+    check(realm_actions==336&&realm_obs==4414&&offer.kind==Intent::Offer&&offer.good==3&&
           offer.amount==kMilitaryServiceTrialWagePerDay&&offer.term==30&&rejected.mask(governor)[realm_military_service_candidate_begin]==1.f,
           "new Governance choices point to a same-region eligible adult civilian and expose a 30-day, four-cash daily wage offer");
     check(Realm::action_name(offer)=="Đề nghị phục vụ",
@@ -1687,7 +1687,7 @@ int main(){try{
     const auto ration_mask=depot_world.mask(depot_governor,ration_candidates);
     const auto ration_action=ration_candidates[size_t(realm_military_ration_purchase_candidate_begin+1)];
     const auto ration_observation=depot_world.observation(depot_governor);
-    check(realm_actions==282&&realm_state==382&&realm_obs==3766&&realm_schema==std::string("realm-v31")&&
+    check(realm_actions==336&&realm_state==382&&realm_obs==4414&&realm_schema==std::string("realm-v34")&&
           ration_action.kind==Intent::BuyMilitaryRations&&ration_action.target==depot_region&&
           ration_action.good==int(GoodId::DryFood)&&ration_action.amount==4&&ration_mask[size_t(realm_military_ration_purchase_candidate_begin+1)]==1.f&&
           std::abs(ration_observation[size_t(realm_ration_depot_observation_begin+depot_region)])<1e-7f&&
@@ -1718,7 +1718,7 @@ int main(){try{
           "zero and over-limit ration purchases reject without changing accounts or decision counters");
     const auto saved_depot=depot_world.serialize("military-ration-depot-roundtrip");
     Realm restored_depot(1,1,128);
-    check(saved_depot.rfind("POLYEC_REALM_60 ",0)==0,"current ration save uses schema59");
+    check(saved_depot.rfind("POLYEC_REALM_67 ",0)==0,"current ration save includes urban housing capacity");
     if(!restored_depot.deserialize(saved_depot,"military-ration-depot-roundtrip",save_error))
         throw std::runtime_error("schema46 ration save rejected: "+save_error);
     check(restored_depot.military_ration_stock(depot_region)==4,"schema47 load restores the purchased depot stock");
@@ -1746,7 +1746,7 @@ int main(){try{
           "schema45 migration initializes every regional depot empty without creating food");
     const auto saved_service=serving.serialize("military-service-roundtrip");
     Realm restored(1,1,128);
-    check(saved_service.rfind("POLYEC_REALM_60 ",0)==0&&saved_service.find(" MILITARY_SERVICE_3 ")!=std::string::npos&&restored.deserialize(saved_service,"military-service-roundtrip",save_error)&&
+    check(saved_service.rfind("POLYEC_REALM_67 ",0)==0&&saved_service.find(" MILITARY_SERVICE_3 ")!=std::string::npos&&restored.deserialize(saved_service,"military-service-roundtrip",save_error)&&
           restored.person(service_target).military_service.active&&restored.person(service_target).military_service.paid_total==4&&
           restored.person(service_target).military_service.mobilized_until_day==expected_muster_until&&
           restored.military_unit_rosters()[0].mobilized_members==std::vector<uint64_t>{service_target}&&
@@ -1985,11 +1985,11 @@ int main(){try{
           observed[14]==kInactiveCapabilityNeutralValue/100.f,
           "observation preserves slot meaning and fills omitted dimensions with neutral values");
     const auto defaultContract=Realm(1,1,128).model_contract();
-    check(defaultContract=="realm-household-fund-goods30-config-v33"&&
+    check(defaultContract=="realm-household-fund-goods30-config-v40"&&
           custom.model_contract()==defaultContract+"-caps-41",
           "custom schema gets a distinct model contract while default remains compatible");
     const auto saved=custom.serialize("capability-schema");
-    check(saved.rfind("POLYEC_REALM_60 ",0)==0&&saved.find(" CAPABILITY_SCHEMA_1 41 ")!=std::string::npos,
+    check(saved.rfind("POLYEC_REALM_67 ",0)==0&&saved.find(" CAPABILITY_SCHEMA_1 41 ")!=std::string::npos,
           "current save stores selected capability IDs as a stable mask");
     Realm restored(1,1,128);std::string error;
     const bool customLoaded=restored.deserialize(saved,"capability-schema",error);
@@ -2126,7 +2126,7 @@ int main(){try{
     const bool migratedOk=migrated.deserialize(oldSave,bundle,error);
     check(migratedOk,(std::string("schema30 migration: ")+error).c_str());
     check(RealmObservationTestAccess::knowledge_source(migrated,fact)==0&&
-          migrated.serialize(bundle).rfind("POLYEC_REALM_60 ",0)==0&&
+          migrated.serialize(bundle).rfind("POLYEC_REALM_67 ",0)==0&&
           RealmObservationTestAccess::knowledge(migrated,fact).kind==KnowledgeKind::UnknownLegacy&&
           RealmObservationTestAccess::knowledge(migrated,fact).confidence_basis_points==kUnknownKnowledgeConfidence&&
           migrated.observation(1)[realm_knowledge_legacy_observation_index]==
@@ -2187,7 +2187,7 @@ test_canonical_market_transactions();
         try{detail::read_body_state_section(bad,unchanged,2,30);}catch(const std::runtime_error&){rejected=true;}
         check(rejected&&unchanged[1].body_state.sleep_debt==0,"body codec out-of-range rejects before publish");
         Realm latest(37,2,128);const auto current=latest.serialize("body-state");
-        check(current.rfind("POLYEC_REALM_60 ",0)==0&&current.find(" KNOWLEDGE_3 0 ")!=std::string::npos&&current.find(" BODY_3 0 ")!=std::string::npos&&current.find(" HOUSEHOLD_1 0 ")!=std::string::npos&&current.find(" LAND_1 ")!=std::string::npos&&current.find(" LANDUSE_1 0 ")!=std::string::npos&&current.find(" PARENTAGE_1 ")!=std::string::npos&&current.find(" MARKET_2 ")!=std::string::npos&&current.find(" SCHEDULE_7 ")!=std::string::npos&&current.find(" CAPABILITY_SCHEMA_1 63 ")!=std::string::npos&&current.find(" PERSONALITY_1 128 ")!=std::string::npos,"schema40 saves existing world data, source ledgers and six personality values per person");
+        check(current.rfind("POLYEC_REALM_67 ",0)==0&&current.find(" KNOWLEDGE_3 0 ")!=std::string::npos&&current.find(" BODY_3 0 ")!=std::string::npos&&current.find(" HOUSEHOLD_1 0 ")!=std::string::npos&&current.find(" LAND_1 ")!=std::string::npos&&current.find(" LANDUSE_1 0 ")!=std::string::npos&&current.find(" PARENTAGE_1 ")!=std::string::npos&&current.find(" MARKET_2 ")!=std::string::npos&&current.find(" SCHEDULE_7 ")!=std::string::npos&&current.find(" CAPABILITY_SCHEMA_1 63 ")!=std::string::npos&&current.find(" PERSONALITY_1 128 ")!=std::string::npos&&current.find(" URBAN_HOUSING_1 ")!=std::string::npos,"schema40 saves existing world data, source ledgers, urban housing and six personality values per person");
         std::string legacy=test_fixtures::save_as_v25(current);const auto body=legacy.find(" BODY_2 0 ");check(body!=std::string::npos,"empty body section fixture");legacy.erase(body);legacy.replace(0,15,"POLYEC_REALM_17");
         Realm migrated(1,1,128);std::string error;check(migrated.deserialize(legacy,"body-state",error),"schema 17 body migration");
         check(migrated.person(1).body_state.sleep_debt==0&&migrated.person(1).body_state.exertion==0,"schema 17 body defaults");
@@ -2245,20 +2245,20 @@ test_canonical_market_transactions();
               "each policy observation reads the requested actor's own body values");
         check(bodyObservation.fingerprint()==beforeRead&&bodyObservation.invariant(),
               "reading body observation does not mutate the Realm");
-        check(std::string(bodyObservation.model_contract())=="realm-household-fund-goods30-config-v33",
+        check(std::string(bodyObservation.model_contract())=="realm-household-fund-goods30-config-v40",
               "non-timeline body observation has a new model contract");
         const auto timelineResult=bodyObservation.execute(ScheduleCommand{1,
             bodyObservation.person(1).decisions+1,ScheduleCommand::Operation::Submit,0,0,1,0,1000});
         check(timelineResult.success&&bodyObservation.model_contract()==
-              std::string("realm-worksite-payroll-goods30-config-v35"),
+              std::string("realm-worksite-payroll-goods30-config-v41"),
               "timeline body observation has a separately versioned model contract");
         Realm historicalBody(37,2,128,false,GameplayConfig::historical());
-        check(std::string(historicalBody.model_contract())=="realm-household-fund-goods30-v33",
+        check(std::string(historicalBody.model_contract())=="realm-household-fund-goods30-v40",
               "historical-default non-timeline contract includes the body observation version");
         const auto historicalTimeline=historicalBody.execute(ScheduleCommand{1,
             historicalBody.person(1).decisions+1,ScheduleCommand::Operation::Submit,0,0,1,0,1000});
         check(historicalTimeline.success&&std::string(historicalBody.model_contract())==
-              "realm-worksite-payroll-goods30-v35",
+              "realm-worksite-payroll-goods30-v41",
               "historical-default timeline contract includes the body observation version");
     }
     {
@@ -4105,14 +4105,15 @@ test_canonical_market_transactions();
         struct RecipeCase {
             uint64_t seed;
             EstablishmentIndustry industry;
-            GoodId first_input;
-            GoodId second_input;
+            std::array<GoodId,3> inputs;
+            size_t input_count;
             GoodId output;
             const char* name;
         };
         constexpr std::array<RecipeCase,2> remainingRecipes{{
-            {53,EstablishmentIndustry::ToolWorkshop,GoodId::Iron,GoodId::Fuel,GoodId::Tools,"Tools"},
-            {55,EstablishmentIndustry::MilitarySupplyWorkshop,GoodId::Tools,GoodId::Cloth,
+            {53,EstablishmentIndustry::ToolWorkshop,{GoodId::Iron,GoodId::Copper,GoodId::Fuel},3,
+             GoodId::Tools,"Tools"},
+            {55,EstablishmentIndustry::MilitarySupplyWorkshop,{GoodId::Tools,GoodId::Cloth,GoodId::Fuel},2,
              GoodId::MilitarySupply,"MilitarySupply"}
         }};
         for(const auto& recipe:remainingRecipes){
@@ -4136,8 +4137,8 @@ test_canonical_market_transactions();
                                      recipeTokens.begin();
             check(establishAt<recipeTokens.size(),"secondary recipe save locates establishment stock");
             const size_t establishmentRecord=establishAt+2;
-            for(const GoodId input:{recipe.first_input,recipe.second_input}){
-                const size_t inputIndex=size_t(input);
+            for(size_t input=0;input<recipe.input_count;++input){
+                const size_t inputIndex=size_t(recipe.inputs[input]);
                 recipeTokens[establishmentRecord+7+inputIndex]="1";
                 recipeTokens[18+inputIndex]=std::to_string(std::stoll(recipeTokens[18+inputIndex])+1);
             }
@@ -4162,8 +4163,8 @@ test_canonical_market_transactions();
             check(recipeUninterrupted.fingerprint()==recipeResumed.fingerprint(),
                   "secondary recipe save/load continues like uninterrupted time");
             const auto completedSite=recipeResumed.establishments()[0];
-            check(completedSite.stock[size_t(recipe.first_input)]==0&&
-                  completedSite.stock[size_t(recipe.second_input)]==0&&
+            check(std::none_of(recipe.inputs.begin(),recipe.inputs.begin()+std::ptrdiff_t(recipe.input_count),
+                      [&](GoodId input){return completedSite.stock[size_t(input)]!=0;})&&
                   completedSite.stock[size_t(recipe.output)]==1,
                   "secondary recipe consumes exact inputs and creates one output");
             check(completedSite.processed_work_units.at(recipeWorker)==2&&
@@ -4312,9 +4313,9 @@ test_canonical_market_transactions();
         }
         check(legacyDailyOutput>0,"timeline-off people phase retains legacy daily product source");
         check(timelineDailyOutput==0,"timeline people phase does not create products from region or job labels");
-        check(std::string(legacyPeople.model_contract())=="realm-household-fund-goods30-config-v33",
+        check(std::string(legacyPeople.model_contract())=="realm-household-fund-goods30-config-v40",
               "timeline-off model contract remains compatible");
-        check(std::string(timelinePeople.model_contract())=="realm-worksite-payroll-goods30-config-v35",
+        check(std::string(timelinePeople.model_contract())=="realm-worksite-payroll-goods30-config-v41",
               "timeline model contract versions changed production sources");
     }
     {
@@ -4394,14 +4395,3 @@ test_canonical_market_transactions();
     auto start=std::chrono::steady_clock::now();for(int day=0;day<90;++day){for(auto id:w.due(Family::Civilian)){auto mask=w.mask(id);int a=mask[1+w.person(id).region]?1+w.person(id).region:0;w.execute({id,w.person(id).decisions+1,w.candidates(id)[a]});}w.advance();check(w.invariant(),"profile A accounting");}
     std::cout<<"REALM TESTS: "<<checks<<" checks passed; profile A10000 persons, "<<w.relations().size()<<" sparse edges;90days "<<std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count()<<"s\n";return 0;
 }catch(const std::exception&e){std::cerr<<"FAIL after "<<checks<<": "<<e.what()<<'\n';return 1;}}
-
-
-
-
-
-
-
-
-
-
-\n

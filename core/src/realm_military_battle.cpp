@@ -76,7 +76,9 @@ RealmResult Realm::execute(const MilitaryBattleCommand& command){
     if(std::adjacent_find(defenders.begin(),defenders.end())!=defenders.end())
         return {false,"A volunteer may only be listed once"};
     int defense_score=0;
+    std::vector<uint64_t> supplied_defenders;
     const auto battleReady=military_battle_candidates(raid_it->target_region);
+    supplied_defenders.reserve(defenders.size());
     for(const uint64_t id:defenders){
         if(id==0||id>people_.size())return {false,"Unknown defending volunteer"};
         const auto& volunteer=person(id);
@@ -84,7 +86,10 @@ RealmResult Realm::execute(const MilitaryBattleCommand& command){
             return {false,"Every defender must be alive, healthy, consenting, mobilized and present at Nam Cang"};
         const int military=capability_value(id,LegacyCapability::Military);
         const int weapon=volunteer.inventory[size_t(GoodId::Weapon)]>0?1:0;
-        defense_score+=1+military/50+weapon;
+        const int leather_armor=volunteer.inventory[size_t(GoodId::Leather)]>0?1:0;
+        const bool supplied=volunteer.inventory[size_t(GoodId::MilitarySupply)]>0;
+        defense_score+=1+military/50+weapon+leather_armor+int(supplied);
+        if(supplied)supplied_defenders.push_back(id);
     }
     if(provinces_[size_t(raid_it->target_region)].stock[size_t(GoodId::Salt)]<0)
         return {false,"Port Salt ledger is invalid"};
@@ -100,6 +105,9 @@ RealmResult Realm::execute(const MilitaryBattleCommand& command){
     int64_t looted=0;
     auto& partner=foreign_trade_partners_[size_t(raid.partner_id)];
     auto& port=provinces_[size_t(raid.target_region)];
+    if(consumed_[size_t(GoodId::MilitarySupply)]>
+       std::numeric_limits<int64_t>::max()-int64_t(supplied_defenders.size()))
+        return {false,"MilitarySupply consumption ledger overflow"};
     if(!repelled&&surviving_attackers>0){
         looted=std::min<int64_t>({surviving_attackers,port.stock[size_t(GoodId::Salt)],partner.salt_capacity});
         if(looted>std::numeric_limits<int64_t>::max()-partner.goods[size_t(GoodId::Salt)])
@@ -111,11 +119,14 @@ RealmResult Realm::execute(const MilitaryBattleCommand& command){
 
     raid.defense_score=defense_score;raid.attacker_losses=attacker_losses;
     raid.defender_casualties=defender_casualties;raid.salt_looted=looted;
-    raid.defenders=defenders;raid.resolved_day=day_;
+    raid.defenders=defenders;raid.supplied_defenders=supplied_defenders;raid.resolved_day=day_;
     raid.status=command.retreat?MilitaryRaidStatus::Withdrawn:
         (repelled?MilitaryRaidStatus::Repelled:MilitaryRaidStatus::Successful);
     for(int i=0;i<defender_casualties;++i)
         mutable_person(defenders[size_t(defenders.size()-1-size_t(i))]).health=0;
+    for(const uint64_t id:supplied_defenders)
+        --mutable_person(id).inventory[size_t(GoodId::MilitarySupply)];
+    consumed_[size_t(GoodId::MilitarySupply)]+=int64_t(supplied_defenders.size());
     if(looted>0){
         port.stock[size_t(GoodId::Salt)]-=looted;
         partner.goods[size_t(GoodId::Salt)]+=looted;

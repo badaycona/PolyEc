@@ -27,6 +27,10 @@
 #include "polyec/military_obligation_section_codec.hpp"
 #include "polyec/military_supply_obligation_section_codec.hpp"
 #include "polyec/military_raid_section_codec.hpp"
+#include "polyec/urban_residence_section_codec.hpp"
+#include "polyec/urban_housing_section_codec.hpp"
+#include "polyec/municipal_council_section_codec.hpp"
+#include "polyec/private_housing_section_codec.hpp"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -52,7 +56,7 @@ uint64_t hash_text(const std::string& s) {
 
 // Text format uses explicit scalar fields, not compiler-dependent struct bytes.
 std::string Realm::serialize(const std::string&bundle)const{
-    std::ostringstream s;s<<"POLYEC_REALM_60 "<<std::quoted(bundle)<<' ';
+    std::ostringstream s;s<<"POLYEC_REALM_67 "<<std::quoted(bundle)<<' ';
     detail::RealmPrimaryHeader header{};
     header.day=day_;header.regions=regions_;header.seed=seed_;header.next_id=next_id_;header.next_fact=next_fact_;
     header.opening_money=opening_money_;header.carrier=carrier_;header.estate=estate_;header.endowment=endowment_;
@@ -97,12 +101,23 @@ std::string Realm::serialize(const std::string&bundle)const{
     detail::write_military_obligation_section(s,military_obligations_,proposals_);
     detail::write_military_supply_obligation_section(s,military_supply_obligations_);
     detail::write_military_raid_section(s,military_raids_);
+    detail::write_urban_residence_section(s,people_);
+    detail::write_urban_housing_section(s,urban_housing_capacity_);
+    detail::write_municipal_council_section(s,municipal_councils_);
+    detail::write_private_housing_section(s,private_residences_);
     return s.str();
 }
 bool Realm::deserialize(const std::string&data,const std::string&bundle,std::string&error,const std::array<int64_t,kGoodIdCount>& bonded_goods){try{
     if(data.size()>256*1024*1024)throw std::runtime_error("Save size limit");
     auto stagedWorld=std::make_unique<Realm>(1,1,128);Realm& w=*stagedWorld;w.land_holdings_.clear();w.land_use_rights_.clear();std::istringstream s(data);std::string magic,b;s>>magic>>std::quoted(b);
     int schema=0;
+    if(magic=="POLYEC_REALM_67")schema=67;
+    if(magic=="POLYEC_REALM_66")schema=66;
+    if(magic=="POLYEC_REALM_65")schema=65;
+    if(magic=="POLYEC_REALM_64")schema=64;
+    if(magic=="POLYEC_REALM_63")schema=63;
+    if(magic=="POLYEC_REALM_62")schema=62;
+    if(magic=="POLYEC_REALM_61")schema=61;
     if(magic=="POLYEC_REALM_60")schema=60;
     if(magic=="POLYEC_REALM_59")schema=59;
     if(magic=="POLYEC_REALM_58")schema=58;
@@ -203,6 +218,17 @@ bool Realm::deserialize(const std::string&data,const std::string&bundle,std::str
         if(schema>=51)detail::read_military_obligation_section(tail,w.military_obligations_,w.proposals_,w.people_.size(),w.regions_,w.day_,w.next_id_);
         if(schema>=54)detail::read_military_supply_obligation_section(tail,w.military_supply_obligations_,w.military_obligations_,w.people_.size(),w.regions_,w.day_,w.next_id_);
         if(schema>=60)detail::read_military_raid_section(tail,w.military_raids_,w.people_.size(),w.regions_,w.day_,w.next_id_);
+        if(schema>=61)detail::read_urban_residence_section(tail,w.people_,w.regions_);
+        if(schema>=64)detail::read_urban_housing_section(tail,w.regions_,w.urban_housing_capacity_);
+        else w.initialize_urban_housing_baseline();
+        if(schema>=65)detail::read_municipal_council_section(tail,w.regions_,w.municipal_councils_);
+        else if(w.regions_==int(kAtlasTerritoryCount)-1){
+            w.municipal_councils_.resize(kAtlasTerritoryCount);
+            for(size_t site=0;site<w.municipal_councils_.size();++site)w.municipal_councils_[site].site_id=uint8_t(site);
+        }
+        if(schema>=67)w.private_residences_=detail::read_private_housing_section(
+            tail,w.people_.size(),w.regions_,w.day_,w.next_id_,w.land_holdings_);
+        else w.private_residences_.clear();
         tail>>std::ws;if(!tail.eof())throw std::runtime_error("Save config trailing fields");
         const auto read_position=s.tellg();
         s.str(data.substr(0,config_at));s.clear();s.seekg(read_position);

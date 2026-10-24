@@ -315,9 +315,9 @@ int main(int argc,char** argv){try{
         const int64_t maximumGrant=beforeTreasury/20;
         const auto urbanChoices=urban.candidates(governor);
         const auto urbanMask=urban.mask(governor,urbanChoices);
-        check(realm_actions==282&&realm_obs==3766&&
-              urban.model_contract()=="realm-household-fund-goods30-config-v33",
-              "urban grant and relief actions change policy meaning without changing tensor dimensions and receive a new model contract");
+        check(realm_actions==336&&realm_obs==4414&&
+              urban.model_contract()=="realm-household-fund-goods30-config-v40",
+              "council approval and refusal actions add 54 choices and receive a new model contract");
         check(urban.observation(governor)[size_t(realm_municipal_fund_observation_index)]==0.f&&
               urban.observation(65)[size_t(realm_municipal_fund_observation_index)]==0.f,
               "the new municipal balance feature starts at zero and reveals no council balance to a civilian policy");
@@ -405,7 +405,7 @@ int main(int argc,char** argv){try{
               "a new grant becomes available after 30 days and is recalculated from the then current treasury");
 
         const std::string urbanSave=urban.serialize("urban-civic-fund-test");
-        check(urbanSave.rfind("POLYEC_REALM_58 ",0)==0&&
+        check(urbanSave.rfind("POLYEC_REALM_67 ",0)==0&&
               urbanSave.find(" MUNICIPAL_FUNDS_1 27 ")!=std::string::npos,
               "new saves store each urban fund and its most recent grant period");
         Realm resumed(1,1,128);

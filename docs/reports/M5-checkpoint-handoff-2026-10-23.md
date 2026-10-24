@@ -49,3 +49,9 @@ Việc commit/push được thực hiện theo yêu cầu hiện tại của ng�
 
 
 Mã commit nội dung tại điểm dừng: `918323d008c7eee7ed82c787f162a839e936d096` trên nhánh `main`; nhánh đích là `origin/main`. Tài liệu này được cập nhật ngay sau commit để giữ lại mã nhận dạng; lần push được xác minh sau commit tài liệu.
+
+## Đính chính sau khi người dùng yêu cầu tiếp tục phát triển — 2026-10-23
+
+Bản handoff ở phần trên lưu trạng thái tại thời điểm dừng trước đó; yêu cầu mới hơn của người dùng là tiếp tục code cho tới khi hoàn thiện gameplay trước RL. Do đó checkpoint commit không phải trạng thái kết thúc nhiệm vụ.
+
+Sau khi sửa Python smoke dùng đúng `transport_route_command` cho Atlas27, đã build `polyec_env` Release và smoke pass với schema realm-v31; CTest `military_battle_tests` build lại và pass1/1 sau query candidate cuối. GDExtension Windows Release `polyec` build pass. Godot4.5.1 headless editor scan pass; UI formatter smoke 41 checks (thêm các kết quả chờ, đẩy lui, vượt phòng thủ và rút lui); native smoke19/19; app UI smoke51/51, gồm kiểm tra hai command battle được đăng ký qua GDExtension. Các kết quả này kiểm API, formatter và app shell, chưa phải một trận trong Realm đang chạy với model phù hợp. Chi tiết xuất lệnh/target và giới hạn sẽ nằm trong mục cập nhật cùng nhóm bên dưới; các kết quả của checkpoint cũ không bị sửa ngược.

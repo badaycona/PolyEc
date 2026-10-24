@@ -25,7 +25,25 @@ py::dict realm_view(const Realm&w,uint64_t observer){
         x["military_ration_stock"]=w.military_ration_stock(int(ps.size()));
         x["military_supplementary_ration_stock"]=w.military_ration_stock(int(ps.size()),int(GoodId::SupplementaryFood));
         x["road"]=p.road;x["jobs"]=p.jobs;x["employed"]=p.employed;x["school"]=p.school;x["school_used"]=p.school_used;ps.append(x);}
-    d["provinces"]=ps;py::list fs;for(auto&f:v.facts){py::dict x;x["id"]=f.id;x["parent"]=f.parent;x["kind"]=f.kind;x["actor"]=f.actor;x["day"]=f.day;x["amount"]=f.amount;fs.append(x);}d["facts"]=fs;
+    d["provinces"]=ps;
+    py::list census;const auto& observer_person=w.person(observer);
+    const auto councils=w.municipal_councils();
+    for(const auto& row:w.urban_census())if(observer_person.sovereign||row.territory_id==observer_person.region){
+        py::dict item;item["site_id"]=row.site_id;item["territory_id"]=row.territory_id;
+        item["urban_residents"]=row.urban_residents;item["rural_residents"]=row.rural_residents;
+        item["unknown_residence"]=row.unknown_residence;item["housing_capacity"]=row.housing_capacity;
+        item["unhoused_residents"]=row.unhoused_residents;item["available_beds"]=row.available_beds;
+        if(row.site_id<councils.size()){
+            const auto& council=councils[row.site_id];
+            item["council_representative_id"]=council.representative;
+            item["council_nominee_id"]=council.nominee;
+            item["council_nomination_day"]=council.nomination_day;
+            item["council_term_end_day"]=council.term_end_day;
+        }
+        census.append(item);
+    }
+    d["urban_census"]=census;
+    py::list fs;for(auto&f:v.facts){py::dict x;x["id"]=f.id;x["parent"]=f.parent;x["kind"]=f.kind;x["actor"]=f.actor;x["day"]=f.day;x["amount"]=f.amount;fs.append(x);}d["facts"]=fs;
     py::list knowledge;for(const auto&k:v.knowledge){py::dict x;x["observer"]=k.observer;x["fact"]=k.fact;x["arrives"]=k.arrives;
         x["source_investigation_id"]=k.source_investigation_id;x["kind"]=unsigned(k.kind);x["confidence_basis_points"]=k.confidence_basis_points;knowledge.append(x);}
     d["knowledge"]=knowledge;return d;
@@ -143,7 +161,8 @@ void bind_realm(py::module_&m){m.attr("REALM_OBS")=realm_obs;m.attr("REALM_ACTIO
         row["created_day"]=raid.created_day;row["resolved_day"]=raid.resolved_day;row["force_units"]=raid.force_units;
         row["defense_score"]=raid.defense_score;row["attacker_losses"]=raid.attacker_losses;
         row["defender_casualties"]=raid.defender_casualties;row["salt_looted"]=raid.salt_looted;
-        row["status"]=int(raid.status);row["defenders"]=raid.defenders;result.append(row);}return result;})
+        row["status"]=int(raid.status);row["defenders"]=raid.defenders;
+        row["supplied_defenders"]=raid.supplied_defenders;result.append(row);}return result;})
     .def_property_readonly("military_supply_obligations",[](const Realm&w){py::list result;for(const auto&item:w.military_supply_obligations()){
         py::dict row;row["id"]=item.id;row["personnel_obligation_id"]=item.personnel_obligation_id;
         row["obligor"]=item.obligor;row["recipient"]=item.recipient;row["source_region"]=item.source_region;

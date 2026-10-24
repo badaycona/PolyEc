@@ -9,7 +9,9 @@
 #include "polyec/market_manager.hpp"
 #include "polyec/household_fund.hpp"
 #include "polyec/land_holding.hpp"
+#include "polyec/private_residence.hpp"
 #include "polyec/world_atlas.hpp"
+#include "polyec/atlas_settlements.hpp"
 #include "polyec/jobs/job.hpp"
 #include <array>
 #include <cstdint>
@@ -24,7 +26,7 @@
 namespace polyec {
 inline constexpr size_t kOrganizationGroupsPerTerritory=4;
 inline constexpr size_t kOrganizationCount=kAtlasTerritoryCount*kOrganizationGroupsPerTerritory;
-inline constexpr const char* realm_schema="realm-v31";
+inline constexpr const char* realm_schema="realm-v34";
 inline constexpr const char* realm_reward_version="realm-v14-person-enterprise-equity-atlas-products-v1";
 inline constexpr int realm_base_state=128, realm_features=12;
 inline constexpr int realm_pre_ration_state=realm_base_state+int((kAtlasTerritoryCount-7)*kLegacyGoodCount);
@@ -36,7 +38,13 @@ inline constexpr int realm_supplementary_ration_observation_count=int(kAtlasTerr
 inline constexpr int realm_military_supply_obligation_observation_begin=realm_supplementary_ration_observation_begin+realm_supplementary_ration_observation_count;
 inline constexpr int realm_military_supply_obligation_observation_count=int(kAtlasTerritoryCount)*2;
 inline constexpr int realm_state=realm_military_supply_obligation_observation_begin+realm_military_supply_obligation_observation_count;
-inline constexpr int realm_actions=282;
+inline constexpr int realm_actions=336;
+inline constexpr int realm_tea_social_candidate=24;
+inline constexpr int realm_incense_social_candidate=25;
+inline constexpr int realm_council_nomination_candidate=71;
+inline constexpr int realm_council_accept_candidate_begin=282;
+inline constexpr int realm_council_reject_candidate_begin=309;
+inline constexpr int realm_council_decision_candidate_count=27;
 inline constexpr int realm_sleep_debt_observation_index=108, realm_exertion_observation_index=109;
 inline constexpr int realm_personality_observation_begin=110, realm_personality_observation_count=6;
 inline constexpr int realm_knowledge_evidence_observation_index=88, realm_knowledge_legacy_observation_index=89;
@@ -87,12 +95,33 @@ inline constexpr int kMilitaryRaidUnitMaximum=8;
 inline constexpr int64_t kMilitaryRaidCashPerUnit=25;
 inline constexpr int kMilitaryRaidTargetRegion=8;
 inline constexpr int64_t kMilitarySupplementaryRationOpeningStock=32;
+inline constexpr int64_t kUrbanHousingBedsPerBlock=8;
+inline constexpr int64_t kUrbanHousingProjectBudget=80;
+inline constexpr int kUrbanHousingProjectTermDays=60;
+inline constexpr int64_t kPrivateResidenceBuildCost=40;
+inline constexpr int64_t kPrivateResidenceConstructionMaterial=2;
+inline constexpr int64_t kPrivateResidenceTools=1;
+inline constexpr int64_t kPrivateResidenceBeds=4;
+inline constexpr int kPrivateResidenceBuildDays=30;
+inline constexpr int64_t kPrivateResidenceRentPerPeriod=2;
+inline constexpr int kPrivateResidenceRentPeriodDays=30;
+inline constexpr int kPrivateResidenceLeaseDays=180;
+inline constexpr int kPrivateResidenceOfferDays=7;
 inline constexpr int realm_municipal_workshop_candidate_begin=36, realm_municipal_workshop_candidate_count=21;
 inline constexpr int realm_municipal_special_candidate_begin=57, realm_municipal_special_candidate_count=12;
 inline constexpr std::array<int64_t,realm_military_ration_purchase_candidate_count> kMilitaryRationPurchaseQuantities{1,4,16,64};
 inline constexpr int realm_obs=realm_state+realm_actions*realm_features;
 enum class Family:int { Governance=0,Economic=1,Civilian=2 };
-enum class Intent:int { Hold,Buy,Sell,Travel,Borrow,Repay,Project,Hire,Tax,Aid,Investigate,Offer,Accept,Reject,Work,Study,Rest,Social,Join,Migrate,Support,Appoint,Mobilize,Resign,Marry,CreateEstablishment,TransferEstablishmentGoods,AuthorizeWorkAtSite,WorkAtSite,BuyMilitaryRations,ShipMilitaryRations,FundMunicipal,ForeignTrade };
+inline constexpr uint8_t kNoUrbanSite=255;
+enum class ResidenceKind:uint8_t { Unknown=0,Rural=1,Urban=2 };
+inline constexpr uint64_t urban_residence_hash_v1(uint64_t seed,uint64_t person_id) noexcept {
+    uint64_t value=seed^(person_id*0x9E3779B97F4A7C15ull);
+    value+=0x9E3779B97F4A7C15ull;
+    value=(value^(value>>30))*0xBF58476D1CE4E5B9ull;
+    value=(value^(value>>27))*0x94D049BB133111EBull;
+    return value^(value>>31);
+}
+enum class Intent:int { Hold,Buy,Sell,Travel,Borrow,Repay,Project,Hire,Tax,Aid,Investigate,Offer,Accept,Reject,Work,Study,Rest,Social,Join,Migrate,Support,Appoint,Mobilize,Resign,Marry,CreateEstablishment,TransferEstablishmentGoods,AuthorizeWorkAtSite,WorkAtSite,BuyMilitaryRations,ShipMilitaryRations,FundMunicipal,ForeignTrade,NominateCouncil,ResolveCouncilNomination };
 struct WorkAssignment { int job=-1; int job_kind=0; };
 struct HouseholdMembership { uint64_t household_id=0; };
 // Named bridge for the six positional stats retained by legacy saves. This is
@@ -198,6 +227,7 @@ struct MilitaryRaid {
     int64_t salt_looted=0;
     MilitaryRaidStatus status=MilitaryRaidStatus::Pending;
     std::vector<uint64_t> defenders;
+    std::vector<uint64_t> supplied_defenders;
     bool operator==(const MilitaryRaid&) const = default;
 };
 // An external partner explicitly funds an abstract coastal raid; no enemy
@@ -266,6 +296,8 @@ struct Person {
     uint64_t decisions=0,sampling=0;
     WorkAssignment work_assignment;
     int region=0,age_days=0,health=100,skill=0,busy_until=0,destination=-1;
+    ResidenceKind residence_kind=ResidenceKind::Unknown;
+    uint8_t urban_site_id=kNoUrbanSite;
     int goal=0,school_days=0,social=0; bool alive=true;
     int tax_remainder=0;
     int organization=0;
@@ -285,6 +317,18 @@ struct Person {
         if(id==CapabilityId::LaborSkill)return skill;
         throw std::out_of_range("capability ID");
     }
+};
+struct UrbanCensus {
+    uint8_t site_id=0,territory_id=0;
+    uint32_t urban_residents=0,rural_residents=0,unknown_residence=0;
+    int64_t housing_capacity=0,unhoused_residents=0,available_beds=0;
+    bool operator==(const UrbanCensus&) const = default;
+};
+struct MunicipalCouncil {
+    uint8_t site_id=0;
+    uint64_t representative=0,nominee=0;
+    int nomination_day=-1,term_end_day=-1;
+    bool operator==(const MunicipalCouncil&) const = default;
 };
 // Pure read-only job classifier: returns the shared singleton descriptor for the
 // person's active assignment at current_day, or nullptr for no active job.
@@ -452,6 +496,11 @@ class Realm {
     friend class RealmDayPipeline;
     friend struct RealmObservationTestAccess;
     friend struct RealmTransportTestAccess;
+    friend struct RealmUrbanResidenceTestAccess;
+    friend struct RealmMedicineTestAccess;
+    friend struct RealmSupplementaryFoodTestAccess;
+    friend struct RealmMunicipalCouncilTestAccess;
+    friend struct RealmPrivateHousingTestAccess;
 public:
 #ifdef POLYEC_ENABLE_REALM_PHASE_PROFILE
     static constexpr size_t day_phase_count = 14;
@@ -496,6 +545,8 @@ RealmResult execute(const EstablishmentCommand& command);
     RealmResult execute(const LandTitleTransferCommand& command);
     RealmResult execute(const LandUseGrantCommand& command);
     RealmResult execute(const LandUseRevokeCommand& command);
+    RealmResult execute(const PrivateResidenceBuildCommand& command);
+    RealmResult execute(const PrivateHousingCommand& command);
     const WorkCreditRegions& work_credits() const {return work_credits_;}
     void advance(int days=1);
     void advance_ticks(int64_t ticks);
@@ -517,8 +568,11 @@ std::vector<Establishment> establishments() const { return establishments_; }
     std::vector<MilitaryObligation> military_obligations() const { return military_obligations_; }
     std::vector<MilitarySupplyObligation> military_supply_obligations() const { return military_supply_obligations_; }
     std::vector<MilitaryRaid> military_raids() const { return military_raids_; }
+    std::vector<UrbanCensus> urban_census() const;
+    std::vector<MunicipalCouncil> municipal_councils() const { return municipal_councils_; }
     std::vector<LandHolding> land_holdings() const { return land_holdings_; }
     std::vector<LandUseRight> land_use_rights() const { return land_use_rights_; }
+    std::vector<PrivateResidence> private_residences() const { return private_residences_; }
     int64_t royal_reference()const{return royal_reference_;}
     std::array<int64_t,2> royal_funds()const{return {credit_pool_,restricted_fund_};}
     std::vector<Proposal> offers(uint64_t observer)const;
@@ -527,6 +581,7 @@ std::vector<Establishment> establishments() const { return establishments_; }
     bool reroll(int slot);
     RealmResult route_command(uint64_t actor,int from,int to,bool open);
     int distance(int from,int to)const;
+    int travel_days(int from,int to)const;
     Draft draft()const{return draft_;}
     bool choose(int card);
     bool save(const std::string& path,const std::string& bundle,std::string& error) const;
@@ -568,8 +623,8 @@ std::vector<Establishment> establishments() const { return establishments_; }
     std::string model_contract() const {
         std::string result;
         if (schedule_book_.timeline_contract)
-            result=config_.historical_defaults() ? "realm-worksite-payroll-goods30-v35" : "realm-worksite-payroll-goods30-config-v35";
-        else result=config_.historical_defaults() ? "realm-household-fund-goods30-v33" : "realm-household-fund-goods30-config-v33";
+            result=config_.historical_defaults() ? "realm-worksite-payroll-goods30-v41" : "realm-worksite-payroll-goods30-config-v41";
+        else result=config_.historical_defaults() ? "realm-household-fund-goods30-v40" : "realm-household-fund-goods30-config-v40";
         if(capability_mask_!=kDefaultCapabilityMask)result+="-caps-"+std::to_string(capability_mask_);
         return result;
     }
@@ -632,8 +687,11 @@ private:
     int day_=0,regions_=6;uint64_t seed_=0,next_id_=1,next_fact_=1;
     std::mt19937_64 rng_;Draft draft_;
     std::vector<Person> people_;std::vector<Province> provinces_;std::vector<int64_t> military_ration_depots_,military_supplementary_ration_depots_;
-    std::vector<Edge> edges_;std::vector<Loan> loans_;std::vector<Project> projects_;std::vector<Establishment> establishments_;std::vector<LandHolding> land_holdings_;std::vector<LandUseRight> land_use_rights_;
+    std::vector<Edge> edges_;std::vector<Loan> loans_;std::vector<Project> projects_;std::vector<Establishment> establishments_;std::vector<LandHolding> land_holdings_;std::vector<LandUseRight> land_use_rights_;std::vector<PrivateResidence> private_residences_;
     std::vector<Fact> facts_;std::vector<Knowledge> knowledge_;std::vector<Proposal> proposals_;
+    std::vector<int64_t> urban_housing_capacity_;
+    std::vector<MunicipalCouncil> municipal_councils_;
+    std::vector<int64_t> urban_residents_cache_,urban_arrivals_reserved_;
     std::vector<MarketOrder> market_orders_;
     std::vector<NationalTransportRoute> national_transport_routes_;
     mutable bool atlas_distance_cache_valid_=false;
@@ -675,6 +733,7 @@ private:
     std::map<uint64_t,int64_t> household_funds_;
     std::array<std::array<bool,7>,7> routes_{};
     void rebuild_atlas_distance_cache() const;
+    int person_travel_days(const Person& person,int destination) const;
     std::array<int64_t,kOrganizationCount> organization_funds_{};
     std::vector<int64_t> municipal_funds_;
     std::vector<int> municipal_last_funded_period_;
@@ -726,10 +785,12 @@ private:
     bool read_court(std::istream& stream,int schema);
     bool legal(uint64_t actor,const Candidate& c,std::string& reason) const;
     void refresh_demography();
+    void initialize_urban_housing_baseline();
     void day_begin();
     void day_body();
     void day_payroll();
     void day_people();
+    void process_private_housing();
     void settle_market_day();
     void cancel_market_orders(uint64_t owner);
     bool place_essential_market_order(Person& person,Province& province);

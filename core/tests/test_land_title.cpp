@@ -24,9 +24,9 @@ void test_land_title_registry(){
     check(world->invariant(),"genesis land registry satisfies Realm invariant");
 
     const auto current=world->serialize("land-title");
-    check(current.rfind("POLYEC_REALM_54 ",0)==0&&current.find(" LAND_1 ")!=std::string::npos&&
+    check(current.rfind("POLYEC_REALM_67 ",0)==0&&current.find(" LAND_1 ")!=std::string::npos&&
               current.find(" LANDUSE_1 0 ")!=std::string::npos,
-          "land titles and empty use-right registry persist in current schema47");
+          "land titles and empty use-right registry persist in current schema67");
     auto restored=std::make_unique<Realm>(1,1,128);std::string error;
     const bool initialRoundTrip=restored->deserialize(current,"land-title",error);
     check(initialRoundTrip&&restored->land_holdings().size()==titles.size()&&
@@ -153,16 +153,17 @@ void test_land_title_registry(){
     std::vector<std::string> householdTokens;
     { std::istringstream input(transferSave); std::string item; while (input >> item) householdTokens.push_back(item); }
     const size_t personCount = size_t(world->count());
+    const size_t personWidth = 23 + Person{}.stats.values.size() + kGoodIdCount;
     size_t personStart = householdTokens.size();
-    for (size_t i = 0; i + 1 + 56 * personCount <= householdTokens.size(); ++i) {
+    for (size_t i = 0; i + 1 + personWidth * personCount <= householdTokens.size(); ++i) {
         if (householdTokens[i] != std::to_string(personCount)) continue;
         bool dense = true;
         for (size_t j = 0; j < personCount; ++j)
-            if (householdTokens[i + 1 + 56 * j] != std::to_string(j + 1)) { dense = false; break; }
+            if (householdTokens[i + 1 + personWidth * j] != std::to_string(j + 1)) { dense = false; break; }
         if (dense) { personStart = i + 1; break; }
     }
     check(personStart < householdTokens.size(), "guardian title fixture locates Person save block");
-    householdTokens[personStart + 56 * (minor - 1) + 1] = std::to_string(adult);
+    householdTokens[personStart + personWidth * (minor - 1) + 1] = std::to_string(adult);
     std::ostringstream guardianSave;
     for (size_t i = 0; i < householdTokens.size(); ++i) {
         if (i) guardianSave << ' ';
@@ -270,16 +271,16 @@ void test_land_title_registry(){
         std::vector<std::string> tokens;
         { std::istringstream input(transferSave); std::string item; while (input >> item) tokens.push_back(item); }
         size_t start = tokens.size();
-        for (size_t i = 0; i + 1 + 56 * personCount <= tokens.size(); ++i) {
+        for (size_t i = 0; i + 1 + personWidth * personCount <= tokens.size(); ++i) {
             if (tokens[i] != std::to_string(personCount)) continue;
             bool dense = true;
             for (size_t j = 0; j < personCount; ++j)
-                if (tokens[i + 1 + 56 * j] != std::to_string(j + 1)) { dense = false; break; }
+                if (tokens[i + 1 + personWidth * j] != std::to_string(j + 1)) { dense = false; break; }
             if (dense) { start = i + 1; break; }
         }
-        if (!id || id > personCount || field >= 56 || start == tokens.size())
+        if (!id || id > personCount || field >= personWidth || start == tokens.size())
             throw std::runtime_error("land transfer Person fixture index");
-        tokens[start + 56 * (id - 1) + field] = value;
+        tokens[start + personWidth * (id - 1) + field] = value;
         std::ostringstream output;
         for (size_t i = 0; i < tokens.size(); ++i) { if (i) output << ' '; output << tokens[i]; }
         return output.str();

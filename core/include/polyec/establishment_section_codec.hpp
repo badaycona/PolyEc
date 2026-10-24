@@ -72,7 +72,7 @@ inline bool read_establishment_section(std::istream& in, size_t people_count, in
             error = "Save establishment owner kind";
             return false;
         }
-        if (industry < 1 || industry > (realm_schema >= 55 ? 14 : realm_schema >= 43 ? 11 : realm_schema >= 42 ? 10 : realm_schema >= 41 ? 9 : realm_schema >= 40 ? 8 : realm_schema >= 39 ? 7 : realm_schema >= 38 ? 6 : realm_schema >= 37 ? 5 : realm_schema >= 36 ? 4 : 3)) {
+        if (industry < 1 || industry > (realm_schema >= 64 ? 17 : realm_schema >= 63 ? 16 : realm_schema >= 62 ? 15 : realm_schema >= 55 ? 14 : realm_schema >= 43 ? 11 : realm_schema >= 42 ? 10 : realm_schema >= 41 ? 9 : realm_schema >= 40 ? 8 : realm_schema >= 39 ? 7 : realm_schema >= 38 ? 6 : realm_schema >= 37 ? 5 : realm_schema >= 36 ? 4 : 3)) {
             error = "Save establishment industry";
             return false;
         }
@@ -203,7 +203,9 @@ inline bool read_establishment_section(std::istream& in, size_t people_count, in
         const bool sourceIndustry=e.industry==EstablishmentIndustry::Forestry||e.industry==EstablishmentIndustry::Mining||
             e.industry==EstablishmentIndustry::TeaGarden||e.industry==EstablishmentIndustry::IncenseWorks||
             (realm_schema>=55&&(e.industry==EstablishmentIndustry::Glassworks||
-             e.industry==EstablishmentIndustry::PotteryKiln||e.industry==EstablishmentIndustry::Tannery));
+             e.industry==EstablishmentIndustry::PotteryKiln||e.industry==EstablishmentIndustry::Tannery))||
+            (realm_schema>=62&&e.industry==EstablishmentIndustry::MedicinalGarden)||
+            (realm_schema>=63&&e.industry==EstablishmentIndustry::SeedPressWorks);
         const int expectedSource=establishment_source_good(e.industry,e.region);
         if(e.industry==EstablishmentIndustry::Mining&&e.region!=7&&e.region!=23){
             error="Save Mining source region";return false;
@@ -212,6 +214,16 @@ inline bool read_establishment_section(std::istream& in, size_t people_count, in
            (e.industry==EstablishmentIndustry::PotteryKiln&&e.region!=15)||
            (e.industry==EstablishmentIndustry::Tannery&&e.region!=17))){
             error="Save Atlas specialty source region";return false;
+        }
+        if(realm_schema>=62&&e.industry==EstablishmentIndustry::MedicinalGarden&&e.region!=20){
+            error="Save Medicinal Garden source region";return false;
+        }
+        if(realm_schema>=63&&e.industry==EstablishmentIndustry::SeedPressWorks&&e.region!=2){
+            error="Save Seed Press Works source region";return false;
+        }
+        if(realm_schema>=64&&e.industry==EstablishmentIndustry::SawmillWorks&&
+           (regions!=int(kAtlasTerritoryCount)-1||e.region!=6)){
+            error="Save Sawmill Works region";return false;
         }
         if((sourceIndustry&&(e.source_good!=expectedSource||e.source_units<0||
                             e.source_units>kEstablishmentSourceUnitsMaximum))||

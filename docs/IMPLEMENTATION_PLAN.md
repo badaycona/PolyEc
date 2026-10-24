@@ -20,7 +20,7 @@ Phần I (1–10) xác định luật nền, kiến trúc, roadmap và điều k
 | UI, khởi đầu và hướng dẫn trong game | 18 |
 | Đủ 12 augment, draft, stat, tính cách và tiến bộ | 19–20 |
 | Sự kiện, causal chain, đời sống dân cư và thông báo | 21 |
-| Schema, phiên bản, cấu hình và quyền sở hữu dữ liệu | 22 |
+| Schema, phiên bản, cấu hình, định nghĩa trước danh mục nội dung và quyền sở hữu dữ liệu | 22 |
 | Cá thể, năng lực, tính cách, cơ thể và tri thức | 23 |
 | Hộ, đất, lao động, sản xuất, thị trường và vận tải | 24–26 |
 | Tổ chức, di sản, quốc gia, quân sự và ngoại thương | 27 |
@@ -560,6 +560,8 @@ Mỗi nhóm có thể có biến thể chất lượng hoặc công dụng. Ng�
 
 Đặc sản ánh xạ vào nhóm và biến thể: len → xơ sợi; lụa → vải cao cấp; trà, trầm, thủy tinh trang trí và đồ sứ tốt → hàng xa xỉ. Sáp ong là biến thể nguyên liệu có công dụng xác định. Tên đặc sản giữ bản sắc, nhưng không tạo 24 cơ chế giá riêng không cần thiết.
 
+Phạm vi hiện hành giữ30 hàng thuộc16 nhóm ở §22.5 theo yêu cầu người dùng ngày2026-10-23. Ưu tiên hoàn thiện nguồn sản xuất và công dụng thực tế của30 hàng này; không tiếp tục đề xuất tăng lên54 hàng hoặc dành mã30–53. Nguyên liệu nội bộ của một cơ sở có thể được mô tả bằng resource ledger có nguồn/quyền/lượng rõ ràng; không tự biến chúng thành hàng giao dịch hoặc nguồn miễn phí.
+
 ### 15.3 Sản xuất và nhu cầu
 
 Cơ sở sản xuất thuộc một chủ thể, có ngành, công suất, người làm, kỹ năng, nguyên liệu, tài sản và hao mòn. Sản lượng bị giới hạn bởi yếu tố thiếu nhất:
@@ -967,6 +969,95 @@ Mỗi tham số có tên, phiên bản, đơn vị, mặc định lịch sử, m
 
 Các tham số sản xuất, lương, capacity, giá và vận tải không được biến quyền sở hữu/consent hay bảo toàn thành công tắc tắt được. Thêm tham số mới cần nêu ảnh hưởng tới save, transition, reward và model compatibility. Report replay/benchmark/train phải ghi cùng fingerprint cấu hình; khác cấu hình không được ghép làm một phép so sánh cùng điều kiện.
 
+<a id="content-definitions-v1"></a>
+
+### 22.4 Định nghĩa trước nội dung game và cách triển khai — yêu cầu 2026-10-23
+
+Trước khi viết một nhóm chức năng, chuẩn bị đầy đủ danh mục đối tượng, thuộc tính, quan hệ và quy tắc mà nhóm đó cần trong tài liệu này. Mục đích là để triển khai theo thiết kế đã đối chiếu, không vừa thêm mã hàng vừa phát hiện chưa có nguồn, người sử dụng hoặc quyền thực hiện. Yêu cầu này áp dụng cho hàng hóa, tài nguyên, công thức, cơ sở, nghề, hoạt động, dịch vụ, tổ chức, chức vụ, vùng/địa điểm và quân sự. Định nghĩa trước không có nghĩa tạo hàng loạt class rỗng hoặc công bố tính năng chưa chạy.
+
+Phân biệt **định nghĩa dùng chung** với **đối tượng đang tồn tại trong thế giới**. Ví dụ định nghĩa Paper nói giấy là gì, đơn vị và các công thức sử dụng; kho của mỗi xưởng mới ghi số Paper thật mà chủ xưởng sở hữu. Định nghĩa bệnh hoặc dịch vụ điều trị không tự tạo người bệnh, thuốc, người chăm sóc hay hiệu quả chữa trị. Dữ liệu chung được đọc nhất quán bởi C++, Python và native/Godot; số dư, tiến độ, vị trí và vòng đời thuộc đối tượng runtime trong Realm.
+
+Mỗi định nghĩa phải có các nội dung sau; trường không áp dụng phải ghi rõ lý do, còn trường chưa quyết định phải chỉ rõ quyết định còn thiếu thay vì điền số giả:
+
+| Nội dung | Phải xác định trước khi triển khai hành vi phụ thuộc |
+|---|---|
+| Mã và tên | Mã ổn định, khóa chữ duy nhất, tên/giải thích tiếng Việt, nhóm, phiên bản và tình trạng còn sử dụng hay đã ngừng. |
+| Kiểu, đơn vị và giới hạn | Đơn vị kế toán/vật lý, lượng nhỏ nhất, kiểu số, cận an toàn, làm tròn, giá trị chưa biết và cách xử lý dữ liệu sai. |
+| Thuộc tính và vòng đời | Trường bắt buộc/tùy chọn; giá trị khởi tạo có nguồn; điều kiện tạo, thay đổi, hết hạn, chết, đóng hoặc loại bỏ. |
+| Chủ sở hữu và quyền | Ai sở hữu đối tượng, tài sản hoặc nghĩa vụ; ai được xem, đề nghị, đồng ý, thực hiện, sửa và hủy; không suy quyền từ việc cùng vùng/cùng nhóm. |
+| Đầu vào và kết quả | Người, thời gian, tiền, hàng, tài nguyên, địa điểm, năng lực cần có; lượng tiêu/sinh, người nhận và hệ quả khi không đủ nguồn. |
+| Quan hệ | Mã của các đối tượng được tham chiếu, quan hệ một/nhiều, bên chịu trách nhiệm, điều kiện tham chiếu còn hợp lệ và xử lý khi bên liên quan mất. |
+| Tác động tới quyết định | Command thực hiện, lựa chọn có thể xuất hiện, điều kiện hợp lệ, thông tin actor biết, kết quả quan sát và tác động tới reward nếu có. |
+| Lưu và tương thích | Phần dữ liệu chung và dữ liệu từng thế giới, snapshot cấu hình, save/migration, ảnh hưởng ý nghĩa model và các lớp gọi core. |
+| Bằng chứng và mức hoàn thiện | Tách rõ đã định nghĩa, đã code, đã kiểm core, đã kiểm Python/native/Godot; dẫn báo cáo và ghi từng phần còn thiếu. |
+
+**Mã ổn định:** giữ nguyên GoodId0–29 và các ID đã xuất hiện trong save; thêm mới ở cuối hoặc trong miền đã được đặc tả, không đánh số lại/xài lại ID đã bỏ. Khóa chữ là tên định nghĩa, không phải số slot hành động UI/policy. Mã recipe, nghề hoặc dịch vụ mới chỉ được cấp sau khi đối chiếu registry hiện hành; tên đề xuất trong thiết kế chưa được coi là ID số đã lưu. Tham chiếu sai phải được báo lỗi; không tự đổi sang DryFood, vùng0 hoặc một đối tượng mặc định để tiếp tục.
+
+**Cấu trúc code:** tiếp tục C++20 OOP và composition. Dùng đối tượng dữ liệu dùng chung cho các loại hàng/công thức; thêm class hoặc thành phần xử lý khi có hành vi, trách nhiệm và dữ liệu vòng đời riêng. Không bắt buộc mỗi GoodId có một subclass. Muối và giấy có thể dùng chung cơ chế kho/giao dịch; khác biệt nằm trong nguồn và recipe. Điều trị hoặc chăn nuôi cần cơ chế riêng nếu có quá trình, điều kiện và hậu quả riêng. Không viết lại cùng luật ở Python hay Godot.
+
+### 22.5 Danh mục hàng hóa chuẩn bị trước khi mở rộng code
+
+Nguồn định danh đang có là [`good_catalog.hpp`](../core/include/polyec/good_catalog.hpp): 30 GoodId, 16 GoodGroup, tên và giá tham chiếu. Bảng dưới đối chiếu đủ ID0–29 với nội dung cần hoàn thiện. **Nguồn/nơi dùng trong hai cột cuối là thiết kế đích, không phải xác nhận code hiện tại đã có tất cả các luật đó.** Độ phủ triển khai lấy từ báo cáo theo phiên bản; không lấy bảng đích làm bằng chứng đã chạy.
+
+Đơn vị hạch toán hiện hành là một đơn vị nguyên của đúng sản phẩm (trong code thường gọi là món); giá là đồng bạc/đơn vị đó, chỉ là giá tham chiếu thử, không phải giá thị trường cố định hoặc giá đã cân bằng. Chưa có quy đổi được chốt thì không tự gọi một món là kg, mét, một liều thuốc hay một con vật. Quy đổi vật lý phải có phiên bản và ảnh hưởng tới recipe/kho/save được kiểm riêng. Các tài nguyên như silica, đất sét hoặc phụ phẩm trong source ledger không tự trở thành hàng có thể mua/bán; nếu cần giao dịch chúng, phải định nghĩa sản phẩm và cấp mã riêng trước.
+
+| ID / khóa hiện có | Tên dùng trong thiết kế | Nhóm hiện có | Giá tham chiếu | Nguồn cần có | Nơi sử dụng cần xác định và triển khai |
+|---|---|---|---:|---|---|
+| 0 `dry_food` | Lương thực khô | Lương thực khô | 20 | Canh tác/thu hoạch có mùa, tồn đầu kỳ hoặc nhập hữu hạn có nguồn. | Bữa ăn hộ/cá nhân, kho lương và tiếp tế; lượng ăn và hậu quả thiếu phải dùng cùng luật. |
+| 1 `supplementary_food` | Thực phẩm bổ sung | Thực phẩm bổ sung | 28 | Seed Press Works có nguồn giới hạn/tái sinh theo luật hiện hành. | Volunteer có depot nhận sau DryFood; Civilian ngoài quân vụ có thể dùng1 món cá nhân sau bữa DryFood thành công để tăng10 nutrition, không tăng health. Trial chưa cân bằng nguồn và giá. |
+| 2 `salt` | Muối | Muối | 35 | Làm muối tại nguồn hợp lệ hoặc nhập hữu hạn. | Chế biến/bảo quản thực phẩm và ngoại thương; bán ra không thay cho việc có nhu cầu trong nước. |
+| 3 `timber` | Gỗ | Gỗ | 45 | Rừng có lượng khai thác và quy tắc tái sinh. | Giấy, xây dựng và các công thức gỗ được định nghĩa; phân biệt gỗ với nhiên liệu. |
+| 4 `fuel` | Nhiên liệu | Nhiên liệu | 18 | Nguồn hoặc chế biến nhiên liệu có tài nguyên và công sức thật. | Luyện/chế tác, lò thủy tinh và lò gốm; công thức phải trừ đúng Fuel. |
+| 5 `iron` | Sắt | Sắt | 45 | Khai thác/chế luyện hoặc nhập hữu hạn; chỉ rõ sắt trong catalog là đầu ra ở công đoạn nào. | Công cụ, vũ khí và các dự án nhận đúng vật liệu. |
+| 6 `copper` | Đồng | Kim loại màu/quý | 65 | Khai thác/chế luyện tại nguồn đồng hoặc nhập hữu hạn. | Chế tác/vật dụng có công thức nhận Copper; không mặc nhiên thay Iron. |
+| 7 `silver` | Bạc hàng hóa | Kim loại màu/quý | 100 | Khai thác/chế luyện tại nguồn bạc hoặc nhập hữu hạn. | Chế tác và trao đổi kim loại; không tự cộng tiền đồng bạc từ hàng Silver. |
+| 8 `gold` | Vàng hàng hóa | Kim loại màu/quý | 120 | Nguồn khai thác/chế luyện hoặc đối tác có hàng hữu hạn được định nghĩa. | Chế tác hàng quý hoặc nhu cầu tổ chức đã xác định; không tự tạo tiền. |
+| 9 `fiber` | Xơ sợi | Xơ sợi | 14 | Cây/nguồn sợi hoặc chăn nuôi phù hợp, mùa và công đoạn tạo sợi. | Dệt Cloth và công thức nhận đúng Fiber. |
+| 10 `beeswax` | Sáp ong | Xơ sợi, phân nhóm kế thừa | 40 | Nuôi/thu hoạch có địa điểm và quyền hợp lệ; rừng tranh chấp không tự được cấp quyền. | Nến, vật dụng hoặc dịch vụ dùng sáp theo recipe riêng; cùng nhóm không cho phép thay Fiber. |
+| 11 `cloth` | Vải thường | Vải | 35 | Dệt từ Fiber và công sức hợp lệ. | Nhu cầu trang phục và recipe quân nhu; xác định mức dùng, không coi chuyển kho là tiêu dùng. |
+| 12 `silk` | Lụa | Vải | 120 | Chuỗi tơ/dệt hoặc nhập hữu hạn, kèm quyền cơ sở/địa điểm. | Trang phục chất lượng cao hoặc nhu cầu tổ chức/hộ có ngân sách; không alias Cloth. |
+| 13 `livestock` | Gia súc | Gia súc/ngựa | 50 | Chăn nuôi, thức ăn, chỗ nuôi và vòng đời; đơn vị/con phải được quy định. | Thực phẩm/phụ phẩm hoặc sức kéo theo luật cụ thể; không dùng thay Horse. |
+| 14 `horse` | Ngựa thường | Gia súc/ngựa | 90 | Chăn nuôi hoặc nhập hữu hạn, với thức ăn/chỗ nuôi. | Đầu vào huấn luyện WarHorse; công dụng vận tải/sức kéo cần luật riêng. |
+| 15 `war_horse` | Ngựa chiến | Gia súc/ngựa | 200 | WarhorseStable huấn luyện từ Horse và Work. | Inventory cá nhân rút ngắn Travel/Migrate Atlas một ngày, giảm2 đồng khi đường ban đầu dài hơn một ngày; ngựa bền, route đóng vẫn chặn. Chưa có campaign/chiến mã đơn vị. |
+| 16 `tools` | Công cụ | Công cụ | 65 | Chế tạo từ Iron và Fuel theo recipe đã duyệt. | Sản xuất/quân nhu/dự án; hao mòn chỉ áp dụng khi có quy tắc, không tự trừ mỗi tick. |
+| 17 `military_supply` | Quân nhu chế tạo | Quân nhu/vũ khí | 90 | Chế tạo từ Tools và Cloth theo recipe đã duyệt. | Cấp phát/tiêu dùng quân vụ theo chức năng riêng; không thay DryFood hoặc Weapon. |
+| 18 `weapon` | Vũ khí | Quân nhu/vũ khí | 110 | Xưởng rèn dùng Iron, Tools và công sức thật. | Trang bị, bảo trì/tổn thất và giao chiến theo luật quân sự; không tự tạo người tham chiến. |
+| 19 `construction_material` | Vật liệu xây dựng | Vật liệu xây dựng | 55 | Chọn rõ loại vật liệu/tổ hợp và công đoạn tạo sản phẩm. | Dự án xây dựng nhận đúng mã và lượng; không bao gồm mọi vật liệu trong nhóm một cách ngầm định. |
+| 20 `paper` | Giấy | Giấy | 60 | Paper Mill dùng Timber và công sức theo recipe. | Học tập, hành chính hoặc sao chép thông tin có định mức; không coi test di sản là nhu cầu giấy. |
+| 21 `medicine` | Dược liệu/thuốc | Dược liệu | 130 | Xác định sản phẩm, thu hái/trồng/chế biến hoặc nhập hữu hạn. | Dịch vụ điều trị có người thực hiện, đối tượng, lượng dùng, thời gian và giới hạn hiệu quả; không cộng health chỉ vì đang sở hữu Medicine. |
+| 22 `tea` | Trà | Hàng xa xỉ | 100 | Tea Garden có mùa và nguồn hữu hạn/tái sinh được quy định. | Nhu cầu có khả năng chi trả, định mức và tác dụng đã xác định; tồn kho không tự tạo cầu. |
+| 23 `incense` | Hương/trầm | Hàng xa xỉ | 160 | Khai thác/chế biến tại cơ sở có nguồn và quyền. | Nhu cầu cá nhân hoặc nghi lễ/tổ chức, với lượng tiêu và chi phí thực. |
+| 24 `decorative_glass` | Thủy tinh trang trí | Hàng xa xỉ | 250 | Chế tác có đầu vào và chất lượng riêng; nếu dùng PlainGlass phải ghi rõ recipe. | Nhu cầu trang trí có người mua và ngân sách; không thay kính thường trong xây dựng. |
+| 25 `fine_porcelain` | Đồ sứ tinh xảo | Hàng xa xỉ | 300 | Chuỗi nguyên liệu/lò/chế tác có công đoạn và chất lượng riêng. | Nhu cầu đồ dùng cao cấp có người mua và ngân sách; không alias Pottery. |
+| 26 `general_luxury` | Hàng xa xỉ tổng hợp | Hàng xa xỉ | 150 | Định nghĩa sản phẩm đại diện hoặc giỏ hàng, nguồn và cách định giá. | Nhu cầu tổng hợp được mô tả rõ; không cộng trùng với Tea/Incense/đồ quý và không dùng làm hàng thay thế tùy ý. |
+| 27 `plain_glass` | Thủy tinh thường | Vật liệu xây dựng | 90 | Glassworks Atlas10: nguồn silica hữu hạn, Fuel và Work theo phiên bản hiện có. | Công trình/vật dụng nhận đúng PlainGlass; giao dịch generic đã có chưa chứng minh công dụng đó đã được code. |
+| 28 `pottery` | Đồ gốm thường | Vật liệu xây dựng | 55 | PotteryKiln Atlas15: nguồn đất sét hữu hạn, Fuel và Work theo phiên bản hiện có. | Đồ dùng/bảo quản hoặc công trình có định mức; tách khỏi FinePorcelain. |
+| 29 `leather` | Da thuộc | Gia súc/ngựa, phân nhóm nguồn gốc | 80 | Tannery Atlas17 tạo từ ledger phụ phẩm hữu hạn; chuỗi chăn nuôi/phụ phẩm mở rộng vẫn thiếu. | Một Leather cá nhân cho defender Nam Cảng cộng1 defense bền; không tiêu hoặc mượn. Chưa có áo giáp campaign. |
+
+Các hướng dùng chưa có luật lượng/thời gian/hiệu quả trong bảng là phần thiết kế phải hoàn thiện, không được dùng như command đã chấp thuận hoặc nguồn reward mới. Không tự bổ sung bệnh, nến, trang phục hay công dụng quân sự vào runtime chỉ từ một dòng bảng. Trước khi code cơ chế tương ứng, điền đầy đủ hồ sơ ở §22.4, quyết định thử có phiên bản nếu cần và các phép kiểm; giữ phạm vi/quyền/consent đã chốt. Các con số giá ở đây được đối chiếu với catalog khi bổ sung tài liệu; thay giá sau này phải cập nhật nguồn chuẩn và ghi phiên bản, không sửa báo cáo run cũ.
+
+### 22.6 Danh mục đối tượng và liên kết phải chuẩn bị cùng hàng hóa
+
+Không chỉ lập danh sách tên. Mỗi nhóm sau phải có bản ghi định nghĩa và tham chiếu tới nhóm còn lại; sử dụng các ID/type hiện có khi đã có, không tạo một hệ ID song song trong tài liệu:
+
+| Nhóm định nghĩa | Chi tiết phải chuẩn bị | Đối tượng thực trong thế giới và liên kết |
+|---|---|---|
+| Tài nguyên và địa điểm | Loại nguồn, đơn vị, trữ lượng/khả năng hồi, mùa, vùng/site, điều kiện tiếp cận và giới hạn khai thác. | Nguồn tại địa điểm cụ thể; lượng đã khai thác, phần còn lại, người có quyền. |
+| Công thức và ngành cơ sở | ID recipe/ngành, GoodId đầu vào/đầu ra, công sức, kỹ năng, capacity, hao hụt, thứ tự quyết toán và trường hợp thiếu. | Establishment có chủ, kho, nguồn vốn và tiến độ; recipe tham chiếu catalog hàng thay vì chép tên tùy ý. |
+| Nghề và hoạt động | Điều kiện làm nghề, năng lực cần, nơi làm, lịch, công việc đủ điều kiện, tiền công và ảnh hưởng cơ thể. | Person/hợp đồng/phiên hoạt động; tách tên nghề khỏi ca Work thực được cấp chú ý. |
+| Nhu cầu và dịch vụ | Ai có nhu cầu, lượng/cadence, ngân sách, nhà cung cấp, đầu vào hàng/thời gian, kết quả và hậu quả không được phục vụ. | Nhu cầu hoặc hồ sơ dịch vụ gắn đúng người/hộ/tổ chức; giữ tiền và tiêu vật tư đúng một lần. |
+| Cơ thể, bệnh và chăm sóc | Chỉ số/đơn vị, nguyên nhân, tiến triển, điều kiện nhận chăm sóc, nguồn thuốc/công và giới hạn hồi phục. | Body/hồ sơ riêng từng người; nối dịch vụ, hoạt động và Fact, không chép chỉ số giữa cá thể. |
+| Hộ, đất và tài sản | Loại chủ thể, sở hữu/sử dụng/giám hộ, đồng sở hữu, quyền chuyển giao, nghĩa vụ và di sản. | Các tài khoản/title/holding thực; liên kết bằng ID, không nhân tiền hay lấy quỹ hộ làm tài sản riêng. |
+| Tổ chức và chức vụ | Loại tổ chức, điều kiện thành viên, chức/quyền đại diện, chọn/bãi nhiệm, quỹ và nghĩa vụ. | Tổ chức/thành viên/người giữ chức thực; tài sản tổ chức tiếp tục thuộc tổ chức khi người đại diện đổi. |
+| Đô thị và tuyến | Loại site, vùng cha, hình học/đơn vị, cư trú thật, authority; tuyến có hướng, thời gian, capacity, phí và điều kiện đi qua. | Census đếm Person sống đúng một lần; route runtime dùng cấu hình thế giới, không suy từ một nét vẽ bản đồ. |
+| Quân sự và ngoại giao | Loại lực lượng, consent, chỉ huy, trang bị, lương, tiếp tế, điều kiện khởi xướng, đối thủ và các kết quả hợp lệ. | Roster, order, cam kết và hồ sơ trận/đối tác; người/hàng/tiền có nguồn, thương vong nối vòng đời và di sản. |
+| Năng lực, tính cách và tri thức | Mã/ý nghĩa/thang đo, nguồn khởi tạo, thông tin biết được và cơ chế sử dụng; tách dữ liệu cá nhân khỏi catalog chung. | Giá trị riêng của từng Person, Knowledge có nguồn, memory riêng; policy chỉ nhận dữ liệu được phép. |
+| Command, sự kiện và UI | Actor, tư cách, tham số, điều kiện hợp lệ, kết quả thành công/từ chối, Fact và quyền xem/độ trễ. | Command đi qua C++ transaction; UI/Python dùng cùng định nghĩa và không trực tiếp viết số dư/cơ thể. |
+
+Mọi recipe, nhu cầu, dịch vụ và hoạt động phải đối chiếu thành một chuỗi có thể giải thích: **nguồn → người có quyền → công việc/chi phí → sản phẩm/dịch vụ → người sử dụng → hệ quả**. Thiếu một mắt xích thì ghi đúng phần thiếu; không giải quyết bằng hàng miễn phí, consumer giả hoặc một class không có hành vi. Catalog trong source là nơi định danh dùng khi chạy; tài liệu này quy định nội dung đích và quyết định; report giữ bằng chứng của phiên bản đã kiểm. Không dùng bảng lịch sử để chứng nhận source mới.
+
+Khi bổ sung một đối tượng thông thường đã nằm trong cơ chế chung, ưu tiên thêm dữ liệu và phép kiểm có ý nghĩa. Khi cần hành vi mới, định nghĩa trách nhiệm class/thành phần, quyền sở hữu dữ liệu và điểm nối vào command/time/save trước khi viết code. Chỉ gọi nhóm hoàn tất khi cả định nghĩa lẫn hành vi liên quan đã được kiểm đúng phạm vi; lập sẵn tên/class không hoàn tất M5 và không tự mở lại RL.
+
 ## 23. Cá thể, cơ thể, năng lực, tính cách và điều được biết
 
 ### 23.1 Dữ liệu cá thể và quyền quyết định
@@ -1063,7 +1154,7 @@ Lỗi cần kiểm gồm sai chủ/quyền, người chết, đang đi đường
 
 ### 25.2 Đủ nguồn cho 16 nhóm hàng
 
-Danh mục hiện có30 sản phẩm/16 nhóm là dữ liệu nhận diện, không tự tạo30 dây chuyền. Với mỗi sản phẩm trong §15.2, bảng triển khai trước code phải chỉ rõ: nguồn đầu kỳ; harvest/khai thác/recipe/nhập khẩu nào tạo mới; địa điểm và quyền tiếp cận; lịch/mùa; lao động, dụng cụ, vật tư; capacity; hao hụt/tiêu dùng; nơi lưu kho và thị trường tiêu thụ. Sản phẩm chưa có nguồn hoặc consumer phải được đánh dấu thiếu; không bù hàng khi kho cạn.
+Danh mục hiện có30 sản phẩm/16 nhóm là dữ liệu nhận diện, không tự tạo30 dây chuyền. [§22.4–22.6](#content-definitions-v1) tập trung hồ sơ cần định nghĩa trước, bảng đủ30 mã hàng và các đối tượng liên quan; không tạo bảng danh mục đích cạnh tranh ở từng plan nhỏ. Với mỗi sản phẩm trong §15.2, bảng triển khai trước code phải chỉ rõ: nguồn đầu kỳ; harvest/khai thác/recipe/nhập khẩu nào tạo mới; địa điểm và quyền tiếp cận; lịch/mùa; lao động, dụng cụ, vật tư; capacity; hao hụt/tiêu dùng; nơi lưu kho và thị trường tiêu thụ. Sản phẩm chưa có nguồn hoặc consumer phải được đánh dấu thiếu; không bù hàng khi kho cạn.
 
 Tiến độ theo sản phẩm: slice Saltworks tại atlas region8 thêm nguồn Salt có đầu vào Fuel, Work, capacity và giao dịch chợ; kết quả: [report M5.2 Saltworks](reports/M5.2-saltworks-core-integration-evidence-2026-10-23.md). Slice Forestry tại atlas region6 thêm nguồn Timber có resource site-held, Work, giới hạn, phục hồi và giao dịch chợ; kết quả: [report M5.2 Timber Forestry](reports/M5.2-timber-forestry-core-integration-evidence-2026-10-23.md). Paper Mill tại region13 nay là consumer gameplay thật của Timber; report toàn chuỗi tại [M5.2 Paper Mill/Timber/Travel](reports/M5.2-paper-mill-timber-travel-evidence-2026-10-23.md). Ba đặc sản PlainGlass/Pottery/Leather đã có producer và đường thị trường generic; report chi tiết tại [M5.2 Atlas specialty](reports/M5.2-atlas-unresolved-specialty-production-evidence-2026-10-23.md). Các lát này chỉ xác nhận từng sản phẩm/chuỗi có nêu; không suy ra đủ30 GoodId đều có nguồn, consumer gameplay và mùa vụ hoặc cả16 nhóm đã hoàn chỉnh.
 
@@ -1120,6 +1211,8 @@ Chuỗi tích hợp phải có mua→gửi→tiến ngày→phí→giao→save/l
 ### 27.1 Tổ chức và tài sản của người sống/người chết
 
 Gia tộc, guild, thành thị và giáo hội cần ID, thành viên, quỹ/tài sản, chức, quyền đại diện và nguồn nghĩa vụ cụ thể. Không đồng nhất một tài khoản organization hiện có với một tổ chức xã hội đầy đủ. Thay người đại diện không chuyển tài sản tổ chức vào tiền riêng. Consent của thành viên/đối tác phải được kiểm tại lệnh cần consent; quyền đại diện không cho phép vượt luật đó.
+
+**Kết quả `municipal-council-representation-v1`, 2026-10-24:** Atlas27 có 27 record hội đồng theo site ID. Cư dân Urban đủ18 tuổi game tự nộp/rút hồ sơ miễn phí; Sovereign bổ nhiệm hoặc từ chối riêng từng settlement; nhiệm kỳ thử là1.460 ngày game. Đại diện chỉ được ra lệnh xây nhà công bằng quỹ/vật liệu của site đó qua pipeline housing hiện có. Từ chức, bắt đầu di cư, chết hoặc hết hạn dừng quyền chi; save65 migration tạo council trống cho save64 trở về trước mà vẫn giữ municipal fund và108 organization balances. Policy contract là realm-v33/model household-v34, 382 state,336 actions,4.414 observations,reward v14. C++/Python/native/GDExtension/Godot smoke theo phạm vi đã chạy; chưa có live Realm click-through do không có bundle model realm-v33 được huấn luyện, chưa có membership/election hoặc nhà tư. [Plan và lý do chọn luật](design/M5.4-municipal-council-representation-plan.md); [báo cáo kết quả và phép kiểm đầy đủ](reports/M5.4-municipal-council-representation-evidence-2026-10-24.md).
 
 Di sản phải gom đúng tài sản riêng của người mất, khoản phải thu/phải trả, title/xưởng và tài sản đang giữ ở escrow hoặc shipment. Tài sản của phối ngẫu, đồng sở hữu hoặc quỹ hộ không tự nhập toàn bộ vào di sản. Trả nợ từ nguồn hợp lệ trước chia; thiếu di sản không chuyển nợ vô hạn sang con. Tước kế vị theo luật riêng, chức bổ nhiệm trả cơ quan. Trẻ nhận sở hữu nhưng quyền quản lý theo giám hộ, không cấp quyền rút tiền/chuyển đất tự do.
 
@@ -1266,7 +1359,7 @@ M6 vẫn sở hữu hoàn thiện UX/tutorial/accessibility và M7 sở hữu pr
 
 ### 30.2 Cách chọn việc kế tiếp
 
-Chọn theo điều kiện còn thiếu của một chuỗi M5. Khi nhóm chính chưa đóng, chỉ chuyển sang helper/benchmark/biểu đồ nếu có phụ thuộc cụ thể hoặc nhóm chính bị chặn; ghi rõ nguyên nhân và việc mở khóa. Danh mục capability, codec hay formatter là bước hỗ trợ; số lượng các bước đó không đại diện phần trăm milestone. Hoàn tất nhóm thì chọn nhóm phụ thuộc tiếp theo theo roadmap, không lên lịch theo giờ.
+Chọn theo điều kiện còn thiếu của một chuỗi M5. Khi nhóm chính chưa đóng, chỉ chuyển sang helper/benchmark/biểu đồ nếu có phụ thuộc cụ thể hoặc nhóm chính bị chặn; ghi rõ nguyên nhân và việc mở khóa. Danh mục capability, codec hay formatter là bước hỗ trợ; số lượng các bước đó không đại diện phần trăm milestone. Hoàn tất nhóm thì chọn nhóm phụ thuộc tiếp theo theo roadmap, không lên lịch theo giờ. Theo chỉ đạo người dùng ngày 2026-10-23, hoàn thiện các chức năng gameplay của bản game trước; không bắt đầu hoặc tiếp tục train/selection/validation/holdout RL cho tới mốc đó. Các cổng policy, hiệu năng và package vẫn giữ nguyên, chỉ thay đổi thứ tự để gameplay đi trước RL.
 
 Trước code, plan ngắn phải nêu hành vi người chơi/agent, dữ liệu và chủ sở hữu, success/reject/biên, save/binding/action/observation/reward/model impact, file/target bị ảnh hưởng, kiểm ngay/kiểm sau và điều kiện đóng nhóm. Tham số chưa có căn cứ phải ghi working assumption có phiên bản, đơn vị, miền, lý do và phép kiểm; không đổi luật quyền/consent, scope hay ngân sách bằng một giả định kỹ thuật.
 
@@ -1353,7 +1446,9 @@ Phạm vi kỹ thuật dự kiến: hai ngăn GoodId tách biệt, mua từ kho 
 
 Save54; Realm v30; household/timeline v32/v34; state382, actions264, observation3550; reward giữ nguyên. Model/trainer/co-play v15 mới, v14 không đổi. Windows Debug: supply obligation36, military obligation31, transport190, Realm19.045 checks pass. Python binding/model/co-play v15/model contract20 pass; native runtime contract1/1; GDExtension Release build pass. Godot runtime chưa test vì không có executable; không tạo PPO run/dataset/biểu đồ và không chọn policy. Report chứa thông số, lệnh test, ca wrong destination/cancel/personal/supplementary, hai proposal tự đóng, migration, giới hạn và SHA-256: [evidence đầy đủ](reports/M5.4-volunteer-dry-ration-obligation-evidence-2026-10-23.md), [plan](design/M5.4-volunteer-dry-ration-obligation-plan.md). M5.4/M5 chưa xong; nhóm kế tiếp là kiểm chứng chuỗi nguyên nhân quân sự có hai nhánh can thiệp trước khi mở thêm luật chiến đấu (chưa có contract).
 
-**Tiếp theo:** chuỗi quân sự §7/§27.3 đã được kiểm riêng trong [M5.4 intervention-chain report](reports/M5.4-military-mobilization-intervention-chain-evidence-2026-10-23.md). Bằng chứng hiện có không thay thế các việc M5 còn thiếu: policy tương thích được chọn bằng validation, holdout độc lập ghép cặp, chạy model cùng source trong app, Profile B/stress/performance và Windows package. Chọn bước kế tiếp theo §28 là kiểm tra source/contract RL hiện hành và lập kế hoạch ngắn cho validation/selector trước khi tạo hoặc resume bất kỳ training run nào.
+**RL được hoãn theo chỉ đạo người dùng ngày 2026-10-23:** selector/validation, holdout, model mới và các bước RL khác vẫn là cổng bắt buộc ở giai đoạn sau nhưng chưa được làm trước khi các chức năng gameplay cần thiết của game hoàn tất. Bước gameplay hiện tại nằm trong [CURRENT_TASK](CURRENT_TASK.md): hoàn thiện tích hợp battle đã qua kiểm core/Python/GDExtension/UI smoke và lập plan cho registry địa điểm đô thị Atlas27. Đây là thứ tự ưu tiên hiện tại, không hạ tiêu chí chất lượng policy, hiệu năng hoặc package.
+
+**Cập nhật trạng thái theo phiên bản ngày 2026-10-24:** trạng thái tác vụ mới nhất nằm ở [CURRENT_TASK](CURRENT_TASK.md), không dùng câu “bước hiện tại” ở các đoạn lịch sử phía trên để chọn việc. Save hiện `POLYEC_REALM_66`, schema `realm-v34`, household/config v40 và timeline/config v41, state382/actions336/observations4414/reward v14. Consumer hiện có gồm MilitarySupply trong raid, Paper trong Investigation, Tea và Incense trong giao lưu tùy chọn, Copper trong recipe Tools, WarHorse trong Travel/Migrate, Leather trong phòng thủ Nam Cảng và SupplementaryFood cho Civilian sau DryFood; nguồn, luật và kết quả từng nhóm có báo cáo riêng. [CURRENT_TASK](CURRENT_TASK.md) ghi các khoảng trống cần làm tiếp, gồm quy mô dân số/profile B, nguồn hàng còn thiếu, hội đồng chưa bầu cử, nhà tư/thuê, campaign quân sự, địa hình/passability và kiểm tra phát hành. Realm runner rộng từng dừng ở assertion byte-for-byte save lịch sử v14 sau434 checks và chưa chạy lại trên toàn source v34 hiện tại. Không có policy được train trên household v40/timeline v41; RL và dataset vẫn hoãn cho tới khi gameplay cần thiết hoàn tất.
 
 **RL v15 smoke sau khi ghép gameplay M5.4, 2026-10-23:** một update Economic qua binding C++ hiện hành,16 world sáu vùng×64 bước focal=1.024 quyết định;29.842 peer decisions dùng dev baseline có nhãn. Thời gian18,60 giây, peak RSS629.510.144 byte. Realm schema v30, observation3550, actions264, model/timeline v34. Reward rollout mean−0,008177, return target mean−0,302205; đây là tín hiệu trong cùng một update, không phải đánh giá policy. Chart reward/return và biểu đồ đủ33 Intent cùng JSON nguồn đúng run được lưu;18 Intent không có cơ hội hợp lệ trong fixture Economic ngắn, nên không kết luận policy bỏ quên chúng. Manifest smoke_only, không candidate/selection/runtime; rollout đầy đủ chỉ ở RAM, files giữ aggregate/checkpoint/manifest/plot data. Checkpoint khôi phục metadata/16 world states; script vẽ chỉ nhận đúng contract và1024 decisions. [Báo cáo đầy đủ về cách tạo dữ liệu, metrics, bảng Intent và hash](reports/M5-current-contract-rl-v15-smoke-evidence-2026-10-23.md), [plan/kết quả](design/M5-current-contract-rl-v15-smoke-plan.md). Đây là điều kiện đo tốc độ ban đầu, không mở cổng kết luận policy; việc kế tiếp là evaluator/selector validation v15, sau đó training candidate theo budget riêng và holdout tách biệt.
 
@@ -1366,3 +1461,27 @@ Một thương nhân ở Nam Cảng có thể gửi đề nghị một đơn nh�
 Core behavior cùng runtime/GDExtension snapshot và giao diện gửi/đọc offer đã có; runner ngoại thương82/82, ba CTest liên quan3/3, Windows Release `polyec`/`polyec_env` build, Python save roundtrip pass. **UI vẫn chưa được xác minh**: Godot4.5.1 executable không sẵn trên môi trường; editor scan và smoke còn là bước bắt buộc trước khi đóng nhóm. Không được coi C++ GDExtension build là bằng chứng parser/UI chạy. Chưa có partner learned policy; không được thay bằng hardcoded consent. Offer không được actor trả lời sẽ hết hạn; direct trade tiếp tục hoạt động. Model v31/state382/actions282/observations3766/reward giữ nguyên. [Kế hoạch](design/M5.4-foreign-trade-offer-plan.md), [báo cáo đầy đủ](reports/M5.4-foreign-trade-offer-evidence-2026-10-23.md). RL vẫn đợi tới khi gameplay M5 còn thiếu hoàn tất.
 
 **Đính chính tích hợp UI ngày 2026-10-23:** Sau report ban đầu, Godot4.5.1 official portable được tải vào TEMP và xác minh SHA-256, editor scan pass; `military_service_ui_smoke.gd` 33/33, app `ui_smoke.gd` 49/49 và `native_smoke.gd` 19/19 pass. Điều này xác nhận GDScript parse, formatter và app/native UI hiện có. Chưa có live Realm UI click-through cho offer vì checkout không chứa bundle learned policy `realm-v31` tương thích; không dùng model cũ hoặc baseline giả làm bằng chứng feature đó. [Evidence report đã đính chính](reports/M5.4-foreign-trade-offer-evidence-2026-10-23.md).
+
+## Cập nhật `atlas-urban-sites-v1` — 2026-10-23
+
+Atlas27 có một địa điểm trung tâm hư cấu, có ID/tên/loại/tọa độ `map_unit`, cho từng territory ID0–26. Nam Cảng/Hải Châu là cảng; Kinh Kỳ/Hoàng Điền/Trực Lộ là trung tâm/kho/xưởng triều đình. C++ constexpr kiểm ID, tên duy nhất, foreign key và point-in-polygon. GDExtension đưa registry qua `atlas_map_data`; map Godot vẽ marker, label khi hover/chọn và giữ nguyên picking lãnh địa. Đây là nội dung bản đồ; chưa có census, Person residence, ranh giới đô thị, quỹ/authority riêng hoặc hiệu ứng kinh tế/route. Không thêm dân/hàng/tiền/quyền.
+
+Release world-atlas target + CTest pass1/1; Windows Release `polyec` build pass; Godot4.5.1 editor scan pass; `ui_smoke.gd` 133/133 và `native_smoke.gd` 19/19. Chi tiết đủ 27 tên, kind, tọa độ, luật, file, command, kết quả và giới hạn ở [báo cáo địa điểm trung tâm](reports/M5.4-atlas-urban-sites-evidence-2026-10-23.md), triển khai theo [plan](design/M5.4-atlas-urban-sites-plan.md). Bước kế tiếp cùng vấn đề đô thị là xác định người mô phỏng có ở trong địa điểm nào, không lấy dân số Atlas làm census; contract phải xử lý migration, save và phân tách city/rural trước khi code.
+
+## Cập nhật `urban-residence-census-v1` — 2026-10-23
+
+Atlas Realm hiện gán nơi cư trú xác định bằng hash(seed, Person ID), với tỷ lệ đô thị kỳ vọng20% theo cấu hình thử `urban-residence-share-trial-1`. Không tiêu thụ RNG gameplay; 20% chưa hiệu chuẩn nhân khẩu học. Mỗi census đếm Person còn sống thành đô thị, nông thôn hoặc chưa rõ; các nhóm phải cộng đúng population sống. Di cư giữ site nguồn trong thời gian đi và đổi site khi arrival; newborn kế thừa loại/site của parent; death rời tổng đang sống. Python/GDExtension chỉ trả số tổng hợp theo quyền địa phương/toàn quốc, không cung cấp danh tính hoặc thêm observation cho policy.
+
+Save tăng60→61 với section `URBAN_RESIDENCE_1`; schema60 trở về trước đọc thành Unknown thay vì tự nhận là nông thôn. Core CTest chuyên biệt xác nhận seed, tổng census, query không sửa fingerprint, roundtrip, migration save cũ, reject sai site nguyên tử, profile nhỏ, birth và arrival. Python smoke: seed20261023, 512 người → 132 đô thị/380 nông thôn; Sovereign nhận27 vùng, observer thường1 vùng. Windows Release `polyec_env`/`polyec` build, Godot editor scan và UI formatter47 checks pass. Foreign-trade CTest1/1 pass. Realm test runner dừng ở assertion historical v14 byte-for-byte sau434 checks như đã ghi ở CURRENT_TASK; checksum lịch sử không bị thay. Chưa làm live Realm UI click-through do thiếu policy bundle realm-v31 phù hợp; không huấn luyện RL. Bảng luật, file, kiểm tra, giới hạn và giá trị mẫu ở [báo cáo đầy đủ](reports/M5.4-urban-residence-census-evidence-2026-10-23.md), contract tại [plan](design/M5.4-urban-residence-census-plan.md).
+
+Nhóm tiếp theo sau census được chọn từ khoảng thiếu địa lý/di chuyển: dùng thời gian route đang lưu để Travel/Migrate cộng ngày từng cạnh, phí thử `4 + 2 đồng/ngày`; không suy từ map_unit hoặc gọi là km. C++ shortest-path/command/save-load và route regression đã pass; Python/GDExtension build cùng Godot UI/native smoke đạt kết quả trong [report route-time](reports/M5.4-atlas-route-travel-time-evidence-2026-10-23.md), theo [plan](design/M5.4-atlas-route-travel-time-plan.md). `realm_tests` vẫn dừng ở historical v14 byte checksum sau434 checks, không sửa dữ liệu lịch sử.
+
+### Cập nhật `medicine-source-and-treatment-v1` — 2026-10-23
+
+GoodId Medicine21 hiện có nguồn hữu hạn trên MedicinalGarden tại Atlas20 Dược Cốc và consumer tự điều trị trong vòng đời Person. Vườn bắt đầu100 abstract source units; mỗi batch Work16 tick tiêu1 và tạo1 Medicine. Vốn mở cơ sở25/50/100 đồng là cash cơ sở và không đổi nguồn. Person sống với health1–60 chỉ dùng medicine từ inventory của chính mình: trừ1, tăng10 tới giới hạn hiệu quả70, ghi consumed ledger và Fact237; health>60 không dùng, health0/dead không được hồi sinh. Đây là luật game thử, không phải khuyến nghị y tế.
+
+Save tăng61→62; không thêm field, `ESTABLISH_14` giữ shape. Realm v31, action282, observation3766 và reward giữ nguyên; model cũ không chứng minh chất lượng dưới gameplay mới. Core test runner28 checks; CTest Medicine, Atlas specialty và urban residence3/3; Windows Release `polyec_env`/`polyec` build; Python binding14 checks; Godot editor scan, medicine UI50, native19 và app UI133 pass. Chuỗi C++ kiểm được producer→save/load→rút→mua→treatment→save/load. Chưa chạy đủ100 mẻ đến cạn nguồn hoặc live Realm policy session; không có RL/dataset/holdout/package. Report chi tiết, các tham số, file, phép kiểm và giới hạn: [Medicine evidence](reports/M5.2-medicine-production-treatment-evidence-2026-10-23.md); plan trước code: [Medicine plan](design/M5.2-medicine-production-treatment-plan.md).
+
+**Kết quả `supplementary-food-source-v1` — 2026-10-24:** Phù Sa region2 có SeedPressWorks16. Một source unit và16 Work tick tạo đúng một SupplementaryFood1; source mở đầu100, tăng25 mỗi90 ngày game và dừng ở100. Tồn mở đầu32 món, stock xưởng, stock market và depot quân nhu là các sổ riêng. Governance mua sản phẩm xưởng, gửi qua route Atlas, vùng nhận giao một món cho volunteer sau bữa DryFood. Save lên63, `ESTABLISH_14` không đổi; schema62 tiếp tục nạp Medicine garden. Realm v31/actions282/observation3766/reward không đổi. C++ runner28 checks, CTest liên quan5/5, Release `polyec_env`/`polyec` build, Python producer19 assertions và ration binding22 checks pass. Godot editor/UI/native smoke đang chờ vì không tìm thấy executable; không dùng smoke cũ làm bằng chứng UI của source mới. Bảng luật, từng ca kiểm và giới hạn đầy đủ: [report](reports/M5.2-supplementary-food-source-evidence-2026-10-24.md); [plan](design/M5.2-supplementary-food-source-plan.md).
+
+**Nhóm kế tiếp được chọn: nhà ở và sức chứa của settlement Atlas27.** Census hiện biết Person thuộc Urban/Rural/Unknown nhưng không thể trả lời hộ nào có chỗ ở, settlement có bao nhiêu chỗ, một hộ di cư đến nơi hết chỗ thì chuyện gì xảy ra, hoặc ai có quyền xây. Viết và review plan trước code cho `urban-housing-capacity-v1`, gồm vật liệu ConstructionMaterial có nguồn thật, quyền trên land holding/use-right, công sức/tiền xây dựng, gắn căn nhà và sức chứa với settlement/person/household, hành vi khi sinh/migrate/death, census không đếm trùng, save migration và Python/GDExtension/Godot impact. Chưa đặt thông số sản xuất/giá trước khi plan đối chiếu source và quyền hiện hành. RL vẫn dừng cho tới khi gameplay cần thiết hoàn tất.

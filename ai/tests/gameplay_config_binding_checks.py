@@ -24,11 +24,11 @@ with tempfile.TemporaryDirectory(prefix="polyec-config-parity-") as directory:
         [args.replay, "--replay", str(config)], text=True
     ).splitlines()]
     world = core.Realm(71, 2, 128, config_path=str(config))
-    assert world.model_contract == "realm-household-fund-goods30-config-v49"
+    assert world.model_contract == "realm-household-fund-goods30-config-v50"
     timeline = core.Realm(71, 2, 128, config_path=str(config))
     ok, reason, _ = timeline.schedule_command(0, 1, 1, 0, 0, 1, 0, 5)
     assert ok, reason
-    assert timeline.model_contract == "realm-worksite-payroll-goods30-config-v49"
+    assert timeline.model_contract == "realm-worksite-payroll-goods30-config-v50"
     checks += 3
     worker = 65
     region = world.person(worker)["region"]
@@ -90,10 +90,3 @@ with tempfile.TemporaryDirectory(prefix="polyec-config-parity-") as directory:
 print(json.dumps({"checks": checks, "cpp_python_checkpoints": len(expected),
                   "saved_snapshot_after_file_change": True,
                   "config_fingerprint": world.config_fingerprint}))
-
-
-
-
-
-
-

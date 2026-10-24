@@ -3,7 +3,7 @@
 import polyec_env as core
 
 
-assert core.REALM_SCHEMA == "realm-v38"
+assert core.REALM_SCHEMA == "realm-v39"
 assert core.REALM_ACTIONS == 400 and core.REALM_OBS == 5182
 
 world = core.Realm(20261024, 26, 512)
@@ -18,7 +18,7 @@ assert row["available_beds"] == max(0, row["housing_capacity"] - row["urban_resi
 assert row["council_representative_id"] == 0 and row["council_nominee_id"] == 0
 
 saved = world.serialize("urban-housing-binding-v1")
-assert saved.startswith('POLYEC_REALM_71 "')
+assert saved.startswith('POLYEC_REALM_72 "')
 restored = core.Realm(1, 1, 128)
 ok, error = restored.deserialize(saved, "urban-housing-binding-v1")
 assert ok, error

@@ -49,7 +49,7 @@ int main(){try{
     const uint64_t authority=region+2;
     const uint64_t worker=eligible_civilian(world,region);
     check(worker&&world.person(authority).taxing_authority,"Atlas region23 has a mine authority and an adult civilian household head");
-    check(world.model_contract()=="realm-household-fund-goods30-config-v49"&&realm_schema==std::string_view("realm-v38")&&
+    check(world.model_contract()=="realm-household-fund-goods30-config-v50"&&realm_schema==std::string_view("realm-v39")&&
           realm_actions==400&&realm_obs==5182,"Gold social use advances the contract and keeps tensor sizes unchanged");
     check(world.candidates(worker)[realm_gold_social_candidate].kind==Intent::Hold,
           "Gold social use is absent before the civilian personally owns Gold");
@@ -119,7 +119,7 @@ int main(){try{
           "the action consumes personal Gold, pays the regional fund, raises social by20 and occupies14 days");
 
     const auto saved=world.serialize(saveName);
-    check(saved.rfind("POLYEC_REALM_71 ",0)==0,"Gold Mine is written with save schema70");
+    check(saved.rfind("POLYEC_REALM_72 ",0)==0,"Gold Mine is written with save schema70");
     Realm restored(1,1,128);std::string error;
     check(restored.deserialize(saved,saveName,error)&&restored.fingerprint()==world.fingerprint()&&
           restored.establishments()[0].industry==EstablishmentIndustry::GoldMine&&

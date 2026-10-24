@@ -32,8 +32,8 @@ func run() -> void:
 		"the player-facing Gold action explains the personal item, fund payment, social gain and adult eligibility")
 	var session = ClassDB.instantiate("PolyEcSession")
 	var schema = session.realm_schema()
-	check(schema == "realm-v38", "native core schema")
-	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v49", "native core model contract")
+	check(schema == "realm-v39", "native core schema")
+	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v50", "native core model contract")
 	for case in [[10, 12, 27, "thủy tinh thường", 90], [15, 13, 28, "đồ gốm thường", 55], [17, 14, 29, "da thuộc", 80]]:
 		var stock := []
 		stock.resize(30)
@@ -84,6 +84,17 @@ func run() -> void:
 	var butchery_line: String = RealmPanel.establishment_text([{"id": 57, "region": 18, "industry": 22, "stock": butcher_stock}], 18)
 	check(butchery_line.contains("lò mổ và chế biến") and butchery_line.contains("1 Livestock") and butchery_line.contains("3 DryFood"),
 		"Butchery UI explains the real Livestock input and DryFood output")
+	var decorative_stock := []
+	decorative_stock.resize(30)
+	decorative_stock.fill(0)
+	decorative_stock[24] = 1
+	decorative_stock[27] = 2
+	decorative_stock[4] = 3
+	var decorative_line: String = RealmPanel.establishment_text([{"id": 58, "region": 10, "industry": 23, "stock": decorative_stock}], 10)
+	check(decorative_line.contains("xưởng kính trang trí") and decorative_line.contains("thủy tinh trang trí") and decorative_line.contains("2 kính thường") and decorative_line.contains("3 nhiên liệu") and decorative_line.contains("16 tick Work"),
+		"Decorative Glass Works UI explains its output and both real recipe inputs")
+	check(RealmPanel.decorative_glass_social_description().contains("trả 6 đồng") and RealmPanel.decorative_glass_social_description().contains("thêm 15") and RealmPanel.decorative_glass_social_description().contains("từ 14 tuổi"),
+		"the player-facing DecorativeGlass action explains personal item, money, benefit and age eligibility")
 	var census_line: String = RealmPanel.urban_census_text([{"site_name": "Nam Cảng", "urban_residents": 24, "housing_capacity": 24, "unhoused_residents": 0, "available_beds": 0}], true)
 	check(census_line.contains("sức chứa 24") and census_line.contains("còn thiếu chỗ 0") and census_line.contains("giường trống 0"),
 		"housing census UI explains resident count, capacity, unhoused residents and vacant beds")
@@ -102,7 +113,7 @@ func run() -> void:
 		var manifest = JSON.parse_string(FileAccess.get_file_as_string(base + "manifest.json"))
 		paths.append(base + family + ".onnx")
 		hashes.append(manifest.sha256)
-	var loaded = session.realm_load(paths, hashes, 38, 10000)
+	var loaded = session.realm_load(paths, hashes, 39, 10000)
 	check(not loaded, "historical realm-v6 model bundle is rejected after service actions and observation length changed")
 	var rejected = session.realm_snapshot(65)
 	check(not rejected.loaded, "incompatible bundle leaves Realm unloaded")
@@ -114,5 +125,3 @@ func run() -> void:
 	else:
 		print("HOUSEHOLD MODEL GUARD GODOT SMOKE: ", checks, "/", checks, " checks passed")
 		quit(0)
-
-

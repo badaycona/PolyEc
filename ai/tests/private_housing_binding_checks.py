@@ -3,7 +3,7 @@
 import polyec_env as core
 
 
-assert core.REALM_SCHEMA == "realm-v38"
+assert core.REALM_SCHEMA == "realm-v39"
 assert core.REALM_ACTIONS == 400 and core.REALM_OBS == 5182
 assert core.REALM_PRIVATE_HOUSING_CANDIDATE_BEGIN == 336
 assert core.REALM_PRIVATE_BUILD_CANDIDATE_BEGIN == 336

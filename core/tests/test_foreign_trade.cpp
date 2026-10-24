@@ -42,7 +42,7 @@ uint64_t sovereign_in(const Realm& world){
     return 0;
 }
 std::string downgrade_trade_history_save_59_to_57(std::string save){
-    if(save.rfind("POLYEC_REALM_71 ",0)==0||save.rfind("POLYEC_REALM_70 ",0)==0||save.rfind("POLYEC_REALM_64 ",0)==0||save.rfind("POLYEC_REALM_63 ",0)==0||save.rfind("POLYEC_REALM_62 ",0)==0||save.rfind("POLYEC_REALM_61 ",0)==0||save.rfind("POLYEC_REALM_60 ",0)==0)test_fixtures::downgrade_save_60_to_59(save);
+    if(save.rfind("POLYEC_REALM_72 ",0)==0||save.rfind("POLYEC_REALM_70 ",0)==0||save.rfind("POLYEC_REALM_64 ",0)==0||save.rfind("POLYEC_REALM_63 ",0)==0||save.rfind("POLYEC_REALM_62 ",0)==0||save.rfind("POLYEC_REALM_61 ",0)==0||save.rfind("POLYEC_REALM_60 ",0)==0)test_fixtures::downgrade_save_60_to_59(save);
     std::istringstream input(save);std::vector<std::string> words;std::string word;
     while(input>>word)words.push_back(word);
     if(words.empty()||words[0]!="POLYEC_REALM_59")throw std::runtime_error("expected schema59 save");

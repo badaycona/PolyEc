@@ -6,7 +6,7 @@ const NAMES=["Thanh Điền","Hắc Sơn","Bạch Khâu","Thiết Lĩnh","Lâm G
 const CARDS=["Sổ Bộ Chuẩn Mực","Lò Đào Tạo Hoàng Gia","Người Đứng Giữa","Kho Thóc Tiền Triều","Liên Minh Công Thương","Đoàn Công Trình Hoàng Gia","Môn Sinh Khắp Chốn","Mạng Lưới Thư Trạm","Ngân Quỹ Kiến Quốc","Hiến Ước Liên Lãnh","Học Viện Bách Nghệ","Hội Đồng Khai Quốc"]
 const ACTION_NAMES=["Chờ","Mua","Bán","Vận tải","Vay","Trả nợ","Dự án","Tuyển dụng","Thuế","Cứu trợ","Điều tra","Đề nghị","Chấp thuận","Từ chối","Làm việc","Học","Nghỉ","Giao lưu","Tham gia hội","Di cư","Giúp gia đình","Bổ nhiệm","Huy động","Từ chức"]
 const GOODS=["lương khô","thực phẩm bổ sung","muối","gỗ","nhiên liệu","sắt","đồng","bạc","vàng","xơ sợi","sáp ong","vải","lụa","gia súc","ngựa","ngựa chiến","công cụ","quân nhu","vũ khí","vật liệu xây dựng","giấy","thuốc","trà","trầm hương","thủy tinh trang trí","đồ sứ tinh xảo","hàng xa xỉ","thủy tinh thường","đồ gốm thường","da thuộc"]
-const ESTABLISHMENT_NAMES=["","xưởng dệt","xưởng công cụ","xưởng quân nhu","xưởng muối","xưởng gỗ","mỏ","xưởng giấy","vườn trà","xưởng trầm","trại ngựa","lò rèn vũ khí","lò thủy tinh thường","lò gốm thường","xưởng thuộc da","vườn dược liệu","cơ sở ép và sấy hạt","xưởng cưa","trại nuôi ong","trại nuôi tằm","mỏ vàng","trại chăn nuôi","lò mổ và chế biến"]
+const ESTABLISHMENT_NAMES=["","xưởng dệt","xưởng công cụ","xưởng quân nhu","xưởng muối","xưởng gỗ","mỏ","xưởng giấy","vườn trà","xưởng trầm","trại ngựa","lò rèn vũ khí","lò thủy tinh thường","lò gốm thường","xưởng thuộc da","vườn dược liệu","cơ sở ép và sấy hạt","xưởng cưa","trại nuôi ong","trại nuôi tằm","mỏ vàng","trại chăn nuôi","lò mổ và chế biến","xưởng kính trang trí"]
 
 const SPECIALTY_TRIAL_PRICES=[90,55,80]
 var session: RefCounted
@@ -48,6 +48,9 @@ static func silk_social_action_description() -> String:
 
 static func gold_social_action_description() -> String:
     return "Dùng 1 Gold của chính mình và trả 20 đồng vào quỹ vùng · tăng điểm giao lưu của bản thân thêm 20 (tối đa 100) · bận 14 ngày game · chỉ Civilian trưởng thành ngoài quân vụ"
+
+static func decorative_glass_social_description() -> String:
+    return "Dùng 1 kính trang trí của chính mình và trả 6 đồng vào quỹ vùng · tăng điểm giao lưu của bản thân thêm 15 (tối đa 100) · bận 7 ngày game · chỉ Civilian từ 14 tuổi ngoài quân vụ"
 
 static func pottery_meal_vessel_description() -> String:
     return "Đồ gốm cá nhân bền: sau bữa lương khô đã ăn, thêm tối đa 5 dinh dưỡng (giới hạn 100); bản thân đồ gốm không bị tiêu."
@@ -201,12 +204,12 @@ func _ready() -> void:
     if OS.get_cmdline_user_args().has("--atlas-manual-test"):
         start_atlas_manual_test()
         return
-    if not session.has_method("realm_schema") or session.realm_schema()!="realm-v38":
-        status.text="Lõi mô phỏng không khớp dữ liệu realm-v38; cần build đúng phiên bản"
+    if not session.has_method("realm_schema") or session.realm_schema()!="realm-v39":
+        status.text="Lõi mô phỏng không khớp dữ liệu realm-v39; cần build đúng phiên bản"
         return
     var paths=[]
     var hashes=[]
-    var model_root="res://models/realm-v38"
+    var model_root="res://models/realm-v39"
     for arg in OS.get_cmdline_user_args():
         if arg.begins_with("--model-root="):
             model_root=arg.trim_prefix("--model-root=")
@@ -219,7 +222,7 @@ func _ready() -> void:
             status.text="Chưa có bundle "+family
             return
         var manifest=JSON.parse_string(f.get_as_text())
-        if not manifest is Dictionary or manifest.get("schema","")!="realm-v38":
+        if not manifest is Dictionary or manifest.get("schema","")!="realm-v39":
             status.text="Sai schema policy "+family
             return
         if manifest.get("model_contract","")!=session.realm_model_contract():
@@ -227,7 +230,7 @@ func _ready() -> void:
             return
         paths.append(root+family+".onnx")
         hashes.append(manifest.sha256)
-    if not session.realm_load(paths,hashes,38,10000):
+    if not session.realm_load(paths,hashes,39,10000):
         status.text="Không nạp được model: "+str(session.realm_snapshot().get("error",""))
         return
     refresh()
@@ -400,6 +403,7 @@ static func establishment_text(items: Array, region: int) -> String:
         elif industry==20: product_good=8;product_name=GOODS[8]
         elif industry==21: product_good=13;product_name=GOODS[13]
         elif industry==22: product_good=0;product_name=GOODS[0]
+        elif industry==23: product_good=24;product_name=GOODS[24]
         var line="#%d %s · tồn kho %d %s" % [int(site.get("id",0)),ESTABLISHMENT_NAMES[industry],int(stock[product_good]) if product_good>=0 and product_good<stock.size() else 0,product_name]
         if industry in [12,13,14]:
             var source=int(site.get("source_units",0))
@@ -420,6 +424,10 @@ static func establishment_text(items: Array, region: int) -> String:
             line+=" · tồn đàn trừu tượng %d/100; tạo 1 Livestock sau 16 tick Work; bổ sung25 mỗi90 ngày game, tối đa100; không mô phỏng từng con vật" % int(site.get("source_units",0))
         elif industry==22:
             line+=" · tiêu 1 Livestock trong kho xưởng để làm 3 DryFood sau 16 tick Work; cần chuyển hàng từ kho vùng vào xưởng trước"
+        elif industry==23:
+            var plain=int(stock[27]) if stock.size()>27 else 0
+            var fuel=int(stock[4]) if stock.size()>4 else 0
+            line+=" · mỗi mẻ dùng 1 %s và1 %s trong kho xưởng, cần16 tick Work, tạo1 %s · đang có %d kính thường và %d nhiên liệu" % [GOODS[27],GOODS[4],GOODS[24],plain,fuel]
         lines.append(line)
     return "\n".join(lines) if not lines.is_empty() else "Chưa có xưởng trong vùng này"
 
@@ -430,7 +438,7 @@ func refresh() -> void:
         status.text="DỪNG: "+str(v.get("error",""))
         return
     run_button.text="Ⅱ  Tạm dừng" if running else "▶  Chạy thế giới"
-    status.text="KIỂM THỬ ATLAS THỦ CÔNG · NPC không tự ra quyết định; đây chưa phải bản game hoàn chỉnh" if v.get("atlas_manual_test",false) else "Policy realm-v38 · quyết định tự chủ chỉ bật sau khi có đủ 3 bộ tương thích đã huấn luyện và kiểm tra"
+    status.text="KIỂM THỬ ATLAS THỦ CÔNG · NPC không tự ra quyết định; đây chưa phải bản game hoàn chỉnh" if v.get("atlas_manual_test",false) else "Policy realm-v39 · quyết định tự chủ chỉ bật sau khi có đủ 3 bộ tương thích đã huấn luyện và kiểm tra"
     summary.text="Ngày %d  ·  %d cá thể / %d còn sống / %d trẻ em  ·  %d quyết định  ·  %d nợ / %d dự án" % [v.day,v.persons,v.alive,v.children,v.decisions,v.loans,v.projects]
     var atlas_names={}
     for site in v.get("urban_census",[]):
@@ -550,6 +558,7 @@ func refresh() -> void:
         elif a.name=="Giao lưu cùng bạc": text=silver_social_action_description(a.amount)
         elif a.name=="Giao lưu bằng lụa": text=silk_social_action_description()
         elif a.name=="Giao lưu với trang sức vàng": text=gold_social_action_description()
+        elif a.name=="Giao lưu bằng kính trang trí": text=decorative_glass_social_description()
         elif a.name=="Nghỉ": text=beeswax_rest_description()
         elif a.name in ["Vận tải","Di cư"]: text=travel_action_description(region_label(a.target),a.term,a.good==15)
         elif a.name=="Mua lương quân vụ": text="Mua %d phần %s · trả từ ngân khố vùng" % [a.amount,"lương khô" if a.good==0 else "khẩu phần bổ sung"]
@@ -581,6 +590,8 @@ func refresh() -> void:
                 text+=" · tồn đàn ban đầu25/100; mỗi mẻ cần 1 đơn vị đàn và 16 tick Work; tăng25 mỗi90 ngày game"
             elif industry==22:
                 text+=" · mỗi mẻ cần 1 Livestock và 16 tick Work, tạo3 DryFood"
+            elif industry==23:
+                text+=" · mỗi mẻ cần 1 %s +1 %s và16 tick Work, tạo1 %s" % [GOODS[27],GOODS[4],GOODS[24]]
         elif a.name=="Chuyển hàng xưởng":
             text=establishment_transfer_action_text(a.good,a.amount,a.target,a.term==2)
         elif a.name.begins_with("Nhập từ đối tác "): text="Nhập %d hàng khô từ %s · giá 24 đ/món, thuế 5%%, phí tàu %d và phí cảng 2 đ/món · đến cuối ngày %d" % [a.amount,a.name.trim_prefix("Nhập từ ").trim_suffix(" qua cảng"),int(foreign_trade.get("import_route",{}).get("fee_per_unit",0)),v.day+1+int(foreign_trade.get("import_route",{}).get("travel_days",0))]

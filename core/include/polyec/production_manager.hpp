@@ -37,7 +37,7 @@ inline constexpr int64_t kProductionTicksPerUnit = kAttendanceTicksPerWorkUnit;
 inline constexpr int64_t kProductionShortageForfeit = 1; // no labor debt or carryover
 inline constexpr int64_t kLaborProductivityDenominator = 200;
 
-inline constexpr std::array<ProductionRecipe, 23> kProductionRecipes{{
+inline constexpr std::array<ProductionRecipe, 24> kProductionRecipes{{
     {EstablishmentIndustry::ClothWorkshop, {{ProductionGoodAmount{9, 1}}}, 1, 11},
     {EstablishmentIndustry::ToolWorkshop, {{ProductionGoodAmount{5, 1}, ProductionGoodAmount{6, 1}, ProductionGoodAmount{4, 1}}}, 3, 16},
     {EstablishmentIndustry::MilitarySupplyWorkshop, {{ProductionGoodAmount{16, 1}, ProductionGoodAmount{11, 1}}}, 2, 17},
@@ -62,6 +62,9 @@ inline constexpr std::array<ProductionRecipe, 23> kProductionRecipes{{
     {EstablishmentIndustry::LivestockRanch, {}, 0, size_t(GoodId::Livestock), 1, int(GoodId::Livestock), 1},
     {EstablishmentIndustry::Butchery, {{ProductionGoodAmount{size_t(GoodId::Livestock), 1}}}, 1,
         size_t(GoodId::DryFood), 3},
+    {EstablishmentIndustry::DecorativeGlassWorks,
+        {{ProductionGoodAmount{size_t(GoodId::PlainGlass), 1},ProductionGoodAmount{size_t(GoodId::Fuel), 1}}},
+        2,size_t(GoodId::DecorativeGlass),1},
 }};
 
 inline ProductionRecipe production_recipe(EstablishmentIndustry industry,const GameplayConfig& config={},
@@ -80,6 +83,7 @@ inline ProductionRecipe production_recipe(EstablishmentIndustry industry,const G
         case EstablishmentIndustry::MedicinalGarden:case EstablishmentIndustry::SeedPressWorks:
         case EstablishmentIndustry::Apiary:case EstablishmentIndustry::SilkwormFarm:case EstablishmentIndustry::GoldMine:
         case EstablishmentIndustry::LivestockRanch:case EstablishmentIndustry::Butchery:break;
+        case EstablishmentIndustry::DecorativeGlassWorks:break;
         case EstablishmentIndustry::SawmillWorks:break;
         }
         return r;

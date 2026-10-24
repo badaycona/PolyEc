@@ -126,7 +126,7 @@ int main(){try{
     Realm schema65Resume(1,1,128);
     check(schema65Resume.deserialize(schema65Save,"coastal-raid-battle-v1",error)&&
           schema65Resume.military_raids()==world.military_raids()&&
-          schema65Resume.serialize("coastal-raid-battle-v1").rfind("POLYEC_REALM_71 ",0)==0,
+          schema65Resume.serialize("coastal-raid-battle-v1").rfind("POLYEC_REALM_72 ",0)==0,
           "schema65 raid data migrates without a supply-use list and the next save writes schema70");
     auto legacySave=pendingSave;test_fixtures::downgrade_save_60_to_59(legacySave);
     Realm legacy(1,1,128);

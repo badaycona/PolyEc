@@ -51,7 +51,8 @@ enum class EstablishmentIndustry : int {
     SilkwormFarm = 19,
     GoldMine = 20,
     LivestockRanch = 21,
-    Butchery = 22
+    Butchery = 22,
+    DecorativeGlassWorks = 23
 };
 
 inline constexpr int kEstablishmentCapacityMax = 1000000;

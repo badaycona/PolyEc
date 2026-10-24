@@ -91,7 +91,7 @@ int main(){try{
           "one complete work batch consumes one source unit and creates exactly one Medicine");
 
     auto resumedSave=world.serialize("medicine-source-and-treatment-v1");
-    check(resumedSave.rfind("POLYEC_REALM_71 ",0)==0,
+    check(resumedSave.rfind("POLYEC_REALM_72 ",0)==0,
           "the current schema 64 save contains the new industry and urban housing section");
     Realm resumed(1,1,128);std::string error;
     check(resumed.deserialize(resumedSave,"medicine-source-and-treatment-v1",error),error.c_str());
@@ -107,7 +107,7 @@ int main(){try{
           migrated62.establishments()[0].industry==EstablishmentIndustry::MedicinalGarden&&
           migrated62.establishments()[0].source_units==99&&
           migrated62.establishments()[0].stock[medicine]==1&&
-          migrated62.serialize("medicine-source-and-treatment-v1").rfind("POLYEC_REALM_71 ",0)==0&&
+          migrated62.serialize("medicine-source-and-treatment-v1").rfind("POLYEC_REALM_72 ",0)==0&&
           migrated62.invariant(),
           "a schema 62 Medicinal Garden loads with its source and Medicine stock intact, then saves as schema 64");
     auto malformed=tokens(resumedSave);
@@ -154,7 +154,7 @@ int main(){try{
     schema61.replace(0,std::string("POLYEC_REALM_63").size(),"POLYEC_REALM_61");
     Realm migrated(1,1,128);
     check(migrated.deserialize(schema61,"medicine-source-and-treatment-v1",error)&&
-          migrated.serialize("medicine-source-and-treatment-v1").rfind("POLYEC_REALM_71 ",0)==0&&
+          migrated.serialize("medicine-source-and-treatment-v1").rfind("POLYEC_REALM_72 ",0)==0&&
           migrated.establishments().empty()&&migrated.invariant(),
           "schema 61 migrates to 64 without inventing a garden, Medicine or residence data");
     for(const auto [health,stock,label]:{std::tuple{61,1,"health above 60"},

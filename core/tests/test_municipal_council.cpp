@@ -95,7 +95,7 @@ int main(){try{
     check(world.invariant(),"council appointment and authorized housing preserve world invariants");
 
     const auto saved=world.serialize("municipal-council-trial-1");
-    check(saved.starts_with("POLYEC_REALM_71 ")&&saved.find(" MUNICIPAL_COUNCIL_1 27 ")!=std::string::npos,
+    check(saved.starts_with("POLYEC_REALM_72 ")&&saved.find(" MUNICIPAL_COUNCIL_1 27 ")!=std::string::npos,
           "schema70 save writes all 27 council identities and their current representatives");
     Realm loaded(1,1,128);std::string error;
     check(loaded.deserialize(saved,"municipal-council-trial-1",error),error.c_str());

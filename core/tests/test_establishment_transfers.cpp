@@ -316,7 +316,7 @@ int main(int argc,char** argv){try{
         const auto urbanChoices=urban.candidates(governor);
         const auto urbanMask=urban.mask(governor,urbanChoices);
         check(realm_actions==400&&realm_obs==5182&&
-              urban.model_contract()=="realm-household-fund-goods30-config-v49",
+              urban.model_contract()=="realm-household-fund-goods30-config-v50",
               "council approval and refusal actions add 54 choices and receive a new model contract");
         check(urban.observation(governor)[size_t(realm_municipal_fund_observation_index)]==0.f&&
               urban.observation(65)[size_t(realm_municipal_fund_observation_index)]==0.f,
@@ -405,7 +405,7 @@ int main(int argc,char** argv){try{
               "a new grant becomes available after 30 days and is recalculated from the then current treasury");
 
         const std::string urbanSave=urban.serialize("urban-civic-fund-test");
-        check(urbanSave.rfind("POLYEC_REALM_71 ",0)==0&&
+        check(urbanSave.rfind("POLYEC_REALM_72 ",0)==0&&
               urbanSave.find(" MUNICIPAL_FUNDS_1 27 ")!=std::string::npos,
               "new saves store each urban fund and its most recent grant period");
         Realm resumed(1,1,128);
@@ -530,11 +530,3 @@ int main(int argc,char** argv){try{
     }
     std::cout<<"Establishment transfer checks="<<checks<<"; excluded MSVC debug proxies="<<excluded_debug_proxies<<'\n';return 0;
 }catch(const std::exception& error){allocations_until_failure=-1;std::cerr<<"FAIL after "<<checks<<": "<<error.what()<<'\n';return 1;}}
-
-
-
-
-
-
-
-

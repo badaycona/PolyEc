@@ -133,13 +133,16 @@ RealmResult Realm::execute(const PrivateResidenceBuildCommand& command) {
         })) return {false, "This holding already has a private home"};
     const auto material = size_t(GoodId::ConstructionMaterial);
     const auto tools = size_t(GoodId::Tools);
+    const auto glass = size_t(GoodId::PlainGlass);
     if (actor.cash < kPrivateResidenceBuildCost ||
         actor.inventory[material] < kPrivateResidenceConstructionMaterial ||
-        actor.inventory[tools] < kPrivateResidenceTools)
-        return {false, "Building requires 40 personal coins, two ConstructionMaterial, and one Tools"};
+        actor.inventory[tools] < kPrivateResidenceTools ||
+        actor.inventory[glass] < kPrivateResidencePlainGlass)
+        return {false, "Building requires 40 personal coins, two ConstructionMaterial, one Tools, and one PlainGlass"};
     if (day_ > 365000-kPrivateResidenceBuildDays || next_id_ == UINT64_MAX || next_fact_ == UINT64_MAX ||
         consumed_[material] > std::numeric_limits<int64_t>::max()-kPrivateResidenceConstructionMaterial ||
-        consumed_[tools] > std::numeric_limits<int64_t>::max()-kPrivateResidenceTools)
+        consumed_[tools] > std::numeric_limits<int64_t>::max()-kPrivateResidenceTools ||
+        consumed_[glass] > std::numeric_limits<int64_t>::max()-kPrivateResidencePlainGlass)
         return {false, "Private home construction limit reached"};
 
     // Reserve every container before changing balances so allocation failure
@@ -150,8 +153,10 @@ RealmResult Realm::execute(const PrivateResidenceBuildCommand& command) {
     transfer(actor.cash,provinces_[size_t(holding->region)].firm,kPrivateResidenceBuildCost);
     actor.inventory[material]-=kPrivateResidenceConstructionMaterial;
     actor.inventory[tools]-=kPrivateResidenceTools;
+    actor.inventory[glass]-=kPrivateResidencePlainGlass;
     consumed_[material]+=kPrivateResidenceConstructionMaterial;
     consumed_[tools]+=kPrivateResidenceTools;
+    consumed_[glass]+=kPrivateResidencePlainGlass;
     private_residences_.push_back({id,command.holding_id,0,0,holding->region,
         day_+kPrivateResidenceBuildDays,-1,-1,-1,0,0,false});
     actor.last_decision_day=day_;

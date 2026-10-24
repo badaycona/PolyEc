@@ -112,6 +112,7 @@ inline constexpr int kUrbanHousingProjectTermDays=60;
 inline constexpr int64_t kPrivateResidenceBuildCost=40;
 inline constexpr int64_t kPrivateResidenceConstructionMaterial=2;
 inline constexpr int64_t kPrivateResidenceTools=1;
+inline constexpr int64_t kPrivateResidencePlainGlass=1;
 inline constexpr int64_t kPrivateResidenceBeds=4;
 inline constexpr int kPrivateResidenceBuildDays=30;
 inline constexpr int64_t kPrivateResidenceRentPerPeriod=2;
@@ -634,8 +635,8 @@ std::vector<Establishment> establishments() const { return establishments_; }
     std::string model_contract() const {
         std::string result;
         if (schedule_book_.timeline_contract)
-            result=config_.historical_defaults() ? "realm-worksite-payroll-goods30-v43" : "realm-worksite-payroll-goods30-config-v43";
-        else result=config_.historical_defaults() ? "realm-household-fund-goods30-v43" : "realm-household-fund-goods30-config-v43";
+            result=config_.historical_defaults() ? "realm-worksite-payroll-goods30-v44" : "realm-worksite-payroll-goods30-config-v44";
+        else result=config_.historical_defaults() ? "realm-household-fund-goods30-v44" : "realm-household-fund-goods30-config-v44";
         if(capability_mask_!=kDefaultCapabilityMask)result+="-caps-"+std::to_string(capability_mask_);
         return result;
     }

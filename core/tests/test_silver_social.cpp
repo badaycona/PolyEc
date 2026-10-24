@@ -39,7 +39,7 @@ int main(){try{
         if(person.alive&&person.region==region&&person.family==Family::Civilian&&person.age_days>=14*365&&
            world.household_authority(world.household_of(id))==id){worker=id;break;}
     }
-    check(world.model_contract()=="realm-household-fund-goods30-config-v43"&&realm_actions==400&&realm_obs==5182,
+    check(world.model_contract()=="realm-household-fund-goods30-config-v44"&&realm_actions==400&&realm_obs==5182,
           "Silver social uses the new action meaning without changing tensor shapes");
     check(worker&&world.person(authority).taxing_authority,"region23 has its mining authority and an adult worker");
     check(world.candidates(worker)[size_t(realm_silver_social_candidate)].kind==Intent::Hold,

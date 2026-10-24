@@ -57,6 +57,34 @@ func click_day(panel: Control, expected_day: int) -> void:
 		next_day.pressed.emit()
 		expect(int(panel.session.realm_snapshot(panel.actor).day) == expected_day + 1, "nút ngày tiến đúng một ngày và giữ Realm chạy được")
 
+func travel_with_panel(panel: Control, session: Object, actor: int, destination: int, message: String) -> void:
+	var start: Dictionary = session.realm_snapshot(actor)
+	var travel_name := "Di cư" if int(start.person.get("role", -1)) == 2 else "Vận tải"
+	var action: Dictionary = {}
+	for candidate in start.get("actions", []):
+		if candidate.name == travel_name and int(candidate.target) == destination:
+			action = candidate
+			break
+	if action.is_empty():
+		expect(false, message + ": không có lựa chọn đi hợp lệ")
+		return
+	var travel_fee := 4 + 2 * int(action.get("term", 0))
+	if int(start.person.cash) < travel_fee:
+		var loan := find_candidate(start, "Vay")
+		if not click_candidate(panel, session, actor, loan, message + ": vay đúng luật để đủ phí đường về"):
+			return
+		start = session.realm_snapshot(actor)
+		expect(int(start.person.cash) >= travel_fee, message + ": khoản vay đủ trả phí đường")
+		action = find_candidate(start, travel_name, destination)
+		if action.is_empty():
+			expect(false, message + ": sau khoản vay vẫn không có lựa chọn đi hợp lệ")
+			return
+	if not click_candidate(panel, session, actor, action, message): return
+	for _day in range(maxi(1, int(action.get("term", 1)) + 1)):
+		click_day(panel, int(session.realm_snapshot(actor).day))
+	var arrived: Dictionary = session.realm_snapshot(actor).person
+	expect(int(arrived.region) == destination, message + ": người mua đến đúng vùng")
+
 func run() -> void:
 	var session: Object = ClassDB.instantiate("PolyEcSession")
 	var panel_script = load("res://ui/realm/realm_panel.gd")
@@ -75,9 +103,9 @@ func run() -> void:
 	expect(session.realm_snapshot(1).get("atlas_manual_test", false), "nút mở cùng C++ Realm ở chế độ kiểm thử có nhãn")
 	expect(panel.status.text.contains("NPC không tự ra quyết định") and panel.region_rows.size() == 27, "màn hình nói rõ NPC chưa tự quyết định và hiển thị 27 vùng")
 	var initial: Dictionary = session.realm_snapshot(34)
-	expect(initial.person.inventory.size() == 30 and initial.person.inventory[19] == 0 and initial.person.inventory[16] == 0, "người mua bắt đầu không có sẵn vật liệu xây dựng hoặc công cụ")
+	expect(initial.person.inventory.size() == 30 and initial.person.inventory[19] == 0 and initial.person.inventory[16] == 0 and initial.person.inventory[27] == 0, "người mua bắt đầu không có sẵn vật liệu, công cụ hoặc kính thường")
 	expect(initial.person.cash >= 40 and initial.land_holdings.any(func(land): return int(land.owner_id) == 34 and int(land.region) == 6), "người chơi có đủ tiền và một thửa đô thị đứng tên mình theo dữ liệu Atlas")
-	expect(initial.regions[6].stock[3] == 0 and initial.regions[6].stock[19] == 0, "chợ vùng bắt đầu không có sẵn Timber hoặc vật liệu xây dựng")
+	expect(initial.regions[6].stock[3] == 0 and initial.regions[6].stock[19] == 0 and initial.regions[6].stock[27] == 0, "chợ vùng bắt đầu không có sẵn Timber, vật liệu xây dựng hoặc kính thường")
 
 	# Create Timber through the public Forestry, then move it through the ordinary market and Sawmill commands.
 	var authority := 8
@@ -114,6 +142,24 @@ func run() -> void:
 		click_candidate(panel, session, authority, withdraw, "đưa vật liệu xây dựng từ xưởng vào chợ")
 	expect(session.realm_snapshot(34).regions[6].stock[19] >= 2, "chợ chỉ có vật liệu sau khi xưởng thật sự sản xuất và giao hàng")
 
+	# Glassworks is restricted to region10. The owner travels there, buys the pane from that local market, and carries it home.
+	var glass_authority := 12
+	var glass_action := find_candidate(session.realm_snapshot(glass_authority), "Tạo cơ sở sản xuất", 10, 12, -1, 25)
+	click_candidate(panel, session, glass_authority, glass_action, "cơ quan vùng10 lập Glassworks thật")
+	var glass_site := int(session.realm_snapshot(glass_authority).establishments.back().id)
+	var glass_fuel := find_candidate(session.realm_snapshot(glass_authority), "Chuyển hàng xưởng", glass_site, 4, 2, 1)
+	click_candidate(panel, session, glass_authority, glass_fuel, "đưa Fuel thật vào Glassworks")
+	var glass_authorization := find_candidate(session.realm_snapshot(glass_authority), "Cho phép làm tại xưởng", glass_site)
+	click_candidate(panel, session, glass_authority, glass_authorization, "cơ quan vùng10 cấp quyền Work")
+	var glass_worker := int(glass_authorization.good)
+	var glass_work := find_candidate(session.realm_snapshot(glass_worker), "Làm tại xưởng", glass_site)
+	click_candidate(panel, session, glass_worker, glass_work, "lao động làm một mẻ kính bằng Work thật")
+	click_day(panel, int(session.realm_snapshot(glass_worker).day))
+	expect(session.realm_snapshot(glass_authority).establishments.back().stock[27] == 1, "Glassworks dùng Fuel và Work để tạo một PlainGlass")
+	var glass_withdraw := find_candidate(session.realm_snapshot(glass_authority), "Chuyển hàng xưởng", glass_site, 27, 3, 1)
+	click_candidate(panel, session, glass_authority, glass_withdraw, "Glassworks đưa kính đã làm ra vào chợ vùng10")
+	expect(session.realm_snapshot(glass_authority).regions[10].stock[27] == 1, "PlainGlass chỉ xuất hiện ở chợ sau khi Glassworks sản xuất và chuyển hàng")
+
 	# The private buyer uses the visible market-order buttons, then the visible housing commands.
 	panel.actor = 34
 	panel.refresh()
@@ -127,13 +173,29 @@ func run() -> void:
 	var order_day := int(session.realm_snapshot(34).day)
 	click_day(panel, order_day)
 	var supplied: Dictionary = session.realm_snapshot(34)
-	expect(supplied.person.inventory[19] == 2 and supplied.person.inventory[16] == 1 and supplied.person.cash >= 40, "chợ giao đúng hai vật liệu và một công cụ; người chơi vẫn đủ 40 đồng xây nhà")
+	expect(supplied.person.inventory[19] == 2 and supplied.person.inventory[16] == 1 and supplied.person.cash >= 40, "chợ giao đúng hai vật liệu và một công cụ; người chơi vẫn đủ 40 đồng xây nhà trước khi mua kính")
 	if supplied.person.inventory[19] != 2 or supplied.person.inventory[16] != 1:
 		panel.queue_free()
 		quit(1)
 		return
 	var build_button := find_button(panel.commands, "Xây nhà (40 đồng", true)
-	expect(build_button != null and not build_button.disabled, "người chơi có thể chọn chính thửa đất mình đứng tên")
+	expect(build_button != null and build_button.disabled, "thiếu PlainGlass thì giao diện khóa lệnh xây nhà")
+	travel_with_panel(panel, session, 34, 10, "người chơi đi tới vùng Glassworks để mua kính")
+	var buy_glass := find_button(panel.commands, "Đặt lệnh mua 1 kính thường", true)
+	expect(buy_glass != null and not buy_glass.disabled, "giao diện chỉ bật đơn kính khi chợ vùng10 có hàng và người chơi đủ tiền")
+	if buy_glass != null: buy_glass.pressed.emit()
+	var glass_order_day := int(session.realm_snapshot(34).day)
+	click_day(panel, glass_order_day)
+	expect(session.realm_snapshot(34).person.inventory[27] == 1, "settlement giao PlainGlass vào kho cá nhân của người mua")
+	travel_with_panel(panel, session, 34, 6, "người chơi mang kính về đúng nơi cư trú và thửa đất")
+	panel.actor = 34
+	panel.refresh()
+	if int(session.realm_snapshot(34).person.cash) < 40:
+		var housing_loan := find_candidate(session.realm_snapshot(34), "Vay")
+		click_candidate(panel, session, 34, housing_loan, "chủ nhà vay theo lệnh tài chính hiện có để đủ tiền xây")
+		panel.refresh()
+	build_button = find_button(panel.commands, "Xây nhà (40 đồng", true)
+	expect(build_button != null and not build_button.disabled, "sau khi mua và mang kính về, người chơi có thể xây trên thửa mình đứng tên")
 	if build_button != null: build_button.pressed.emit()
 	var building_fingerprint := str(session.realm_snapshot(34).fingerprint)
 	var save_build_button := find_button(panel, "Lưu")

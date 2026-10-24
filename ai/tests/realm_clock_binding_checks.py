@@ -164,7 +164,7 @@ def main():
     # Timeline contract keeps the current candidate surface usable for v11 agents.
     check(p.timeline_contract, "timeline contract true")
     check(not p.pilot_policy_compatible, "pilot compatibility false")
-    check(p.model_contract == "realm-worksite-payroll-goods30-config-v43",
+    check(p.model_contract == "realm-worksite-payroll-goods30-config-v44",
           "model contract timeline/worksite/catalog action surface with configured gameplay values")
     observed_after_timeline = p.observe(actor)
     mask_after_timeline = p.mask(actor)

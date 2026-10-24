@@ -467,7 +467,7 @@ func refresh() -> void:
     if v.get("atlas_manual_test",false):
         add_private_housing_controls(v,p)
     var inventory: Array=p.get("inventory",[])
-    if int(p.get("role",-1))==2 and int(p.get("age_days",0))>=6*365 and (inventory.size()<=7 or int(inventory[7])==0):
+    if int(p.get("role",-1))==2 and int(p.get("age",0))>=6 and (inventory.size()<=7 or int(inventory[7])==0):
         add_silver_social_market_control(v,p)
     var military_raids: Array=v.get("military_raids",[])
     if bool(p.get("sovereign",false)):
@@ -702,7 +702,7 @@ static func private_housing_error_text(reason: String) -> String:
         "A private home requires an available adult living at an Atlas urban site":"Chỉ người trưởng thành còn sống, đang rảnh và cư trú tại đô thị Atlas mới được xây nhà.",
         "Actor must own an urban holding at their current residence":"Cá thể phải đứng tên một thửa đất đô thị tại nơi mình đang cư trú.",
         "This holding already has a private home":"Thửa đất này đã có nhà tư.",
-        "Building requires 40 personal coins, two ConstructionMaterial, and one Tools":"Cần 40 đồng cá nhân, hai vật liệu xây dựng và một công cụ.",
+        "Building requires 40 personal coins, two ConstructionMaterial, one Tools, and one PlainGlass":"Cần 40 đồng cá nhân, hai vật liệu xây dựng, một công cụ và một kính thường.",
         "Private home construction limit reached":"Đã chạm giới hạn ngày hoặc số hồ sơ xây nhà.",
         "Private leases are only available in Atlas":"Nhà tư chỉ hoạt động trong thế giới Atlas.",
         "Trial rent is fixed at two coins per thirty game days":"Giá thuê thử nghiệm cố định là 2 đồng mỗi 30 ngày game.",
@@ -728,7 +728,7 @@ func add_private_housing_controls(v: Dictionary, p: Dictionary) -> void:
     var stock: Array=region_market.get("stock",[])
     var prices: Array=region_market.get("prices",[])
     var inventory: Array=p.get("inventory",[])
-    for requirement in [{"good":19,"quantity":2,"label":"vật liệu xây dựng"},{"good":16,"quantity":1,"label":"công cụ"}]:
+    for requirement in [{"good":19,"quantity":2,"label":"vật liệu xây dựng"},{"good":16,"quantity":1,"label":"công cụ"},{"good":27,"quantity":1,"label":"kính thường"}]:
         var good=int(requirement.good)
         var owned=int(inventory[good] if good<inventory.size() else 0)
         var needed=maxi(0,int(requirement.quantity)-owned)
@@ -751,9 +751,12 @@ func add_private_housing_controls(v: Dictionary, p: Dictionary) -> void:
         own.set_item_metadata(own.item_count-1,int(holding.id))
         own_count+=1
     commands.add_child(own)
-    var build=button(commands,"Xây nhà (40 đồng, 2 vật liệu, 1 công cụ; 30 ngày)",func():
+    var build=button(commands,"Xây nhà (40 đồng, 2 vật liệu, 1 công cụ, 1 kính thường; 30 ngày)",func():
         if own.item_count>0: run_private_residence_build(int(own.get_item_metadata(own.selected)),str(v.fingerprint)))
-    build.disabled=own_count==0
+    var build_inventory: Array=p.get("inventory",[])
+    var build_affordable=int(p.get("cash",0))>=40 and int(build_inventory[19] if build_inventory.size()>19 else 0)>=2 and int(build_inventory[16] if build_inventory.size()>16 else 0)>=1 and int(build_inventory[27] if build_inventory.size()>27 else 0)>=1
+    build.disabled=own_count==0 or not build_affordable
+    build.tooltip_text="Cần thửa đô thị do mình đứng tên, 40 đồng cá nhân, hai vật liệu xây dựng, một công cụ và một kính thường."
     if own_count==0:
         var no_title=Label.new();no_title.text="Cá thể này chưa đứng tên thửa đất nào được phép xem.";no_title.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;commands.add_child(no_title)
     var tenant_picker=OptionButton.new()

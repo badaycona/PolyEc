@@ -803,10 +803,13 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
                 [&](const auto&home){return home.holding_id==holding->id;}))return false;
         if(p.cash<kPrivateResidenceBuildCost||
            p.inventory[size_t(GoodId::ConstructionMaterial)]<kPrivateResidenceConstructionMaterial||
-           p.inventory[size_t(GoodId::Tools)]<kPrivateResidenceTools||day_>365000-kPrivateResidenceBuildDays||
+           p.inventory[size_t(GoodId::Tools)]<kPrivateResidenceTools||
+           p.inventory[size_t(GoodId::PlainGlass)]<kPrivateResidencePlainGlass||
+           day_>365000-kPrivateResidenceBuildDays||
            next_id_==UINT64_MAX||next_fact_==UINT64_MAX||
            consumed_[size_t(GoodId::ConstructionMaterial)]>std::numeric_limits<int64_t>::max()-kPrivateResidenceConstructionMaterial||
-           consumed_[size_t(GoodId::Tools)]>std::numeric_limits<int64_t>::max()-kPrivateResidenceTools)return false;
+           consumed_[size_t(GoodId::Tools)]>std::numeric_limits<int64_t>::max()-kPrivateResidenceTools||
+           consumed_[size_t(GoodId::PlainGlass)]>std::numeric_limits<int64_t>::max()-kPrivateResidencePlainGlass)return false;
         return true;
     }
     if(c.kind==Intent::PrivateHousing){

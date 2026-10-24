@@ -72,7 +72,7 @@ inline bool read_establishment_section(std::istream& in, size_t people_count, in
             error = "Save establishment owner kind";
             return false;
         }
-        if (industry < 1 || industry > (realm_schema >= 68 ? 18 : realm_schema >= 64 ? 17 : realm_schema >= 63 ? 16 : realm_schema >= 62 ? 15 : realm_schema >= 55 ? 14 : realm_schema >= 43 ? 11 : realm_schema >= 42 ? 10 : realm_schema >= 41 ? 9 : realm_schema >= 40 ? 8 : realm_schema >= 39 ? 7 : realm_schema >= 38 ? 6 : realm_schema >= 37 ? 5 : realm_schema >= 36 ? 4 : 3)) {
+        if (industry < 1 || industry > (realm_schema >= 69 ? 19 : realm_schema >= 68 ? 18 : realm_schema >= 64 ? 17 : realm_schema >= 63 ? 16 : realm_schema >= 62 ? 15 : realm_schema >= 55 ? 14 : realm_schema >= 43 ? 11 : realm_schema >= 42 ? 10 : realm_schema >= 41 ? 9 : realm_schema >= 40 ? 8 : realm_schema >= 39 ? 7 : realm_schema >= 38 ? 6 : realm_schema >= 37 ? 5 : realm_schema >= 36 ? 4 : 3)) {
             error = "Save establishment industry";
             return false;
         }
@@ -206,7 +206,8 @@ inline bool read_establishment_section(std::istream& in, size_t people_count, in
              e.industry==EstablishmentIndustry::PotteryKiln||e.industry==EstablishmentIndustry::Tannery))||
             (realm_schema>=62&&e.industry==EstablishmentIndustry::MedicinalGarden)||
             (realm_schema>=63&&e.industry==EstablishmentIndustry::SeedPressWorks)||
-            (realm_schema>=68&&e.industry==EstablishmentIndustry::Apiary);
+            (realm_schema>=68&&e.industry==EstablishmentIndustry::Apiary)||
+            (realm_schema>=69&&e.industry==EstablishmentIndustry::SilkwormFarm);
         const int expectedSource=establishment_source_good(e.industry,e.region);
         if(e.industry==EstablishmentIndustry::Mining&&e.region!=7&&e.region!=23){
             error="Save Mining source region";return false;
@@ -229,6 +230,10 @@ inline bool read_establishment_section(std::istream& in, size_t people_count, in
         if(realm_schema>=68&&e.industry==EstablishmentIndustry::Apiary&&
            (regions!=int(kAtlasTerritoryCount)-1||e.region!=21)){
             error="Save Apiary requires Atlas region 21";return false;
+        }
+        if(realm_schema>=69&&e.industry==EstablishmentIndustry::SilkwormFarm&&
+           (regions!=int(kAtlasTerritoryCount)-1||e.region!=12)){
+            error="Save Silkworm Farm requires Atlas region 12";return false;
         }
         if((sourceIndustry&&(e.source_good!=expectedSource||e.source_units<0||
                             e.source_units>kEstablishmentSourceUnitsMaximum))||

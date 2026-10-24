@@ -24,10 +24,13 @@ func run() -> void:
 	check(RealmPanel.good_name(10) == "sáp ong" and RealmPanel.beeswax_rest_description().contains("giảm thêm 5 điểm") and
 		RealmPanel.fact_kind_name(239).contains("Beeswax"),
 		"the player-facing Rest description and event explain the personal Beeswax cost and sleep-debt benefit")
+	check(RealmPanel.good_name(12) == "lụa" and RealmPanel.silk_social_action_description().contains("trả 4 đồng") and
+		RealmPanel.silk_social_action_description().contains("thêm 12") and RealmPanel.silk_social_action_description().contains("ngoài quân vụ"),
+		"the player-facing Silk action explains its personal item, fund payment, social gain and eligibility")
 	var session = ClassDB.instantiate("PolyEcSession")
 	var schema = session.realm_schema()
-	check(schema == "realm-v35", "native core schema")
-	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v46", "native core model contract")
+	check(schema == "realm-v36", "native core schema")
+	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v47", "native core model contract")
 	for case in [[10, 12, 27, "thủy tinh thường", 90], [15, 13, 28, "đồ gốm thường", 55], [17, 14, 29, "da thuộc", 80]]:
 		var stock := []
 		stock.resize(30)
@@ -50,6 +53,13 @@ func run() -> void:
 	var apiary_line: String = RealmPanel.establishment_text([{"id": 53, "region": 21, "industry": 18, "stock": apiary_stock, "source_units": 24}], 21)
 	check(apiary_line.contains("trại nuôi ong") and apiary_line.contains("sáp ong") and apiary_line.contains("24 source units") and apiary_line.contains("16 tick Work"),
 		"Apiary UI separates saleable Beeswax stock from the finite source and explains production work")
+	var silk_stock := []
+	silk_stock.resize(30)
+	silk_stock.fill(0)
+	silk_stock[12] = 1
+	var silk_farm_line: String = RealmPanel.establishment_text([{"id": 54, "region": 12, "industry": 19, "stock": silk_stock, "source_units": 25}], 12)
+	check(silk_farm_line.contains("trại nuôi tằm") and silk_farm_line.contains("lụa") and silk_farm_line.contains("25 source units") and silk_farm_line.contains("16 tick Work"),
+		"Silkworm Farm UI distinguishes its finite source from saleable Silk and explains production work")
 	var census_line: String = RealmPanel.urban_census_text([{"site_name": "Nam Cảng", "urban_residents": 24, "housing_capacity": 24, "unhoused_residents": 0, "available_beds": 0}], true)
 	check(census_line.contains("sức chứa 24") and census_line.contains("còn thiếu chỗ 0") and census_line.contains("giường trống 0"),
 		"housing census UI explains resident count, capacity, unhoused residents and vacant beds")

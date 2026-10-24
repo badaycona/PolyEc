@@ -55,7 +55,8 @@ RealmResult Realm::execute(const EstablishmentCommand& cmd){
         cmd.industry != EstablishmentIndustry::MedicinalGarden &&
         cmd.industry != EstablishmentIndustry::SeedPressWorks &&
         cmd.industry != EstablishmentIndustry::SawmillWorks &&
-        cmd.industry != EstablishmentIndustry::Apiary) return {false, "Invalid industry"};
+        cmd.industry != EstablishmentIndustry::Apiary &&
+        cmd.industry != EstablishmentIndustry::SilkwormFarm) return {false, "Invalid industry"};
     if(cmd.industry==EstablishmentIndustry::Saltworks&&cmd.region!=8)return {false,"Saltworks requires atlas region 8"};
     if(cmd.industry==EstablishmentIndustry::Forestry){
         if(cmd.region!=6)return {false,"Forestry requires atlas region 6"};
@@ -142,6 +143,13 @@ RealmResult Realm::execute(const EstablishmentCommand& cmd){
             return site.industry==EstablishmentIndustry::Apiary&&site.region==21;
         }))return {false,"Beeswax source site already exists in region 21"};
     }
+    if(cmd.industry==EstablishmentIndustry::SilkwormFarm){
+        if(regions_!=int(kAtlasTerritoryCount)-1||cmd.region!=12)
+            return {false,"Silkworm Farm requires Atlas region 12"};
+        if(std::any_of(establishments_.begin(),establishments_.end(),[](const Establishment& site){
+            return site.industry==EstablishmentIndustry::SilkwormFarm&&site.region==12;
+        }))return {false,"Silk source site already exists in region 12"};
+    }
     const int cap = cmd.capacity==-1?config_.default_capacity():cmd.capacity;
     if (cap < 1 || cap > kEstablishmentCapacityMax) return {false, "Invalid capacity"};
     if (cmd.funding < 1) return {false, "Insufficient funding"};
@@ -193,7 +201,8 @@ RealmResult Realm::execute(const EstablishmentCommand& cmd){
     const int sourceGood=establishment_source_good(cmd.industry,cmd.region);
     if(sourceGood!=kNoEstablishmentSourceGood){
         e.source_good=sourceGood;
-        e.source_units=(cmd.industry==EstablishmentIndustry::TeaGarden||cmd.industry==EstablishmentIndustry::Apiary)?25:kEstablishmentSourceUnitsMaximum;
+        e.source_units=(cmd.industry==EstablishmentIndustry::TeaGarden||cmd.industry==EstablishmentIndustry::Apiary||
+                        cmd.industry==EstablishmentIndustry::SilkwormFarm)?25:kEstablishmentSourceUnitsMaximum;
     }
     RealmResult result{true, "Committed", 0, newId};
     reserve_append(establishments_,1000000);

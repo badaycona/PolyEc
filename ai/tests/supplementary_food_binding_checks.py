@@ -16,7 +16,7 @@ worker = next(
         and world.person(person_id)["age_days"] >= 14 * 365)
 )
 
-assert core.REALM_SCHEMA == "realm-v35"
+assert core.REALM_SCHEMA == "realm-v36"
 assert core.REALM_ACTIONS == 400 and core.REALM_OBS == 5182
 assert world.mask(governor)[266] == 1.0
 assert world.step(governor, 266)[0]

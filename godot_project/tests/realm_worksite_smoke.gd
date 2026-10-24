@@ -24,7 +24,7 @@ func run() -> void:
 	var session = ClassDB.instantiate("PolyEcSession")
 	var schema = session.realm_schema()
 	check(schema == "realm-v34", "native core schema")
-	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v40", "native core model contract")
+	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v43", "native core model contract")
 	for case in [[10, 12, 27, "thủy tinh thường", 90], [15, 13, 28, "đồ gốm thường", 55], [17, 14, 29, "da thuộc", 80]]:
 		var stock := []
 		stock.resize(30)

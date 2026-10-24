@@ -14,6 +14,11 @@ func _initialize() -> void:
 func run() -> void:
     var realm_panel_script=load("res://ui/realm/realm_panel.gd")
     expect(realm_panel_script.fact_kind_name(238)=="Ăn thêm một món thực phẩm bổ sung","supplementary civilian meal event has a clear player-facing label")
+    expect(realm_panel_script.silver_social_action_description(2).contains("Dùng 1 Silver của chính mình") and
+        realm_panel_script.silver_social_action_description(2).contains("trả 2 đồng") and
+        realm_panel_script.silver_social_action_description(2).contains("tăng điểm giao lưu thêm 10") and
+        realm_panel_script.silver_social_action_description(2).contains("bận 7 ngày game"),
+        "Silver social action explains the owned item, coin cost, benefit cap and duration")
     var tea_social_text=realm_panel_script.tea_social_action_description(1)
     expect(tea_social_text.contains("Dùng 1 Tea của chính mình") and tea_social_text.contains("tăng điểm giao lưu thêm 5 (tối đa 100)") and tea_social_text.contains("bận 7 ngày game"),"Tea social choice explains its personal item cost, benefit cap and duration")
     var incense_social_text=realm_panel_script.incense_social_action_description(2)

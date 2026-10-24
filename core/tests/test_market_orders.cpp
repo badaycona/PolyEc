@@ -70,9 +70,9 @@ int main(){
         const bool loaded=restored.deserialize(saved,"market-order-test",error);
         check(loaded&&restored.fingerprint()==world.fingerprint(),loaded?"pending order round-trips exactly":error.c_str());
         std::string corruptEscrow=saved;
-        const auto marketHeader=corruptEscrow.find(" MARKET_1 ");
+        const auto marketHeader=corruptEscrow.find(" MARKET_2 ");
         check(marketHeader!=std::string::npos,"save includes the versioned market ledger");
-        const auto escrowBegin=marketHeader+std::string(" MARKET_1 ").size();
+        const auto escrowBegin=marketHeader+std::string(" MARKET_2 ").size();
         const auto escrowEnd=corruptEscrow.find(' ',escrowBegin);
         corruptEscrow.replace(escrowBegin,escrowEnd-escrowBegin,std::to_string(initialHouseholdDeposit+1));
         const auto destinationBefore=restored.fingerprint();

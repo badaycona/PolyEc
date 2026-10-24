@@ -41,6 +41,7 @@ inline constexpr int realm_state=realm_military_supply_obligation_observation_be
 inline constexpr int realm_actions=400;
 inline constexpr int realm_tea_social_candidate=24;
 inline constexpr int realm_incense_social_candidate=25;
+inline constexpr int realm_silver_social_candidate=26;
 inline constexpr int realm_council_nomination_candidate=71;
 inline constexpr int realm_council_accept_candidate_begin=282;
 inline constexpr int realm_council_reject_candidate_begin=309;
@@ -633,8 +634,8 @@ std::vector<Establishment> establishments() const { return establishments_; }
     std::string model_contract() const {
         std::string result;
         if (schedule_book_.timeline_contract)
-            result=config_.historical_defaults() ? "realm-worksite-payroll-goods30-v42" : "realm-worksite-payroll-goods30-config-v42";
-        else result=config_.historical_defaults() ? "realm-household-fund-goods30-v42" : "realm-household-fund-goods30-config-v42";
+            result=config_.historical_defaults() ? "realm-worksite-payroll-goods30-v43" : "realm-worksite-payroll-goods30-config-v43";
+        else result=config_.historical_defaults() ? "realm-household-fund-goods30-v43" : "realm-household-fund-goods30-config-v43";
         if(capability_mask_!=kDefaultCapabilityMask)result+="-caps-"+std::to_string(capability_mask_);
         return result;
     }

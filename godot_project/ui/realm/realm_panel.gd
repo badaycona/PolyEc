@@ -40,6 +40,9 @@ static func tea_social_action_description(amount: int) -> String:
 static func incense_social_action_description(amount: int) -> String:
     return "Dùng 1 Incense của chính mình và trả %d đồng · tăng điểm giao lưu thêm 8 (tối đa 100) · bận 7 ngày game" % amount
 
+static func silver_social_action_description(amount: int) -> String:
+    return "Dùng 1 Silver của chính mình và trả %d đồng · tăng điểm giao lưu thêm 10 (tối đa 100) · bận 7 ngày game" % amount
+
 static func travel_action_description(destination: String, days: int, mounted: bool) -> String:
     var text="Đi tới %s · %d ngày game · phí %d đồng" % [destination,days,4+2*days]
     if mounted:
@@ -463,6 +466,9 @@ func refresh() -> void:
     for child in commands.get_children(): commands.remove_child(child);child.queue_free()
     if v.get("atlas_manual_test",false):
         add_private_housing_controls(v,p)
+    var inventory: Array=p.get("inventory",[])
+    if int(p.get("role",-1))==2 and int(p.get("age_days",0))>=6*365 and (inventory.size()<=7 or int(inventory[7])==0):
+        add_silver_social_market_control(v,p)
     var military_raids: Array=v.get("military_raids",[])
     if bool(p.get("sovereign",false)):
         var pending_raid: Dictionary={}
@@ -511,6 +517,7 @@ func refresh() -> void:
         if a.name in ["Mua","Bán"]: text="%s %s · %d đơn vị" % [a.name,GOODS[clampi(a.good,0,GOODS.size()-1)],a.amount]
         elif a.name=="Giao lưu cùng trà": text=tea_social_action_description(a.amount)
         elif a.name=="Giao lưu cùng trầm hương": text=incense_social_action_description(a.amount)
+        elif a.name=="Giao lưu cùng bạc": text=silver_social_action_description(a.amount)
         elif a.name in ["Vận tải","Di cư"]: text=travel_action_description(region_label(a.target),a.term,a.good==15)
         elif a.name=="Mua lương quân vụ": text="Mua %d phần %s · trả từ ngân khố vùng" % [a.amount,"lương khô" if a.good==0 else "khẩu phần bổ sung"]
         elif a.name=="Gửi lương quân vụ": text="Gửi tối đa %d phần %s tới vùng #%d" % [a.amount,"lương khô" if a.good==0 else "khẩu phần bổ sung",a.target]
@@ -663,6 +670,20 @@ func run_private_housing_market_order(good: int, quantity: int, maximum_unit_pri
     var result=session.realm_market_order(actor,0,0,region,good,quantity,maximum_unit_price,expected)
     feedback.text="Đã giữ tiền cho đơn mua; chợ sẽ giao hàng khi hết ngày game." if result.success else "Không đặt được đơn mua: "+str(result.get("error","Realm từ chối giao dịch"))
     refresh()
+
+func add_silver_social_market_control(v: Dictionary, p: Dictionary) -> void:
+    var region=int(p.get("region",-1))
+    if region<0 or region>=v.get("regions",[]).size(): return
+    var market: Dictionary=v.regions[region]
+    var stock: Array=market.get("stock",[])
+    var prices: Array=market.get("prices",[])
+    var available=int(stock[7] if stock.size()>7 else 0)
+    if available<1: return
+    var price=int(prices[7] if prices.size()>7 else 0)
+    var purchase=button(commands,"Đặt lệnh mua 1 Silver cho lựa chọn giao lưu",func():
+        run_private_housing_market_order(7,1,price,region,str(v.fingerprint)))
+    purchase.disabled=price<=0 or int(p.get("cash",0))<price
+    purchase.tooltip_text="Cần %d đồng để giữ giá tối đa cho đơn; chợ giao hàng sau một ngày nếu còn tồn." % price
 
 func run_private_housing_command(residence_id: int, operation: int, household_id: int, expected: String) -> void:
     if not pause_core_and_stop_ui():

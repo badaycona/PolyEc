@@ -509,6 +509,9 @@ std::array<Candidate,realm_actions> Realm::candidates(uint64_t id)const{
         if(p.family==Family::Civilian&&p.alive&&p.age_days>=6*365&&
            p.inventory[size_t(GoodId::Incense)]>0)
             c[size_t(realm_incense_social_candidate)]={Intent::Social,p.region,int(GoodId::Incense),2,7};
+        if(p.family==Family::Civilian&&p.alive&&p.age_days>=6*365&&
+           p.inventory[size_t(GoodId::Silver)]>0)
+            c[size_t(realm_silver_social_candidate)]={Intent::Social,p.region,int(GoodId::Silver),2,7};
         for(int group=1;group<4;++group)c[20+group]={Intent::Join,p.region,group,2,30};
         auto authority=household_authority(p.household_membership.household_id);if(authority)c[19]={Intent::Support,int(authority),0,5};c[20]={Intent::Buy,p.region,0,1};
     }
@@ -1190,6 +1193,9 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
         const size_t incense=size_t(GoodId::Incense);
         if(c.good==int(GoodId::Incense)&&p.inventory[incense]>0&&
            consumed_[incense]<std::numeric_limits<int64_t>::max())return true;
+        const size_t silver=size_t(GoodId::Silver);
+        if(c.good==int(GoodId::Silver)&&p.inventory[silver]>0&&
+           consumed_[silver]<std::numeric_limits<int64_t>::max())return true;
         break;
     }
     case Intent::Join:if(p.family==Family::Civilian&&p.age_days>=6*365&&c.target==p.region&&c.good>=0&&c.good<4&&p.organization!=1+4*p.region+c.good&&p.cash>=c.amount&&c.term>0&&c.term<=30)return true;break;
@@ -1465,6 +1471,13 @@ RealmResult Realm::execute(const RealmCommand&cmd){
             --p.inventory[incense];
             ++consumed_[incense];
             p.social=std::min(100,p.social+8);
+        }else if(c.good==int(GoodId::Silver)){
+            const size_t silver=size_t(GoodId::Silver);
+            if(p.inventory[silver]<1||consumed_[silver]==std::numeric_limits<int64_t>::max())
+                throw std::logic_error("validated social silver changed before commit");
+            --p.inventory[silver];
+            ++consumed_[silver];
+            p.social=std::min(100,p.social+10);
         }else p.social=std::min(100,p.social+2);
         p.busy_until=day_+c.term;
         break;
@@ -3314,6 +3327,7 @@ std::string Realm::action_name(const Candidate&c){
     }
     if(c.kind==Intent::Social&&c.good==int(GoodId::Tea))return "Giao lưu cùng trà";
     if(c.kind==Intent::Social&&c.good==int(GoodId::Incense))return "Giao lưu cùng trầm hương";
+    if(c.kind==Intent::Social&&c.good==int(GoodId::Silver))return "Giao lưu cùng bạc";
     if(c.kind==Intent::NominateCouncil&&c.target>=0&&c.target<int(kAtlasTerritoryCount)){
         const std::string site(kAtlasUrbanSites[size_t(c.target)].name);
         if(c.good==0)return "Tự ứng cử đại diện hội đồng tại "+site;

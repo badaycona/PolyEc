@@ -25,7 +25,7 @@ std::array<float,realm_actions> revalidate_snapshot(const Realm&w,uint64_t id,co
     for(int a=0;a<realm_actions;++a){auto&x=seen[a];auto&y=current[a];valid[a]=valid[a]&&seen_mask[a]&&x.kind==y.kind&&x.target==y.target&&x.good==y.good&&x.amount==y.amount&&x.term==y.term?1.f:0.f;}return valid;
 }
 bool RealmRuntime::load_models(const std::array<std::string,3>&paths,const std::string&bundle,uint64_t seed,int population,bool allowIncompatiblePilot,int complexActors){
-    loaded_=false;allow_incompatible_pilot_for_development_=false;loaded_model_contract_.clear();try{
+    loaded_=false;atlas_manual_test_=false;allow_incompatible_pilot_for_development_=false;loaded_model_contract_.clear();try{
     world_=std::make_unique<Realm>(seed,6,population,false,GameplayConfig{},complexActors);if(!world_->gameplay_config().historical_defaults()){error_="Gameplay configuration not supported by this model bundle";world_.reset();return false;}
     constexpr std::array<const char*,3>families{"governance","economic","civilian"};bool anyLegacy=false,anyCurrent=false;
     for(int i=0;i<3;++i){ModelManifest manifest;std::string manifestError;if(!read_model_manifest(std::filesystem::u8path(paths[i]),manifest,manifestError)){error_=manifestError;world_.reset();return false;}
@@ -37,6 +37,21 @@ bool RealmRuntime::load_models(const std::array<std::string,3>&paths,const std::
     runtime_phase_profile_ns_.fill(0);
 #endif
     loaded_=true;error_.clear();return true;}catch(const std::exception&e){error_=e.what();world_.reset();return false;}
+}
+bool RealmRuntime::load_atlas_manual_test(uint64_t seed,int population){
+    loaded_=false;atlas_manual_test_=false;allow_incompatible_pilot_for_development_=false;
+    loaded_model_contract_.clear();bundle_.clear();memories_.clear();memory_roles_.clear();
+    for(auto&policy:policies_)policy.reset();
+    if(population<128||population>100000){error_="Atlas manual-test population must be in 128..100000";world_.reset();return false;}
+    try{
+        world_=std::make_unique<Realm>(seed,int(kAtlasTerritoryCount)-1,population);
+        memories_.assign(size_t(population),{});sync_roles();seed_=seed;
+        bundle_="atlas-manual-test-v1";loaded_model_contract_=world_->model_contract();
+        inference_count_=0;inference_ms_=0;atlas_manual_test_=true;loaded_=true;
+        auto paused=world_->execute(RealmClockCommand{RealmClockCommand::Operation::Pause,world_->pause_revision()});
+        if(!paused.success){loaded_=false;atlas_manual_test_=false;error_="Atlas manual-test pause failed: "+paused.reason;world_.reset();return false;}
+        error_.clear();return true;
+    }catch(const std::exception&error){loaded_=false;atlas_manual_test_=false;world_.reset();error_=error.what();return false;}
 }
 void RealmRuntime::sync_roles(){for(size_t i=0;i<memories_.size();++i){auto family=world_->person(i+1).family;if(i>=memory_roles_.size())memory_roles_.push_back(family);else if(memory_roles_[i]!=family){memories_[i].fill(0);memory_roles_[i]=family;}}}
 bool RealmRuntime::decisions(Family family){
@@ -94,10 +109,10 @@ bool RealmRuntime::resume(std::optional<uint64_t> expected_pause_revision) {
     error_ = result.success ? "" : result.reason;
     return result.success;
 }
-bool RealmRuntime::advance(int days){if(!loaded_||!world_||days<1||days>30){error_="Realm not loaded or day chunk outside1..30";return false;}if(world_->timeline_contract()){error_="Learned pilot policies are unavailable for timeline worlds";return false;}const int64_t maxTick=365000LL*kSubdayUnitsPerDay;const int64_t requestedTicks=static_cast<int64_t>(days)*kSubdayUnitsPerDay;if(world_->game_tick()>maxTick||requestedTicks>maxTick-world_->game_tick()){error_="Realm advance exceeds maximum horizon";return false;}if(world_->draft().chosen<0){error_="Choose a draft card first";return false;}if(world_->paused()){error_="Realm is paused";return false;}
+bool RealmRuntime::advance(int days){if(!loaded_||!world_||days<1||days>30){error_="Realm not loaded or day chunk outside1..30";return false;}if(world_->timeline_contract()){error_="Learned pilot policies are unavailable for timeline worlds";return false;}const int64_t maxTick=365000LL*kSubdayUnitsPerDay;const int64_t requestedTicks=static_cast<int64_t>(days)*kSubdayUnitsPerDay;if(world_->game_tick()>maxTick||requestedTicks>maxTick-world_->game_tick()){error_="Realm advance exceeds maximum horizon";return false;}if(!atlas_manual_test_&&world_->draft().chosen<0){error_="Choose a draft card first";return false;}if(world_->paused()){error_="Realm is paused";return false;}
     try {
         for(int day=0;day<days;++day){
-            for(auto f:{Family::Governance,Family::Economic,Family::Civilian})if(!decisions(f))return false;
+            if(!atlas_manual_test_)for(auto f:{Family::Governance,Family::Economic,Family::Civilian})if(!decisions(f))return false;
 #ifdef POLYEC_ENABLE_REALM_PHASE_PROFILE
             auto phaseStarted=std::chrono::steady_clock::now();
 #endif
@@ -118,9 +133,9 @@ bool RealmRuntime::advance(int days){if(!loaded_||!world_||days<1||days>30){erro
         }error_.clear();return true;
     } catch(const std::exception&e){error_=e.what();return false;}
 }
-bool RealmRuntime::step_one_day(){if(!loaded_||!world_){error_="Realm not loaded";return false;}if(world_->timeline_contract()){error_="Learned pilot policies are unavailable for timeline worlds";return false;}const int64_t maxTick=365000LL*kSubdayUnitsPerDay;if(world_->game_tick()>maxTick||64>maxTick-world_->game_tick()){error_="Realm advance exceeds maximum horizon";return false;}if(world_->draft().chosen<0){error_="Choose a draft card first";return false;}
+bool RealmRuntime::step_one_day(){if(!loaded_||!world_){error_="Realm not loaded";return false;}if(world_->timeline_contract()){error_="Learned pilot policies are unavailable for timeline worlds";return false;}const int64_t maxTick=365000LL*kSubdayUnitsPerDay;if(world_->game_tick()>maxTick||64>maxTick-world_->game_tick()){error_="Realm advance exceeds maximum horizon";return false;}if(!atlas_manual_test_&&world_->draft().chosen<0){error_="Choose a draft card first";return false;}
     try {
-        for(auto f:{Family::Governance,Family::Economic,Family::Civilian})if(!decisions(f))return false;
+        if(!atlas_manual_test_)for(auto f:{Family::Governance,Family::Economic,Family::Civilian})if(!decisions(f))return false;
         auto result=world_->execute(RealmClockCommand{RealmClockCommand::Operation::StepOneDay,world_->pause_revision()});
         if(!result.success){error_=result.reason;return false;}
         memories_.resize(world_->count());sync_roles();
@@ -205,6 +220,36 @@ bool RealmRuntime::land_use_revoke(uint64_t actor,uint64_t holding_id,const std:
     error_=result.success?"":result.reason;
     return result.success;
 }
+bool RealmRuntime::private_residence_build(uint64_t actor,uint64_t holding_id,const std::string&expected){
+    if(!loaded_||!world_){error_="Realm not loaded";return false;}
+    if(world_->regions()!=int(kAtlasTerritoryCount)-1){error_="Private homes require an Atlas27 world";return false;}
+    if(!actor||actor>uint64_t(world_->count())){error_="Invalid private-home builder";return false;}
+    if(!expected.empty()&&expected!=std::to_string(world_->fingerprint())){
+        error_="World changed; refresh before building a private home";return false;
+    }
+    const auto decisions=world_->person(actor).decisions;
+    if(decisions==UINT64_MAX){error_="Private-home decision sequence overflow";return false;}
+    const auto result=world_->execute(PrivateResidenceBuildCommand{actor,decisions+1,holding_id});
+    error_=result.success?"":result.reason;
+    return result.success;
+}
+bool RealmRuntime::private_housing_command(uint64_t actor,uint64_t residence_id,
+        PrivateHousingOperation operation,uint64_t tenant_household,int64_t rent_per_period,
+        const std::string&expected){
+    if(!loaded_||!world_){error_="Realm not loaded";return false;}
+    if(world_->regions()!=int(kAtlasTerritoryCount)-1){error_="Private leases require an Atlas27 world";return false;}
+    if(!actor||actor>uint64_t(world_->count())){error_="Invalid private-housing actor";return false;}
+    if(operation>PrivateHousingOperation::EndLease){error_="Unknown private-housing operation";return false;}
+    if(!expected.empty()&&expected!=std::to_string(world_->fingerprint())){
+        error_="World changed; refresh before changing a private lease";return false;
+    }
+    const auto decisions=world_->person(actor).decisions;
+    if(decisions==UINT64_MAX){error_="Private-housing decision sequence overflow";return false;}
+    const auto result=world_->execute(PrivateHousingCommand{actor,decisions+1,residence_id,
+        tenant_household,operation,rent_per_period});
+    error_=result.success?"":result.reason;
+    return result.success;
+}
 bool RealmRuntime::market_order(uint64_t actor,MarketOrderOperation operation,uint64_t orderId,int region,int good,
                                 int64_t quantity,int64_t maximumUnitPrice,uint64_t&resultOrderId,
                                 const std::string&expected){
@@ -280,7 +325,11 @@ bool RealmRuntime::restore(const std::string&path, bool interactive){
     Realm restored(1,1,128);std::string error;
     if(!restored.deserialize(world,bundle_,error)||n!=size_t(restored.count())){error_="Save world invalid: "+error;return false;}
     if(restored.timeline_contract()){error_="Timeline world not supported by this runtime";return false;}
-    if(!restored.gameplay_config().historical_defaults()){error_="Gameplay configuration not supported by this model bundle";return false;}
+    if(!restored.gameplay_config().historical_defaults()&&
+       (!atlas_manual_test_||restored.regions()!=int(kAtlasTerritoryCount)-1||
+        restored.gameplay_config()!=world_->gameplay_config())){
+        error_="Gameplay configuration not supported by this model bundle";return false;
+    }
     if(restored.model_contract()!=loaded_model_contract_&&!allow_incompatible_pilot_for_development_){error_="Model contract mismatch: "+std::string(restored.model_contract());return false;}
     if(interactive&&!restored.paused()){
         auto pauseResult=restored.execute(RealmClockCommand{RealmClockCommand::Operation::Pause,restored.pause_revision()});

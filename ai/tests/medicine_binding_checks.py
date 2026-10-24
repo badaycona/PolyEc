@@ -13,7 +13,7 @@ worker = next(person["id"] for person in people
               if person["alive"] and person["region"] == region
               and person["family"] == 2 and person["age_days"] >= 14 * 365)
 assert core.REALM_SCHEMA == "realm-v34"
-assert core.REALM_ACTIONS == 336 and core.REALM_OBS == 4414
+assert core.REALM_ACTIONS == 400 and core.REALM_OBS == 5182
 assert world.mask(governor)[266] == 1.0
 assert world.step(governor, 266)[0]
 site = world.establishments()[0]["id"]

@@ -177,13 +177,14 @@ RealmResult Realm::execute(const PrivateHousingCommand& command) {
     if(command.operation==PrivateHousingOperation::Offer){
         if(!home->completed||holding->title_holder!=command.actor||home->tenant_household||home->offered_household||
            command.tenant_household==0||command.tenant_household>people_.size()||
-           household_authority(command.tenant_household)!=command.tenant_household||
-           command.tenant_household==holding->title_holder||next_fact_==UINT64_MAX||day_>365000-kPrivateResidenceOfferDays)
+           household_authority(command.tenant_household)==0||
+           same_household(holding->title_holder,command.tenant_household)||
+           next_fact_==UINT64_MAX||day_>365000-kPrivateResidenceOfferDays)
             return {false,"Only the living title holder can offer a completed vacant home to another household authority"};
-        const auto& tenant=person(command.tenant_household);
+        const auto& tenant=person(household_authority(command.tenant_household));
         if(!tenant.alive||tenant.age_days<18*365||tenant.residence_kind!=ResidenceKind::Urban||
-           tenant.urban_site_id>=kAtlasTerritoryCount)
-            return {false,"Tenant must be an adult household authority in an Atlas urban household"};
+           tenant.region!=home->region||tenant.urban_site_id!=uint8_t(home->region))
+            return {false,"Tenant must be an adult household authority at this urban site"};
         for(const auto& other:private_residences_)if(other.tenant_household==command.tenant_household||
             other.offered_household==command.tenant_household)return {false,"Household already has a private-home lease or offer"};
         facts_.reserve(facts_.size()+1);
@@ -201,7 +202,8 @@ RealmResult Realm::execute(const PrivateHousingCommand& command) {
         facts_.reserve(facts_.size()+1);
         if(command.operation==PrivateHousingOperation::Accept){
             if(!home->completed||holding->title_holder==command.tenant_household||
-               actor.residence_kind!=ResidenceKind::Urban||actor.urban_site_id>=kAtlasTerritoryCount||
+               same_household(holding->title_holder,command.tenant_household)||
+               actor.residence_kind!=ResidenceKind::Urban||actor.urban_site_id!=uint8_t(home->region)||
                day_>365000-kPrivateResidenceLeaseDays||day_>365000-kPrivateResidenceRentPeriodDays)
                 return {false,"Tenant must still live at this site and the home must be ready"};
             home->tenant_household=command.tenant_household;

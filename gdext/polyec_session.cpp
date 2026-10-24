@@ -10,6 +10,7 @@
 #include <godot_cpp/variant/packed_vector2_array.hpp>
 #include <chrono>
 #include <algorithm>
+#include <set>
 #include <memory>
 #ifdef POLYEC_AI_ENABLED
 #include "polyec/lab.hpp"
@@ -62,6 +63,7 @@ protected:
         ClassDB::bind_method(D_METHOD("realm_schema"), &PolyEcSession::realm_schema);
         ClassDB::bind_method(D_METHOD("realm_model_contract"), &PolyEcSession::realm_model_contract);
         ClassDB::bind_method(D_METHOD("realm_load", "paths", "hashes", "seed", "population"), &PolyEcSession::realm_load);
+        ClassDB::bind_method(D_METHOD("realm_atlas_manual_start", "seed", "population"), &PolyEcSession::realm_atlas_manual_start,DEFVAL(int64_t(20261024)),DEFVAL(int64_t(512)));
         ClassDB::bind_method(D_METHOD("realm_step", "days"), &PolyEcSession::realm_step);
         ClassDB::bind_method(D_METHOD("realm_step_one_day"), &PolyEcSession::realm_step_one_day);
         ClassDB::bind_method(D_METHOD("realm_pause"), &PolyEcSession::realm_pause);
@@ -79,6 +81,8 @@ protected:
         ClassDB::bind_method(D_METHOD("realm_land_use_rights"), &PolyEcSession::realm_land_use_rights);
         ClassDB::bind_method(D_METHOD("realm_land_use_grant", "actor", "holding_id", "grantee", "expected"), &PolyEcSession::realm_land_use_grant,DEFVAL(String()));
         ClassDB::bind_method(D_METHOD("realm_land_use_revoke", "actor", "holding_id", "expected"), &PolyEcSession::realm_land_use_revoke,DEFVAL(String()));
+        ClassDB::bind_method(D_METHOD("realm_private_residence_build", "actor", "holding_id", "expected"), &PolyEcSession::realm_private_residence_build,DEFVAL(String()));
+        ClassDB::bind_method(D_METHOD("realm_private_housing_command", "actor", "residence_id", "operation", "tenant_household", "rent_per_period", "expected"), &PolyEcSession::realm_private_housing_command,DEFVAL(int64_t(0)),DEFVAL(int64_t(0)),DEFVAL(String()));
         ClassDB::bind_method(D_METHOD("realm_market_order", "actor", "operation", "order_id", "region", "good", "quantity", "maximum_unit_price", "expected"), &PolyEcSession::realm_market_order,DEFVAL(String()));
         ClassDB::bind_method(D_METHOD("realm_debug_worksite_cycle", "actor", "expected"), &PolyEcSession::realm_debug_worksite_cycle);
         ClassDB::bind_method(D_METHOD("realm_draft", "card", "reroll"), &PolyEcSession::realm_draft);
@@ -197,6 +201,11 @@ public:
         if(!realm.pause()){realm.stop(realm.error().empty()?"Realm interactive pause failed":realm.error());return false;}
         return true;
     }
+    bool realm_atlas_manual_start(int64_t seed=20261024,int64_t population=512){
+        controller.set_paused(true);anchor=Clock::now();
+        if(seed<0||population<128||population>100000){realm.stop("Atlas manual-test seed/population is outside valid bounds");return false;}
+        return realm.load_atlas_manual_test(uint64_t(seed),int(population));
+    }
     bool realm_step(int64_t days){if(!active||days<1||days>30)return false;return realm.advance(int(days));}
     bool realm_step_one_day(){if(!active)return false;return realm.step_one_day();}
     bool realm_pause(){return realm.pause();}
@@ -226,6 +235,27 @@ public:
         Dictionary result;const bool success=active&&actor>0&&holding>0&&recipient>0&&
             realm.land_title_transfer(uint64_t(actor),uint64_t(holding),uint64_t(recipient),expected.utf8().get_data());
         result["success"]=success;result["error"]=String::utf8(realm.error().c_str());
+        if(success&&realm.world())result["fingerprint"]=String::num_uint64(realm.world()->fingerprint());
+        return result;
+    }
+    Dictionary realm_private_residence_build(int64_t actor,int64_t holding,const String&expected=String()){
+        Dictionary result;const bool success=active&&actor>0&&holding>0&&
+            realm.private_residence_build(uint64_t(actor),uint64_t(holding),expected.utf8().get_data());
+        result["success"]=success;result["error"]=String::utf8(realm.error().c_str());
+        if(success&&realm.world())result["fingerprint"]=String::num_uint64(realm.world()->fingerprint());
+        return result;
+    }
+    Dictionary realm_private_housing_command(int64_t actor,int64_t residenceId,int operation,
+            int64_t tenantHousehold,int64_t rentPerPeriod,const String&expected=String()){
+        Dictionary result;bool success=false;
+        if(!active)result["error"]="Cửa sổ không hoạt động";
+        else if(actor<1||residenceId<1||operation<0||operation>int(polyec::PrivateHousingOperation::EndLease)||
+                tenantHousehold<0||rentPerPeriod<0)result["error"]="Thông tin hợp đồng nhà tư không hợp lệ";
+        else success=realm.private_housing_command(uint64_t(actor),uint64_t(residenceId),
+            static_cast<polyec::PrivateHousingOperation>(operation),uint64_t(tenantHousehold),rentPerPeriod,
+            expected.utf8().get_data());
+        if(!result.has("error"))result["error"]=String::utf8(realm.error().c_str());
+        result["success"]=success;
         if(success&&realm.world())result["fingerprint"]=String::num_uint64(realm.world()->fingerprint());
         return result;
     }
@@ -277,7 +307,7 @@ public:
     bool realm_draft(int64_t card,bool reroll){return reroll?realm.reroll(int(card)):realm.choose(int(card));}
     bool realm_save(const String&path,bool restore){return restore?realm.restore_interactive(path.utf8().get_data()):realm.save(path.utf8().get_data());}
     Dictionary realm_snapshot(int64_t actor=1)const{
-        Dictionary d;d["loaded"]=realm.loaded();d["error"]=String::utf8(realm.error().c_str());
+        Dictionary d;d["loaded"]=realm.loaded();d["atlas_manual_test"]=realm.atlas_manual_test();d["error"]=String::utf8(realm.error().c_str());
         auto*w=realm.world();if(!w)return d;if(actor<1||actor>w->count())actor=1;auto v=w->view(uint64_t(actor));
         d["day"]=v.day;d["persons"]=int64_t(v.persons);d["alive"]=int64_t(v.alive);d["children"]=int64_t(v.children);d["decisions"]=int64_t(v.decisions);d["money"]=v.money;d["invariant"]=w->invariant();d["fingerprint"]=String::num_uint64(w->fingerprint());d["inferences"]=int64_t(realm.inference_count());d["inference_ms"]=realm.inference_ms();
         Array cards;for(int c:v.draft.cards)cards.push_back(c);d["cards"]=cards;d["chosen"]=v.draft.chosen;d["tier"]=v.draft.tier;d["rerolled"]=v.draft.rerolled;
@@ -285,6 +315,36 @@ public:
         Array establishments;for(const auto&site:w->establishments()){Dictionary row;row["id"]=int64_t(site.id);row["region"]=site.region;row["owner_kind"]=int(site.owner_kind);row["owner_id"]=int64_t(site.owner_id);row["industry"]=int(site.industry);row["cash"]=site.cash;row["capacity"]=site.capacity;row["source_good"]=site.source_good;row["source_units"]=site.source_units;Array stock;for(const auto quantity:site.stock)stock.push_back(quantity);row["stock"]=stock;establishments.push_back(row);}d["establishments"]=establishments;
         auto&p=w->person(actor);Dictionary person;person["id"]=actor;person["age"]=p.age_days/365;person["role"]=int(p.family);person["sovereign"]=p.sovereign;person["cash"]=p.cash;person["region"]=p.region;person["health"]=p.health;person["nutrition"]=p.nutrition;person["sleep_debt"]=p.body_state.sleep_debt;person["exertion"]=p.body_state.exertion;person["authority"]=p.taxing_authority;person["office"]=p.office_appointment.office;person["candidate"]=p.candidate;person["job_kind"]=p.work_assignment.job_kind;person["skill"]=p.skill;person["goal"]=p.goal;person["alive"]=p.alive;person["debt"]=w->debt(actor);person["decisions"]=int64_t(p.decisions);person["household"]=int64_t(p.household_membership.household_id);const auto&service=p.military_service;Dictionary serviceView;serviceView["active"]=service.active;serviceView["combat_consent"]=service.combat_consent;serviceView["commander"]=int64_t(service.commander);serviceView["start_day"]=service.start_day;serviceView["end_day"]=service.end_day;serviceView["source_region"]=service.source_region;serviceView["wage_per_day"]=service.wage_per_day;serviceView["escrow"]=service.escrow;serviceView["paid_total"]=service.paid_total;person["military_service"]=serviceView;Array stats;Dictionary namedStats;Array activeCapabilities;for(size_t i=0;i<polyec::kLegacyCapabilities.size();++i){const int value=p.stats.get(polyec::kLegacyCapabilities[i]);stats.push_back(value);namedStats[String::utf8(polyec::kLegacyCapabilityKeys[i])]=value;if(w->capability_active(polyec::kLegacyCapabilities[i]))activeCapabilities.push_back(String::utf8(polyec::kLegacyCapabilityKeys[i]));}person["stats"]=stats;person["legacy_capabilities"]=namedStats;person["active_capabilities"]=activeCapabilities;Dictionary capabilities;for(size_t i=0;i<polyec::kCapabilityCount;++i)capabilities[String::utf8(polyec::kCapabilityKeys[i])]=w->capability_value(actor,static_cast<polyec::CapabilityId>(i));Array capabilitySchema;for(const auto capabilityId:w->capability_schema())capabilitySchema.push_back(String::utf8(polyec::kCapabilityKeys[static_cast<size_t>(capabilityId)]));person["capabilities"]=capabilities;person["capability_schema"]=capabilitySchema;d["person"]=person;
         Array census;const auto councils=w->municipal_councils();for(const auto& row:w->urban_census())if(p.sovereign||row.territory_id==p.region){Dictionary item;item["site_id"]=int(row.site_id);item["territory_id"]=int(row.territory_id);item["site_name"]=String::utf8(polyec::kAtlasUrbanSites[row.site_id].name.data());item["urban_residents"]=int64_t(row.urban_residents);item["rural_residents"]=int64_t(row.rural_residents);item["unknown_residence"]=int64_t(row.unknown_residence);item["housing_capacity"]=row.housing_capacity;item["unhoused_residents"]=row.unhoused_residents;item["available_beds"]=row.available_beds;if(row.site_id<councils.size()){const auto&council=councils[row.site_id];item["council_representative_id"]=int64_t(council.representative);item["council_nominee_id"]=int64_t(council.nominee);item["council_nomination_day"]=council.nomination_day;item["council_term_end_day"]=council.term_end_day;}census.push_back(item);}d["urban_census"]=census;
+        const auto holdings=w->land_holdings();Array visibleHoldings;Array tenantHouseholds;
+        for(const auto&land:holdings)if(land.title_holder==uint64_t(actor)||p.sovereign||land.region==p.region){
+            Dictionary item;item["id"]=int64_t(land.id);item["region"]=land.region;
+            item["owner_id"]=int64_t(land.title_holder);item["owned_by_actor"]=land.title_holder==uint64_t(actor);
+            visibleHoldings.push_back(item);
+        }
+        d["land_holdings"]=visibleHoldings;
+        std::set<uint64_t> seenHouseholds;
+        for(uint64_t id=1;id<=w->count();++id){const auto&candidate=w->person(id);
+            if(!candidate.alive||candidate.region!=p.region||candidate.residence_kind!=polyec::ResidenceKind::Urban||
+               candidate.urban_site_id>=polyec::kAtlasTerritoryCount||candidate.age_days<18*365)continue;
+            const auto household=candidate.household_membership.household_id;
+            if(!household||w->household_authority(household)!=id||!seenHouseholds.insert(household).second)continue;
+            Dictionary item;item["household_id"]=int64_t(household);item["authority_id"]=int64_t(id);
+            item["region"]=candidate.region;item["site_id"]=candidate.urban_site_id;
+            tenantHouseholds.push_back(item);
+        }
+        d["private_housing_households"]=tenantHouseholds;
+        Array residences;for(const auto&home:w->private_residences()){
+            auto holding=std::find_if(holdings.begin(),holdings.end(),[&](const polyec::LandHolding&value){return value.id==home.holding_id;});
+            const bool householdParty=home.tenant_household==p.household_membership.household_id||home.offered_household==p.household_membership.household_id;
+            const bool titleHolder=holding!=holdings.end()&&holding->title_holder==actor;
+            if(!p.sovereign&&home.region!=p.region&&!titleHolder&&!householdParty)continue;
+            Dictionary item;item["id"]=int64_t(home.id);item["holding_id"]=int64_t(home.holding_id);item["region"]=home.region;
+            item["owner_id"]=int64_t(holding==holdings.end()?0:holding->title_holder);item["completed"]=home.completed;
+            item["construction_due_day"]=home.construction_due_day;item["tenant_household"]=int64_t(home.tenant_household);
+            item["offered_household"]=int64_t(home.offered_household);item["offered_rent"]=home.offered_rent;
+            item["offer_expires_day"]=home.offer_expires_day;item["rent_per_period"]=home.rent_per_period;
+            item["next_rent_day"]=home.next_rent_day;item["lease_end_day"]=home.lease_end_day;residences.push_back(item);
+        }d["private_residences"]=residences;
         if(v.provinces.size()>8&&(p.sovereign||(p.family==polyec::Family::Economic&&p.region==8))){
             Dictionary trade;Array partners;int partnerId=0;for(const auto&partner:w->foreign_trade_partners()){
                 Dictionary ledger;ledger["partner_id"]=partnerId;

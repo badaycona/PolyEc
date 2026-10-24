@@ -43,7 +43,7 @@ int main(){
               "Incense in another person's inventory does not unlock the choice");
 
         Realm world(92,1,128);
-        check(world.model_contract()=="realm-household-fund-goods30-config-v40"&&realm_actions==336,
+        check(world.model_contract()=="realm-household-fund-goods30-config-v42"&&realm_actions==400,
               "Incense action meaning has a new model contract without changing action count");
         RealmObservationTestAccess::add_incense(world,civilian,2);
         check(world.invariant(),"test Incense inventory preserves opening goods ledger");

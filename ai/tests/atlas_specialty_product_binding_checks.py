@@ -24,8 +24,8 @@ for region, industry, product, candidate, burns_fuel in CASES:
                   if p["alive"] and p["region"] == region and p["family"] == 2
                   and p["age_days"] >= 14 * 365)
     assert core.REALM_SCHEMA == "realm-v34"
-    assert core.REALM_ACTIONS == 336 and core.REALM_OBS == 4414
-    assert world.model_contract == "realm-household-fund-goods30-config-v40"
+    assert core.REALM_ACTIONS == 400 and core.REALM_OBS == 5182
+    assert world.model_contract == "realm-household-fund-goods30-config-v42"
     assert world.mask(governor)[candidate] == 1.0
     assert world.step(governor, candidate)[0]
     site = world.establishments()[0]["id"]

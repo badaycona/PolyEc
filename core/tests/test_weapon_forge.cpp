@@ -22,7 +22,7 @@ int main(){try{
     const uint64_t buyer=find_person(world,region,Family::Economic,true);
     check(world.person(governor).taxing_authority&&worker&&buyer,"region 19 has a public authority, worker and buyer");
     const auto candidates=world.candidates(governor);
-    check(realm_weapon_forge_candidate_begin==170&&realm_actions==336&&realm_obs==4414,
+    check(realm_weapon_forge_candidate_begin==170&&realm_actions==400&&realm_obs==5182,
           "Weapon Forge choices append after existing actions and match observation size");
     for(int tier=0;tier<3;++tier)
         check(candidates[size_t(170+tier)].kind==Intent::CreateEstablishment&&

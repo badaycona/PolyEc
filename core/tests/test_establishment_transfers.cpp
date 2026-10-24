@@ -315,8 +315,8 @@ int main(int argc,char** argv){try{
         const int64_t maximumGrant=beforeTreasury/20;
         const auto urbanChoices=urban.candidates(governor);
         const auto urbanMask=urban.mask(governor,urbanChoices);
-        check(realm_actions==336&&realm_obs==4414&&
-              urban.model_contract()=="realm-household-fund-goods30-config-v40",
+        check(realm_actions==400&&realm_obs==5182&&
+              urban.model_contract()=="realm-household-fund-goods30-config-v42",
               "council approval and refusal actions add 54 choices and receive a new model contract");
         check(urban.observation(governor)[size_t(realm_municipal_fund_observation_index)]==0.f&&
               urban.observation(65)[size_t(realm_municipal_fund_observation_index)]==0.f,

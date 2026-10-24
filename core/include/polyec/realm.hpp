@@ -38,13 +38,23 @@ inline constexpr int realm_supplementary_ration_observation_count=int(kAtlasTerr
 inline constexpr int realm_military_supply_obligation_observation_begin=realm_supplementary_ration_observation_begin+realm_supplementary_ration_observation_count;
 inline constexpr int realm_military_supply_obligation_observation_count=int(kAtlasTerritoryCount)*2;
 inline constexpr int realm_state=realm_military_supply_obligation_observation_begin+realm_military_supply_obligation_observation_count;
-inline constexpr int realm_actions=336;
+inline constexpr int realm_actions=400;
 inline constexpr int realm_tea_social_candidate=24;
 inline constexpr int realm_incense_social_candidate=25;
 inline constexpr int realm_council_nomination_candidate=71;
 inline constexpr int realm_council_accept_candidate_begin=282;
 inline constexpr int realm_council_reject_candidate_begin=309;
 inline constexpr int realm_council_decision_candidate_count=27;
+inline constexpr int realm_private_housing_candidate_begin=336;
+inline constexpr int realm_private_build_candidate_count=16;
+inline constexpr int realm_private_build_candidate_begin=realm_private_housing_candidate_begin;
+inline constexpr int realm_private_offer_candidate_count=16;
+inline constexpr int realm_private_offer_candidate_begin=realm_private_build_candidate_begin+realm_private_build_candidate_count;
+inline constexpr int realm_private_response_candidate_count=16;
+inline constexpr int realm_private_response_candidate_begin=realm_private_offer_candidate_begin+realm_private_offer_candidate_count;
+inline constexpr int realm_private_end_lease_candidate_count=16;
+inline constexpr int realm_private_end_lease_candidate_begin=realm_private_response_candidate_begin+realm_private_response_candidate_count;
+static_assert(realm_private_end_lease_candidate_begin+realm_private_end_lease_candidate_count==realm_actions);
 inline constexpr int realm_sleep_debt_observation_index=108, realm_exertion_observation_index=109;
 inline constexpr int realm_personality_observation_begin=110, realm_personality_observation_count=6;
 inline constexpr int realm_knowledge_evidence_observation_index=88, realm_knowledge_legacy_observation_index=89;
@@ -121,7 +131,7 @@ inline constexpr uint64_t urban_residence_hash_v1(uint64_t seed,uint64_t person_
     value=(value^(value>>27))*0x94D049BB133111EBull;
     return value^(value>>31);
 }
-enum class Intent:int { Hold,Buy,Sell,Travel,Borrow,Repay,Project,Hire,Tax,Aid,Investigate,Offer,Accept,Reject,Work,Study,Rest,Social,Join,Migrate,Support,Appoint,Mobilize,Resign,Marry,CreateEstablishment,TransferEstablishmentGoods,AuthorizeWorkAtSite,WorkAtSite,BuyMilitaryRations,ShipMilitaryRations,FundMunicipal,ForeignTrade,NominateCouncil,ResolveCouncilNomination };
+enum class Intent:int { Hold,Buy,Sell,Travel,Borrow,Repay,Project,Hire,Tax,Aid,Investigate,Offer,Accept,Reject,Work,Study,Rest,Social,Join,Migrate,Support,Appoint,Mobilize,Resign,Marry,CreateEstablishment,TransferEstablishmentGoods,AuthorizeWorkAtSite,WorkAtSite,BuyMilitaryRations,ShipMilitaryRations,FundMunicipal,ForeignTrade,NominateCouncil,ResolveCouncilNomination,PrivateResidenceBuild,PrivateHousing };
 struct WorkAssignment { int job=-1; int job_kind=0; };
 struct HouseholdMembership { uint64_t household_id=0; };
 // Named bridge for the six positional stats retained by legacy saves. This is
@@ -623,8 +633,8 @@ std::vector<Establishment> establishments() const { return establishments_; }
     std::string model_contract() const {
         std::string result;
         if (schedule_book_.timeline_contract)
-            result=config_.historical_defaults() ? "realm-worksite-payroll-goods30-v41" : "realm-worksite-payroll-goods30-config-v41";
-        else result=config_.historical_defaults() ? "realm-household-fund-goods30-v40" : "realm-household-fund-goods30-config-v40";
+            result=config_.historical_defaults() ? "realm-worksite-payroll-goods30-v42" : "realm-worksite-payroll-goods30-config-v42";
+        else result=config_.historical_defaults() ? "realm-household-fund-goods30-v42" : "realm-household-fund-goods30-config-v42";
         if(capability_mask_!=kDefaultCapabilityMask)result+="-caps-"+std::to_string(capability_mask_);
         return result;
     }

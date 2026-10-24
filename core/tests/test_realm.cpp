@@ -28,6 +28,10 @@ void check_at(bool ok,const char* label,int line){++checks;if(!ok)throw std::run
 namespace polyec {
 struct RealmObservationTestAccess {
     static Person& mutable_person(Realm& world,uint64_t actor){return world.mutable_person(actor);}
+    static void endow_person_good(Realm&world,uint64_t actor,GoodId good,int64_t quantity){
+        world.mutable_person(actor).inventory[size_t(good)]+=quantity;
+        world.opening_[size_t(good)]+=quantity;
+    }
     static void remove_all_food_and_set_death_health(Realm& world,uint64_t actor){
         auto& person=world.mutable_person(actor);person.inventory[0]=0;person.health=1;person.nutrition=0;
         int64_t removed=0;
@@ -1468,7 +1472,7 @@ int main(){try{
     };
     Realm rejected(9201,6,128);
     const auto offer=offer_action(rejected,30);
-    check(realm_actions==336&&realm_obs==4414&&offer.kind==Intent::Offer&&offer.good==3&&
+    check(realm_actions==400&&realm_obs==5182&&offer.kind==Intent::Offer&&offer.good==3&&
           offer.amount==kMilitaryServiceTrialWagePerDay&&offer.term==30&&rejected.mask(governor)[realm_military_service_candidate_begin]==1.f,
           "new Governance choices point to a same-region eligible adult civilian and expose a 30-day, four-cash daily wage offer");
     check(Realm::action_name(offer)=="Đề nghị phục vụ",
@@ -1687,7 +1691,7 @@ int main(){try{
     const auto ration_mask=depot_world.mask(depot_governor,ration_candidates);
     const auto ration_action=ration_candidates[size_t(realm_military_ration_purchase_candidate_begin+1)];
     const auto ration_observation=depot_world.observation(depot_governor);
-    check(realm_actions==336&&realm_state==382&&realm_obs==4414&&realm_schema==std::string("realm-v34")&&
+    check(realm_actions==400&&realm_state==382&&realm_obs==5182&&realm_schema==std::string("realm-v34")&&
           ration_action.kind==Intent::BuyMilitaryRations&&ration_action.target==depot_region&&
           ration_action.good==int(GoodId::DryFood)&&ration_action.amount==4&&ration_mask[size_t(realm_military_ration_purchase_candidate_begin+1)]==1.f&&
           std::abs(ration_observation[size_t(realm_ration_depot_observation_begin+depot_region)])<1e-7f&&
@@ -1985,7 +1989,7 @@ int main(){try{
           observed[14]==kInactiveCapabilityNeutralValue/100.f,
           "observation preserves slot meaning and fills omitted dimensions with neutral values");
     const auto defaultContract=Realm(1,1,128).model_contract();
-    check(defaultContract=="realm-household-fund-goods30-config-v40"&&
+    check(defaultContract=="realm-household-fund-goods30-config-v42"&&
           custom.model_contract()==defaultContract+"-caps-41",
           "custom schema gets a distinct model contract while default remains compatible");
     const auto saved=custom.serialize("capability-schema");
@@ -2059,8 +2063,10 @@ int main(){try{
         [fact](const Fact& row){return row.id==fact;}),"secret fact stays hidden from unrelated observer before investigation");
     check(std::none_of(beforeInvestigationView.knowledge.begin(),beforeInvestigationView.knowledge.end(),
         [fact](const PlayerKnowledge& row){return row.fact==fact;}),"secret evidence has no PlayerKnowledge row before Investigation");
+    RealmObservationTestAccess::endow_person_good(world,1,GoodId::Paper,1);
     const auto command=world.candidates(1)[13];
     const auto result=world.execute({1,world.person(1).decisions+1,command});
+    if(!result.success)std::cerr<<"Investigation fixture rejected: "<<result.reason<<'\n';
     check(result.success,"real investigation command is accepted");
     const auto investigation=world.investigations().back();
     world.advance(investigation.due-world.day());
@@ -2245,20 +2251,20 @@ test_canonical_market_transactions();
               "each policy observation reads the requested actor's own body values");
         check(bodyObservation.fingerprint()==beforeRead&&bodyObservation.invariant(),
               "reading body observation does not mutate the Realm");
-        check(std::string(bodyObservation.model_contract())=="realm-household-fund-goods30-config-v40",
+        check(std::string(bodyObservation.model_contract())=="realm-household-fund-goods30-config-v42",
               "non-timeline body observation has a new model contract");
         const auto timelineResult=bodyObservation.execute(ScheduleCommand{1,
             bodyObservation.person(1).decisions+1,ScheduleCommand::Operation::Submit,0,0,1,0,1000});
         check(timelineResult.success&&bodyObservation.model_contract()==
-              std::string("realm-worksite-payroll-goods30-config-v41"),
+              std::string("realm-worksite-payroll-goods30-config-v42"),
               "timeline body observation has a separately versioned model contract");
         Realm historicalBody(37,2,128,false,GameplayConfig::historical());
-        check(std::string(historicalBody.model_contract())=="realm-household-fund-goods30-v40",
+        check(std::string(historicalBody.model_contract())=="realm-household-fund-goods30-v42",
               "historical-default non-timeline contract includes the body observation version");
         const auto historicalTimeline=historicalBody.execute(ScheduleCommand{1,
             historicalBody.person(1).decisions+1,ScheduleCommand::Operation::Submit,0,0,1,0,1000});
         check(historicalTimeline.success&&std::string(historicalBody.model_contract())==
-              "realm-worksite-payroll-goods30-v41",
+              "realm-worksite-payroll-goods30-v42",
               "historical-default timeline contract includes the body observation version");
     }
     {
@@ -4313,9 +4319,9 @@ test_canonical_market_transactions();
         }
         check(legacyDailyOutput>0,"timeline-off people phase retains legacy daily product source");
         check(timelineDailyOutput==0,"timeline people phase does not create products from region or job labels");
-        check(std::string(legacyPeople.model_contract())=="realm-household-fund-goods30-config-v40",
+        check(std::string(legacyPeople.model_contract())=="realm-household-fund-goods30-config-v42",
               "timeline-off model contract remains compatible");
-        check(std::string(timelinePeople.model_contract())=="realm-worksite-payroll-goods30-config-v41",
+        check(std::string(timelinePeople.model_contract())=="realm-worksite-payroll-goods30-config-v42",
               "timeline model contract versions changed production sources");
     }
     {

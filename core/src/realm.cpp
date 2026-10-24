@@ -722,6 +722,62 @@ std::array<Candidate,realm_actions> Realm::candidates(uint64_t id)const{
         c[size_t(base+4)]={Intent::WorkAtSite,idValue,0,0,1};
     }
     for(auto&proposal:proposals_)if(!proposal.resolved&&proposal.to==id&&proposal.due>=day_&&proposal.ready<=day_){c[28]={Intent::Accept,int(proposal.id)};c[29]={Intent::Reject,int(proposal.id)};break;}
+    if(regions_==int(kAtlasTerritoryCount)-1&&p.alive&&p.region>=0&&p.region<int(kAtlasTerritoryCount)){
+        std::vector<Candidate> buildOptions,offerOptions,responseOptions,endLeaseOptions;
+        std::vector<LandHolding> holdings=land_holdings_;
+        std::sort(holdings.begin(),holdings.end(),[](const auto&a,const auto&b){return a.id<b.id;});
+        for(const auto&holding:holdings){
+            if(holding.id>uint64_t(INT32_MAX)||holding.title_holder!=id||holding.region!=p.region||
+               p.residence_kind!=ResidenceKind::Urban||p.urban_site_id>=kAtlasTerritoryCount||
+               holding.region!=p.urban_site_id||p.age_days<18*365)continue;
+            const bool hasHome=std::any_of(private_residences_.begin(),private_residences_.end(),
+                [&](const auto&home){return home.holding_id==holding.id;});
+            if(!hasHome)buildOptions.push_back({Intent::PrivateResidenceBuild,int(holding.id),0,0,0});
+        }
+        std::vector<std::pair<uint64_t,int>> authorities;
+        for(const auto&candidate:people_){
+            if(!candidate.alive||candidate.age_days<18*365||candidate.region<0||candidate.region>=int(kAtlasTerritoryCount)||
+               candidate.residence_kind!=ResidenceKind::Urban||candidate.urban_site_id>=kAtlasTerritoryCount)continue;
+            const auto household=candidate.household_membership.household_id;
+            if(household&&household_authority(household)==candidate.id)authorities.emplace_back(household,candidate.region);
+        }
+        for(const auto&home:private_residences_){
+            if(home.id>uint64_t(INT32_MAX))continue;
+            const auto holding=std::lower_bound(land_holdings_.begin(),land_holdings_.end(),home.holding_id,
+                [](const LandHolding&value,uint64_t key){return value.id<key;});
+            if(holding==land_holdings_.end()||holding->id!=home.holding_id)continue;
+            if(holding->title_holder==id&&home.completed&&!home.tenant_household&&!home.offered_household){
+                for(const auto&[household,householdRegion]:authorities){
+                    if(householdRegion!=home.region)continue;
+                    if(household==p.household_membership.household_id)continue;
+                    bool occupied=false;
+                    for(const auto&other:private_residences_)
+                        if(other.tenant_household==household||other.offered_household==household){occupied=true;break;}
+                    if(!occupied)offerOptions.push_back({Intent::PrivateHousing,int(home.id),
+                        int(PrivateHousingOperation::Offer),int64_t(household),0});
+                }
+            }
+            if(home.offered_household&&home.offered_household==p.household_membership.household_id&&
+               household_authority(home.offered_household)==id){
+                responseOptions.push_back({Intent::PrivateHousing,int(home.id),int(PrivateHousingOperation::Accept),int64_t(home.offered_household),0});
+                responseOptions.push_back({Intent::PrivateHousing,int(home.id),int(PrivateHousingOperation::Decline),int64_t(home.offered_household),0});
+            }
+            if(home.tenant_household&&(holding->title_holder==id||
+               household_authority(home.tenant_household)==id))
+                endLeaseOptions.push_back({Intent::PrivateHousing,int(home.id),int(PrivateHousingOperation::EndLease),int64_t(home.tenant_household),0});
+        }
+        const auto fillWindow=[&](const std::vector<Candidate>&options,int begin,int capacity){
+            if(options.empty())return;
+            const size_t offset=size_t(p.decisions%options.size());
+            const size_t count=std::min<size_t>(size_t(capacity),options.size());
+            for(size_t index=0;index<count;++index)
+                c[size_t(begin)+index]=options[(offset+index)%options.size()];
+        };
+        fillWindow(buildOptions,realm_private_build_candidate_begin,realm_private_build_candidate_count);
+        fillWindow(offerOptions,realm_private_offer_candidate_begin,realm_private_offer_candidate_count);
+        fillWindow(responseOptions,realm_private_response_candidate_begin,realm_private_response_candidate_count);
+        fillWindow(endLeaseOptions,realm_private_end_lease_candidate_begin,realm_private_end_lease_candidate_count);
+    }
     return c;
 }
 bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
@@ -729,9 +785,62 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
     if(c.kind==Intent::Hold)return true;
     if(!p.alive){reason="Actor deceased";return false;}
     bool busyBlocks=p.busy_until>day_;
-    if(schedule_book_.timeline_contract)switch(c.kind){case Intent::Buy:case Intent::BuyMilitaryRations:case Intent::ShipMilitaryRations:case Intent::ForeignTrade:case Intent::Sell:case Intent::Borrow:case Intent::Repay:case Intent::Tax:case Intent::Aid:case Intent::Investigate:case Intent::Offer:case Intent::Accept:case Intent::Reject:case Intent::Support:case Intent::Hire:case Intent::Project:case Intent::Appoint:case Intent::Resign:case Intent::Marry:case Intent::CreateEstablishment:case Intent::TransferEstablishmentGoods:case Intent::AuthorizeWorkAtSite:case Intent::WorkAtSite:case Intent::FundMunicipal:case Intent::NominateCouncil:case Intent::ResolveCouncilNomination:busyBlocks=false;break;default:break;}
+    if(schedule_book_.timeline_contract)switch(c.kind){case Intent::Buy:case Intent::BuyMilitaryRations:case Intent::ShipMilitaryRations:case Intent::ForeignTrade:case Intent::Sell:case Intent::Borrow:case Intent::Repay:case Intent::Tax:case Intent::Aid:case Intent::Investigate:case Intent::Offer:case Intent::Accept:case Intent::Reject:case Intent::Support:case Intent::Hire:case Intent::Project:case Intent::Appoint:case Intent::Resign:case Intent::Marry:case Intent::CreateEstablishment:case Intent::TransferEstablishmentGoods:case Intent::AuthorizeWorkAtSite:case Intent::WorkAtSite:case Intent::FundMunicipal:case Intent::NominateCouncil:case Intent::ResolveCouncilNomination:case Intent::PrivateResidenceBuild:case Intent::PrivateHousing:busyBlocks=false;break;default:break;}
     if(busyBlocks){reason="Action duration not finished";return false;}
     if(c.amount<0||c.amount>1000000||c.target<0){reason="Invalid terms";return false;}
+    if(c.kind==Intent::PrivateResidenceBuild){
+        if(regions_!=int(kAtlasTerritoryCount)-1||c.target<=0||c.good!=0||c.amount!=0||c.term!=0||
+           uint64_t(c.target)>uint64_t(INT32_MAX)||!p.alive||p.age_days<18*365||p.destination!=-1||
+           p.busy_until>day_||p.residence_kind!=ResidenceKind::Urban||p.urban_site_id>=kAtlasTerritoryCount)return false;
+        const auto holding=std::lower_bound(land_holdings_.begin(),land_holdings_.end(),uint64_t(c.target),
+            [](const LandHolding&value,uint64_t key){return value.id<key;});
+        if(holding==land_holdings_.end()||holding->id!=uint64_t(c.target)||holding->title_holder!=id||
+           holding->region!=p.region||holding->region!=p.urban_site_id||
+           std::any_of(private_residences_.begin(),private_residences_.end(),
+                [&](const auto&home){return home.holding_id==holding->id;}))return false;
+        if(p.cash<kPrivateResidenceBuildCost||
+           p.inventory[size_t(GoodId::ConstructionMaterial)]<kPrivateResidenceConstructionMaterial||
+           p.inventory[size_t(GoodId::Tools)]<kPrivateResidenceTools||day_>365000-kPrivateResidenceBuildDays||
+           next_id_==UINT64_MAX||next_fact_==UINT64_MAX||
+           consumed_[size_t(GoodId::ConstructionMaterial)]>std::numeric_limits<int64_t>::max()-kPrivateResidenceConstructionMaterial||
+           consumed_[size_t(GoodId::Tools)]>std::numeric_limits<int64_t>::max()-kPrivateResidenceTools)return false;
+        return true;
+    }
+    if(c.kind==Intent::PrivateHousing){
+        if(regions_!=int(kAtlasTerritoryCount)-1||c.target<=0||uint64_t(c.target)>uint64_t(INT32_MAX)||
+           c.amount<=0||c.good<int(PrivateHousingOperation::Offer)||c.good>int(PrivateHousingOperation::EndLease)||c.term!=0)return false;
+        const auto home=std::lower_bound(private_residences_.begin(),private_residences_.end(),uint64_t(c.target),
+            [](const PrivateResidence&value,uint64_t key){return value.id<key;});
+        if(home==private_residences_.end()||home->id!=uint64_t(c.target)||home->region!=p.region)return false;
+        const auto holding=std::lower_bound(land_holdings_.begin(),land_holdings_.end(),home->holding_id,
+            [](const LandHolding&value,uint64_t key){return value.id<key;});
+        if(holding==land_holdings_.end()||holding->id!=home->holding_id||next_fact_==UINT64_MAX)return false;
+        const auto operation=static_cast<PrivateHousingOperation>(c.good);
+        const auto household=uint64_t(c.amount);
+        if(operation==PrivateHousingOperation::Offer){
+            if(!home->completed||holding->title_holder!=id||home->tenant_household||home->offered_household||
+               household>people_.size()||household==p.household_membership.household_id||
+               household_authority(household)==0||same_household(holding->title_holder,household)||
+               day_>365000-kPrivateResidenceOfferDays)return false;
+            const auto&tenant=person(household_authority(household));
+            if(!tenant.alive||tenant.age_days<18*365||tenant.residence_kind!=ResidenceKind::Urban||
+               tenant.region!=home->region||tenant.urban_site_id!=uint8_t(home->region))return false;
+            for(const auto&other:private_residences_)
+                if(other.tenant_household==household||other.offered_household==household)return false;
+            return true;
+        }
+        if(operation==PrivateHousingOperation::Accept||operation==PrivateHousingOperation::Decline){
+            if(home->offered_household!=household||household_authority(household)!=id||home->offer_expires_day<day_)return false;
+            if(operation==PrivateHousingOperation::Accept&&(!home->completed||same_household(holding->title_holder,household)||
+               p.residence_kind!=ResidenceKind::Urban||p.urban_site_id!=uint8_t(home->region)||
+               day_>365000-kPrivateResidenceLeaseDays||day_>365000-kPrivateResidenceRentPeriodDays))return false;
+            return true;
+        }
+        const bool landlord=holding->title_holder==id;
+        const bool tenant=home->tenant_household&&home->tenant_household==household&&
+            household_authority(home->tenant_household)==id;
+        return home->tenant_household&&home->tenant_household==household&&(landlord||tenant);
+    }
     if(c.kind==Intent::Accept||c.kind==Intent::Reject){if(legal_proposal_response(id,c))return true;reason="Proposal unavailable";return false;}
     if(c.kind==Intent::Support){if(p.family!=Family::Civilian||p.age_days<6*365||c.target<=0||c.target!=int(household_authority(p.household_membership.household_id))||uint64_t(c.target)==id||c.target>int(people_.size())||!person(c.target).alive||p.cash<c.amount){reason="Household transfer unavailable";return false;}return true;}
     if(c.kind==Intent::Marry){
@@ -1233,6 +1342,12 @@ RealmResult Realm::execute(const RealmCommand&cmd){
     }
     if(c.kind==Intent::FundMunicipal)
         return execute(MunicipalBudgetCommand{p.id,cmd.sequence,c.target,c.amount});
+    if(c.kind==Intent::PrivateResidenceBuild)
+        return execute(PrivateResidenceBuildCommand{p.id,cmd.sequence,uint64_t(c.target)});
+    if(c.kind==Intent::PrivateHousing)
+        return execute(PrivateHousingCommand{p.id,cmd.sequence,uint64_t(c.target),uint64_t(c.amount),
+            static_cast<PrivateHousingOperation>(c.good),
+            c.good==int(PrivateHousingOperation::Offer)?kPrivateResidenceRentPerPeriod:0});
     if(c.kind==Intent::ForeignTrade)
         return execute(ForeignTradeCommand{p.id,cmd.sequence,static_cast<ForeignTradeOperation>(c.term),c.good,c.amount});
     if(c.kind==Intent::BuyMilitaryRations)
@@ -3186,6 +3301,17 @@ bool Realm::choose(int card){if(day_||draft_.chosen>=0||std::find(draft_.cards.b
     event(1,regions_,106,card);return true;
 }
 std::string Realm::action_name(const Candidate&c){
+    if(c.kind==Intent::PrivateResidenceBuild)return "Xây nhà tư trên thửa #"+std::to_string(c.target);
+    if(c.kind==Intent::PrivateHousing){
+        const char*operation="Thao tác nhà tư";
+        switch(static_cast<PrivateHousingOperation>(c.good)){
+        case PrivateHousingOperation::Offer:operation="Mời hộ thuê nhà";break;
+        case PrivateHousingOperation::Accept:operation="Chấp thuận thuê nhà";break;
+        case PrivateHousingOperation::Decline:operation="Từ chối thuê nhà";break;
+        case PrivateHousingOperation::EndLease:operation="Kết thúc hợp đồng thuê";break;
+        }
+        return std::string(operation)+" #"+std::to_string(c.target)+" · hộ #"+std::to_string(c.amount);
+    }
     if(c.kind==Intent::Social&&c.good==int(GoodId::Tea))return "Giao lưu cùng trà";
     if(c.kind==Intent::Social&&c.good==int(GoodId::Incense))return "Giao lưu cùng trầm hương";
     if(c.kind==Intent::NominateCouncil&&c.target>=0&&c.target<int(kAtlasTerritoryCount)){

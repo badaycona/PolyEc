@@ -30,7 +30,7 @@ int main(){try{
         check(authority<=uint64_t(world.count())&&world.person(authority).taxing_authority&&worker,
               "the source region has a public authority and an adult worker");
         const auto candidates=world.candidates(authority);
-        check(realm_schema==std::string_view("realm-v34")&&realm_actions==336&&realm_obs==4414,
+        check(realm_schema==std::string_view("realm-v34")&&realm_actions==400&&realm_obs==5182,
               "the product additions use the versioned v31 observation and action contract");
         const auto& create=candidates[size_t(product.candidate)];
         check(create.kind==Intent::CreateEstablishment&&create.target==product.region&&

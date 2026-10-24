@@ -86,7 +86,7 @@ int main(){
         const auto candidates=world.candidates(member);
         check(std::abs(joined_observation[realm_state]-float(int(candidates[0].kind))/32.0f)<1e-6f,
               "action feature block begins after all 27 territory states");
-        check(int(joined_observation.size())==4414&&realm_state==382,"full geography observation also carries 54 site-specific council decisions");
+        check(int(joined_observation.size())==5182&&realm_state==382,"full geography observation also carries 54 site-specific council decisions");
 
         const auto after_join=world.total_money();
         const auto created=world.execute(EstablishmentCommand{member,world.person(member).decisions+1,

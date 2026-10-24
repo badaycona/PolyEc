@@ -48,7 +48,7 @@ int main(){try{
     constexpr int region=20;
     constexpr size_t medicine=size_t(GoodId::Medicine);
     static_assert(int(GoodId::Medicine)==21);
-    static_assert(realm_actions==336&&realm_obs==4414);
+    static_assert(realm_actions==400&&realm_obs==5182);
 
     Realm world(73021,26,512);
     const uint64_t authority=uint64_t(region+2);

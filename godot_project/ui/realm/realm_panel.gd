@@ -109,17 +109,20 @@ func _ready() -> void:
     funds_label=label_at(self,"",11,Vector2(32,121),Color("91a7a4"))
     summary=label_at(self,"",15,Vector2(32,142))
     var regions=panel(Vector2(24,184),Vector2(880,265))
+    var region_scroll=ScrollContainer.new()
+    region_scroll.position=Vector2(20,18)
+    region_scroll.size=Vector2(840,230)
+    regions.add_child(region_scroll)
     var table=GridContainer.new()
-    table.position=Vector2(20,18)
     table.columns=6
     table.add_theme_constant_override("v_separation",10)
-    regions.add_child(table)
+    region_scroll.add_child(table)
     var widths=[170,105,115,130,125,60]
     var headers=["LÃNH ĐỊA","NGÂN KHỐ","LƯƠNG THỰC","VIỆC LÀM","HỌC SINH","ĐƯỜNG"]
     for col in range(6):
         var header=label_at(table,headers[col],11,Vector2.ZERO,Color("d1b575"))
         header.custom_minimum_size.x=widths[col]
-    for r in range(7):
+    for r in range(27):
         var row=[]
         for col in range(6):
             var cell=label_at(table,"",13,Vector2.ZERO)
@@ -161,6 +164,7 @@ func _ready() -> void:
     bar.add_theme_constant_override("separation",12)
     add_child(bar)
     run_button=button(bar,"▶  Chạy thế giới",toggle_run)
+    button(bar,"Atlas kiểm thử thủ công",start_atlas_manual_test)
     button(bar,"Một ngày",func(): step_day())
     if OS.get_cmdline_user_args().has("--worksite-smoke"):
         actor=65
@@ -179,12 +183,15 @@ func _ready() -> void:
     timer.timeout.connect(func(): advance_automatic_day())
     add_child(timer)
     timer.start()
-    if not session.has_method("realm_schema") or session.realm_schema()!="realm-v33":
-        status.text="Lõi mô phỏng không khớp dữ liệu realm-v33; cần build đúng phiên bản"
+    if OS.get_cmdline_user_args().has("--atlas-manual-test"):
+        start_atlas_manual_test()
+        return
+    if not session.has_method("realm_schema") or session.realm_schema()!="realm-v34":
+        status.text="Lõi mô phỏng không khớp dữ liệu realm-v34; cần build đúng phiên bản"
         return
     var paths=[]
     var hashes=[]
-    var model_root="res://models/realm-v33"
+    var model_root="res://models/realm-v34"
     for arg in OS.get_cmdline_user_args():
         if arg.begins_with("--model-root="):
             model_root=arg.trim_prefix("--model-root=")
@@ -197,7 +204,7 @@ func _ready() -> void:
             status.text="Chưa có bundle "+family
             return
         var manifest=JSON.parse_string(f.get_as_text())
-        if not manifest is Dictionary or manifest.get("schema","")!="realm-v33":
+        if not manifest is Dictionary or manifest.get("schema","")!="realm-v34":
             status.text="Sai schema policy "+family
             return
         if manifest.get("model_contract","")!=session.realm_model_contract():
@@ -393,11 +400,15 @@ func refresh() -> void:
         status.text="DỪNG: "+str(v.get("error",""))
         return
     run_button.text="Ⅱ  Tạm dừng" if running else "▶  Chạy thế giới"
-    status.text="Policy realm-v33 · quyết định tự chủ chỉ bật sau khi có đủ 3 bộ đã huấn luyện và kiểm tra"
+    status.text="KIỂM THỬ ATLAS THỦ CÔNG · NPC không tự ra quyết định; đây chưa phải bản game hoàn chỉnh" if v.get("atlas_manual_test",false) else "Policy realm-v34 · quyết định tự chủ chỉ bật sau khi có đủ 3 bộ tương thích đã huấn luyện và kiểm tra"
     summary.text="Ngày %d  ·  %d cá thể / %d còn sống / %d trẻ em  ·  %d quyết định  ·  %d nợ / %d dự án" % [v.day,v.persons,v.alive,v.children,v.decisions,v.loans,v.projects]
-    for r in range(7):
+    var atlas_names={}
+    for site in v.get("urban_census",[]):
+        atlas_names[int(site.get("territory_id",-1))]=str(site.get("site_name",""))
+    for r in range(min(region_rows.size(),v.regions.size())):
         var region=v.regions[r]
-        var cells=[NAMES[r],"%d đ" % region.treasury,str(region.stock[0]),"%d / %d" % [region.workers,region.jobs],"%d / %d" % [region.students,region.school],str(region.road)]
+        var region_name=str(atlas_names.get(r,region_label(r)))
+        var cells=[region_name,"%d đ" % region.treasury,str(region.stock[0]),"%d / %d" % [region.workers,region.jobs],"%d / %d" % [region.students,region.school],str(region.road)]
         for col in range(6): region_rows[r][col].text=cells[col]
     funds_label.visible=v.chosen>=0
     if v.chosen>=0:
@@ -450,6 +461,8 @@ func refresh() -> void:
         for offer in foreign_trade.get("offers",[]):
             profile.text+="\n"+foreign_trade_offer_text(offer,v.day)
     for child in commands.get_children(): commands.remove_child(child);child.queue_free()
+    if v.get("atlas_manual_test",false):
+        add_private_housing_controls(v,p)
     var military_raids: Array=v.get("military_raids",[])
     if bool(p.get("sovereign",false)):
         var pending_raid: Dictionary={}
@@ -622,6 +635,107 @@ func step_day() -> void:
     else:
         feedback.text="Đã tiến một ngày"
     refresh()
+
+func start_atlas_manual_test() -> void:
+    if running:
+        pause_core_and_stop_ui()
+    var ok=session.realm_atlas_manual_start(20261024,512)
+    running=false
+    feedback.text="Đã tạo thế giới Atlas 27 vùng, 512 cá thể. NPC không tự quyết định; mọi lệnh vẫn đi qua luật Realm." if ok else str(session.realm_snapshot(actor).get("error","Không tạo được thế giới Atlas"))
+    refresh()
+
+func run_private_residence_build(holding_id: int, expected: String) -> void:
+    if not pause_core_and_stop_ui():
+        feedback.text="Không tạm dừng được lõi Realm"
+        refresh()
+        return
+    var result=session.realm_private_residence_build(actor,holding_id,expected)
+    feedback.text="Đã bắt đầu xây nhà trên thửa #%d; cần 30 ngày game để hoàn tất." % holding_id if result.success else private_housing_error_text(str(result.error))
+    refresh()
+
+func run_private_housing_command(residence_id: int, operation: int, household_id: int, expected: String) -> void:
+    if not pause_core_and_stop_ui():
+        feedback.text="Không tạm dừng được lõi Realm"
+        refresh()
+        return
+    var result=session.realm_private_housing_command(actor,residence_id,operation,household_id,2,expected)
+    feedback.text="Đã gửi lệnh nhà ở; thời hạn, quyền và khoản tiền được Realm kiểm tra." if result.success else private_housing_error_text(str(result.error))
+    refresh()
+
+static func private_housing_error_text(reason: String) -> String:
+    var messages={
+        "Unknown actor":"Không tìm thấy cá thể thực hiện lệnh.",
+        "Decision counter overflow":"Cá thể đã đạt giới hạn số lệnh.",
+        "Stale or duplicate decision ID":"Lệnh đã cũ hoặc đã được gửi trước đó; hãy làm mới hồ sơ.",
+        "A private home requires an available adult living at an Atlas urban site":"Chỉ người trưởng thành còn sống, đang rảnh và cư trú tại đô thị Atlas mới được xây nhà.",
+        "Actor must own an urban holding at their current residence":"Cá thể phải đứng tên một thửa đất đô thị tại nơi mình đang cư trú.",
+        "This holding already has a private home":"Thửa đất này đã có nhà tư.",
+        "Building requires 40 personal coins, two ConstructionMaterial, and one Tools":"Cần 40 đồng cá nhân, hai vật liệu xây dựng và một công cụ.",
+        "Private home construction limit reached":"Đã chạm giới hạn ngày hoặc số hồ sơ xây nhà.",
+        "Private leases are only available in Atlas":"Nhà tư chỉ hoạt động trong thế giới Atlas.",
+        "Trial rent is fixed at two coins per thirty game days":"Giá thuê thử nghiệm cố định là 2 đồng mỗi 30 ngày game.",
+        "Unknown private home":"Không tìm thấy căn nhà này.",
+        "Private home has no land title":"Căn nhà không còn hồ sơ quyền sở hữu đất hợp lệ.",
+        "Only the living title holder can offer a completed vacant home to another household authority":"Chỉ chủ đất còn sống mới được mời hộ khác thuê căn nhà đã xây xong và đang trống.",
+        "Tenant must be an adult household authority in an Atlas urban household":"Hộ thuê phải có người đại diện trưởng thành và đang cư trú tại đô thị Atlas.",
+        "Household already has a private-home lease or offer":"Hộ này đã có hợp đồng thuê hoặc lời mời thuê đang chờ.",
+        "This lease offer is not addressed to the actor's household":"Lời mời này không gửi cho hộ của cá thể đang chọn.",
+        "Tenant must still live at this site and the home must be ready":"Người thuê phải còn cư trú tại đô thị này và căn nhà phải hoàn tất.",
+        "Actor is neither the landlord nor tenant household authority":"Cá thể này không phải chủ nhà hay người đại diện hộ thuê.",
+        "Unknown private housing operation":"Loại lệnh nhà ở không hợp lệ."
+    }
+    return messages.get(reason,"Realm đã từ chối lệnh nhà ở: "+reason)
+
+func add_private_housing_controls(v: Dictionary, p: Dictionary) -> void:
+    var heading=Label.new()
+    heading.text="NHÀ TƯ / CHO THUÊ · mọi khoản tiền và quyền do Realm kiểm tra"
+    heading.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+    commands.add_child(heading)
+    var holdings: Array=v.get("land_holdings",[])
+    var own=OptionButton.new()
+    var own_count=0
+    for holding in holdings:
+        if not holding.get("owned_by_actor",false): continue
+        own.add_item("Thửa #%d · vùng %d" % [int(holding.id),int(holding.region)])
+        own.set_item_metadata(own.item_count-1,int(holding.id))
+        own_count+=1
+    commands.add_child(own)
+    var build=button(commands,"Xây nhà (40 đồng, 2 vật liệu, 1 công cụ; 30 ngày)",func():
+        if own.item_count>0: run_private_residence_build(int(own.get_item_metadata(own.selected)),str(v.fingerprint)))
+    build.disabled=own_count==0
+    if own_count==0:
+        var no_title=Label.new();no_title.text="Cá thể này chưa đứng tên thửa đất nào được phép xem.";no_title.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;commands.add_child(no_title)
+    var tenant_picker=OptionButton.new()
+    var households: Array=v.get("private_housing_households",[])
+    for household in households:
+        if int(household.get("authority_id",0))==actor: continue
+        tenant_picker.add_item("Hộ #%d · người đại diện #%d" % [int(household.household_id),int(household.authority_id)])
+        tenant_picker.set_item_metadata(tenant_picker.item_count-1,int(household.household_id))
+    commands.add_child(tenant_picker)
+    var homes: Array=v.get("private_residences",[])
+    if homes.is_empty():
+        var empty=Label.new();empty.text="Chưa có nhà tư trong phạm vi cá thể này được xem.";empty.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;commands.add_child(empty)
+    for home in homes:
+        var home_id=int(home.get("id",0))
+        var owner=int(home.get("owner_id",0))
+        var tenant=int(home.get("tenant_household",0))
+        var offered=int(home.get("offered_household",0))
+        var line=Label.new()
+        line.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+        line.text="Nhà #%d · thửa #%d · vùng %d · chủ #%d · %s" % [home_id,int(home.get("holding_id",0)),int(home.get("region",0)),owner,"đã xây xong" if home.get("completed",false) else "đang xây đến ngày %d" % int(home.get("construction_due_day",0))]
+        if tenant>0: line.text+=" · hộ thuê #%d · %d đồng/30 ngày · kỳ tới ngày %d · hợp đồng hết ngày %d" % [tenant,int(home.get("rent_per_period",0)),int(home.get("next_rent_day",-1)),int(home.get("lease_end_day",-1))]
+        elif offered>0: line.text+=" · đang mời hộ #%d · %d đồng/30 ngày · hết hạn ngày %d" % [offered,int(home.get("offered_rent",0)),int(home.get("offer_expires_day",-1))]
+        else: line.text+=" · đang trống"
+        commands.add_child(line)
+        if owner==actor and home.get("completed",false) and tenant==0 and offered==0:
+            var offer=button(commands,"Mời hộ được chọn thuê · 2 đồng/30 ngày",func():
+                if tenant_picker.item_count>0: run_private_housing_command(home_id,0,int(tenant_picker.get_item_metadata(tenant_picker.selected)),str(v.fingerprint)))
+            offer.disabled=tenant_picker.item_count==0
+        if offered>0 and int(p.get("household",0))==offered:
+            button(commands,"Chấp thuận đề nghị nhà #%d" % home_id,func(): run_private_housing_command(home_id,1,offered,str(v.fingerprint)))
+            button(commands,"Từ chối đề nghị nhà #%d" % home_id,func(): run_private_housing_command(home_id,2,offered,str(v.fingerprint)))
+        if tenant>0 and (owner==actor or int(p.get("household",0))==tenant):
+            button(commands,"Kết thúc hợp đồng nhà #%d" % home_id,func(): run_private_housing_command(home_id,3,tenant,str(v.fingerprint)))
 
 func toggle_run() -> void:
     if running:

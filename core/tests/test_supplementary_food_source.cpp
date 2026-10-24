@@ -69,7 +69,7 @@ int main(){try{
     constexpr int region=2;
     constexpr size_t supplementary=size_t(GoodId::SupplementaryFood);
     static_assert(int(GoodId::SupplementaryFood)==1);
-    static_assert(realm_actions==336&&realm_obs==4414);
+    static_assert(realm_actions==400&&realm_obs==5182);
     Realm world(73102,26,512);
     const uint64_t governor=uint64_t(region+2);
     const uint64_t worker=find_person(world,region,Family::Civilian);

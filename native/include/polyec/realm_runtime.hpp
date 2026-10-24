@@ -17,6 +17,8 @@ public:
 #endif
     bool load_models(const std::array<std::string,3>&paths,const std::string&bundle,uint64_t seed,int population=10000,
                      bool allow_incompatible_pilot_for_development=false,int complex_actors=0);
+    // Clearly labeled validation mode: real Atlas Realm rules, no autonomous NPC policy.
+    bool load_atlas_manual_test(uint64_t seed,int population=512);
     bool advance(int days);
     bool step_one_day();
     bool pause(std::optional<uint64_t> expected_pause_revision = std::nullopt);
@@ -34,6 +36,10 @@ public:
     bool land_title_transfer(uint64_t actor,uint64_t holding_id,uint64_t recipient,const std::string& expected="");
     bool land_use_grant(uint64_t actor,uint64_t holding_id,uint64_t grantee,const std::string& expected="");
     bool land_use_revoke(uint64_t actor,uint64_t holding_id,const std::string& expected="");
+    bool private_residence_build(uint64_t actor,uint64_t holding_id,const std::string& expected="");
+    bool private_housing_command(uint64_t actor,uint64_t residence_id,PrivateHousingOperation operation,
+                                 uint64_t tenant_household=0,int64_t rent_per_period=0,
+                                 const std::string& expected="");
     bool market_order(uint64_t actor,MarketOrderOperation operation,uint64_t order_id,int region,int good,
                       int64_t quantity,int64_t maximum_unit_price,uint64_t&result_order_id,
                       const std::string&expected="");
@@ -50,9 +56,10 @@ public:
     const Realm* world()const{return world_.get();}
     const std::string& error()const{return error_;}
     bool loaded()const{return loaded_;}
+    bool atlas_manual_test()const{return loaded_&&atlas_manual_test_;}
     double inference_ms()const{return inference_ms_;}
     uint64_t inference_count()const{return inference_count_;}
-    void stop(const std::string&message){loaded_=false;error_=message;}
+    void stop(const std::string&message){loaded_=false;atlas_manual_test_=false;error_=message;}
 private:
     std::unique_ptr<Realm> world_;
     std::array<std::unique_ptr<NativePolicy>,3> policies_;
@@ -62,7 +69,7 @@ private:
     std::array<uint64_t, runtime_phase_count> runtime_phase_profile_ns_{};
 #endif
     uint64_t seed_=1,inference_count_=0;double inference_ms_=0;
-    std::string bundle_,error_;bool loaded_=false;
+    std::string bundle_,error_;bool loaded_=false,atlas_manual_test_=false;
     bool allow_incompatible_pilot_for_development_=false;
     std::string loaded_model_contract_;
     bool decisions(Family family);

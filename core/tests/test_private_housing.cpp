@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 
@@ -70,6 +71,10 @@ struct RealmPrivateHousingTestAccess {
         world.urban_housing_capacity_[8]=0;
         world.refresh_demography();
     }
+    static void add_extra_urban_titles(Realm&world,uint64_t owner,int count){
+        for(int index=0;index<count;++index)
+            world.land_holdings_.push_back({world.next_id_++,8,1,owner});
+    }
 };
 }
 
@@ -83,9 +88,16 @@ int main(){
     try{
         Realm world(20261024,26,256);
         const auto [owner,tenant]=RealmPrivateHousingTestAccess::prepare(world);
+        const auto tenantHousehold=world.household_of(tenant);
         const auto holding=world.land_holdings().front().id;
         const int64_t landlordBefore=world.person(owner).cash;
-        const auto build=world.execute(PrivateResidenceBuildCommand{owner,world.person(owner).decisions+1,holding});
+        const auto buildCandidates=world.candidates(owner);
+        const auto buildAction=std::find_if(buildCandidates.begin()+realm_private_build_candidate_begin,
+            buildCandidates.begin()+realm_private_offer_candidate_begin,[](const Candidate&candidate){return candidate.kind==Intent::PrivateResidenceBuild;});
+        check(buildAction!=buildCandidates.begin()+realm_private_offer_candidate_begin,"owned urban holding appears among learned-policy build choices");
+        const auto buildIndex=int(buildAction-buildCandidates.begin());
+        check(world.mask(owner)[size_t(buildIndex)]>0,"build candidate mask matches an affordable legal build");
+        const auto build=world.execute({owner,world.person(owner).decisions+1,*buildAction});
         check(build.success&&world.private_residences().size()==1,"owner can build a private home on their urban title");
         check(world.person(owner).cash==landlordBefore-kPrivateResidenceBuildCost,"construction charges the title holder's personal cash");
         check(world.person(owner).inventory[size_t(GoodId::ConstructionMaterial)]==0&&world.person(owner).inventory[size_t(GoodId::Tools)]==0,"construction consumes the exact personal materials");
@@ -97,10 +109,33 @@ int main(){
         check(world.private_residences().front().completed&&world.invariant(),"home completes after thirty game days");
         const auto home=world.private_residences().front();
 
-        const auto offer=world.execute(PrivateHousingCommand{owner,world.person(owner).decisions+1,home.id,tenant,PrivateHousingOperation::Offer,kPrivateResidenceRentPerPeriod});
-        check(offer.success&&world.private_residences().front().offered_household==tenant,"landlord makes a voluntary offer to a local household");
-        const auto accept=world.execute(PrivateHousingCommand{tenant,world.person(tenant).decisions+1,home.id,tenant,PrivateHousingOperation::Accept,0});
-        check(accept.success&&world.private_residences().front().tenant_household==tenant,"tenant household authority accepts the offer");
+        const auto offerCandidates=world.candidates(owner);
+        const auto offerAction=std::find_if(offerCandidates.begin()+realm_private_offer_candidate_begin,
+            offerCandidates.begin()+realm_private_response_candidate_begin,[&](const Candidate&candidate){return candidate.kind==Intent::PrivateHousing&&candidate.good==int(PrivateHousingOperation::Offer)&&candidate.target==int(home.id)&&candidate.amount==int64_t(tenantHousehold);});
+        check(offerAction!=offerCandidates.begin()+realm_private_response_candidate_begin,"a completed vacant home and local household appear as a learned-policy offer choice");
+        check(world.mask(owner)[size_t(offerAction-offerCandidates.begin())]>0,"offer candidate mask matches the typed offer rules");
+        const auto offer=world.execute({owner,world.person(owner).decisions+1,*offerAction});
+        check(offer.success&&world.private_residences().front().offered_household==tenantHousehold,"landlord makes a voluntary offer to a local household");
+        const auto responseCandidates=world.candidates(tenant);
+        const auto declineAction=std::find_if(responseCandidates.begin()+realm_private_response_candidate_begin,
+            responseCandidates.begin()+realm_private_end_lease_candidate_begin,[&](const Candidate&candidate){return candidate.kind==Intent::PrivateHousing&&candidate.good==int(PrivateHousingOperation::Decline)&&candidate.target==int(home.id);});
+        const auto acceptAction=std::find_if(responseCandidates.begin()+realm_private_response_candidate_begin,
+            responseCandidates.begin()+realm_private_end_lease_candidate_begin,[&](const Candidate&candidate){return candidate.kind==Intent::PrivateHousing&&candidate.good==int(PrivateHousingOperation::Accept)&&candidate.target==int(home.id);});
+        check(declineAction!=responseCandidates.begin()+realm_private_end_lease_candidate_begin&&acceptAction!=responseCandidates.begin()+realm_private_end_lease_candidate_begin,
+            "the tenant receives separate accept and decline choices for the same offer");
+        check(world.execute({tenant,world.person(tenant).decisions+1,*declineAction}).success&&
+              world.private_residences().front().offered_household==0,"tenant can decline through the ordinary candidate command");
+        const auto renewedCandidates=world.candidates(owner);
+        const auto renewedOffer=std::find_if(renewedCandidates.begin()+realm_private_offer_candidate_begin,
+            renewedCandidates.begin()+realm_private_response_candidate_begin,[&](const Candidate&candidate){return candidate.kind==Intent::PrivateHousing&&candidate.good==int(PrivateHousingOperation::Offer)&&candidate.target==int(home.id)&&candidate.amount==int64_t(tenantHousehold);});
+        check(renewedOffer!=renewedCandidates.begin()+realm_private_response_candidate_begin&&
+              world.execute({owner,world.person(owner).decisions+1,*renewedOffer}).success,"landlord can send a new offer after a decline");
+        const auto nextResponses=world.candidates(tenant);
+        const auto nextAccept=std::find_if(nextResponses.begin()+realm_private_response_candidate_begin,
+            nextResponses.begin()+realm_private_end_lease_candidate_begin,[&](const Candidate&candidate){return candidate.kind==Intent::PrivateHousing&&candidate.good==int(PrivateHousingOperation::Accept)&&candidate.target==int(home.id);});
+        check(nextAccept!=nextResponses.begin()+realm_private_end_lease_candidate_begin,"renewed offer has a legal acceptance choice");
+        const auto accept=world.execute({tenant,world.person(tenant).decisions+1,*nextAccept});
+        check(accept.success&&world.private_residences().front().tenant_household==tenantHousehold,"tenant household authority accepts the offer through the candidate pipeline");
         check(world.private_residences().front().next_rent_day==world.day()+kPrivateResidenceRentPeriodDays,"first rent is due thirty game days after acceptance");
 
         RealmPrivateHousingTestAccess::move_renter_home_region(world,tenant,0);
@@ -123,10 +158,54 @@ int main(){
         check(restored.person(owner).cash==ownerCash+kPrivateResidenceRentPerPeriod,"rent transfers to the current title holder when due");
         check(restored.private_residences().front().next_rent_day==restored.day()+kPrivateResidenceRentPeriodDays,"rent schedule advances by one period");
 
+        const auto endCandidates=restored.candidates(owner);
+        const auto endAction=std::find_if(endCandidates.begin()+realm_private_end_lease_candidate_begin,
+            endCandidates.end(),[&](const Candidate&candidate){return candidate.kind==Intent::PrivateHousing&&
+                candidate.good==int(PrivateHousingOperation::EndLease)&&candidate.target==int(home.id);});
+        check(endAction!=endCandidates.end()&&restored.mask(owner)[size_t(endAction-endCandidates.begin())]>0,
+            "landlord receives a legal end-lease choice");
+        check(restored.execute({owner,restored.person(owner).decisions+1,*endAction}).success&&
+              restored.private_residences().front().tenant_household==0,"landlord ends the lease through the learned-policy command path");
+        const auto reofferCandidates=restored.candidates(owner);
+        const auto reofferAction=std::find_if(reofferCandidates.begin()+realm_private_offer_candidate_begin,
+            reofferCandidates.begin()+realm_private_response_candidate_begin,[&](const Candidate&candidate){return candidate.kind==Intent::PrivateHousing&&
+                candidate.good==int(PrivateHousingOperation::Offer)&&candidate.target==int(home.id)&&candidate.amount==int64_t(tenantHousehold);});
+        check(reofferAction!=reofferCandidates.begin()+realm_private_response_candidate_begin&&
+              restored.execute({owner,restored.person(owner).decisions+1,*reofferAction}).success,"vacant home can be offered again after the lease ends");
+        const auto renterResponses=restored.candidates(tenant);
+        const auto renterAccept=std::find_if(renterResponses.begin()+realm_private_response_candidate_begin,
+            renterResponses.begin()+realm_private_end_lease_candidate_begin,[&](const Candidate&candidate){return candidate.kind==Intent::PrivateHousing&&
+                candidate.good==int(PrivateHousingOperation::Accept)&&candidate.target==int(home.id);});
+        check(renterAccept!=renterResponses.begin()+realm_private_end_lease_candidate_begin&&
+              restored.execute({tenant,restored.person(tenant).decisions+1,*renterAccept}).success,"tenant can accept a later offer through the candidate path");
+
         RealmPrivateHousingTestAccess::make_renter_poor(restored,tenant);
         RealmPrivateHousingTestAccess::make_rent_due_now(restored);
         check(restored.private_residences().front().tenant_household==0,"lease ends when household cannot pay rent");
         check(restored.invariant(),"ending a lease leaves a valid world");
+
+        Realm rotating(20261025,26,256);
+        const auto [rotatingOwner,rotatingTenant]=RealmPrivateHousingTestAccess::prepare(rotating);
+        (void)rotatingTenant;
+        RealmPrivateHousingTestAccess::add_extra_urban_titles(rotating,rotatingOwner,16);
+        check(rotating.invariant(),"many titles for one owner remain valid before candidate rotation");
+        const auto firstWindow=rotating.candidates(rotatingOwner);
+        std::vector<int> firstTargets;
+        for(int slot=realm_private_build_candidate_begin;slot<realm_private_offer_candidate_begin;++slot)
+            if(firstWindow[size_t(slot)].kind==Intent::PrivateResidenceBuild)
+                firstTargets.push_back(firstWindow[size_t(slot)].target);
+        check(firstTargets.size()==16,"one observation contains no more than sixteen build targets");
+        check(rotating.execute({rotatingOwner,rotating.person(rotatingOwner).decisions+1,Candidate{}}).success,
+              "an ordinary committed decision advances the candidate window");
+        const auto secondWindow=rotating.candidates(rotatingOwner);
+        std::vector<int> secondTargets;
+        for(int slot=realm_private_build_candidate_begin;slot<realm_private_offer_candidate_begin;++slot)
+            if(secondWindow[size_t(slot)].kind==Intent::PrivateResidenceBuild)
+                secondTargets.push_back(secondWindow[size_t(slot)].target);
+        std::set<int> allTargets(firstTargets.begin(),firstTargets.end());
+        allTargets.insert(secondTargets.begin(),secondTargets.end());
+        check(secondTargets.size()==16&&allTargets.size()==17,
+              "stable-ID candidate window rotates so the seventeenth title appears after the next decision");
         std::cout<<"PRIVATE HOUSING TESTS: "<<checks<<" checks passed\n";
         return 0;
     }catch(const std::exception&error){std::cerr<<"FAIL after "<<checks<<": "<<error.what()<<'\n';return 1;}

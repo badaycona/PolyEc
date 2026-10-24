@@ -49,7 +49,7 @@ int main(){try{
     const uint64_t buyer=traveler;
     check(world.person(governor).taxing_authority&&worker&&buyer&&traveler,"region 14 authority, adult worker and economic traveler are available");
     const auto candidates=world.candidates(governor);
-    check(realm_tea_garden_candidate_begin==161&&realm_actions==336&&realm_obs==4414,
+    check(realm_tea_garden_candidate_begin==161&&realm_actions==400&&realm_obs==5182,
           "Tea Garden uses three appended choices without moving actions 0 through 160");
     for(int tier=0;tier<3;++tier)
         check(candidates[size_t(161+tier)].kind==Intent::CreateEstablishment&&

@@ -77,7 +77,29 @@ int main(int argc,char**argv){if(argc!=6)return 2;try{
  auto terms=inbox.candidates(1);auto term_mask=inbox.mask(1);check(inbox.execute({1,2,{Intent::Project,inbox.person(1).region,0,200,60}}).success,"treasury changes after observation");check(revalidate_snapshot(inbox,1,terms,term_mask)[6]==0,"batch cannot silently change observed aid amount");
  std::array<std::string,3>paths{argv[1],argv[2],argv[3]};std::string path=argv[5];uint64_t seed=0;
  for(int i=1;i<2000;++i){Realm w(i,6,256);auto d=w.draft();if(std::find(d.cards.begin(),d.cards.end(),6)!=d.cards.end()){seed=i;break;}}
- check(seed>0,"A07 runtime fixture");RealmRuntime runtime;
+ check(seed>0,"A07 runtime fixture");
+ {
+  RealmRuntime atlas;check(atlas.load_atlas_manual_test(20261024,256),"Atlas manual-test mode starts without policy files");
+  check(atlas.atlas_manual_test()&&atlas.loaded()&&atlas.world()->regions()==int(kAtlasTerritoryCount)-1&&
+        atlas.paused()&&atlas.inference_count()==0,"Atlas manual-test mode is clearly separate from model inference");
+  const auto before=atlas.world()->fingerprint();const auto day=atlas.world()->day();
+  check(!atlas.private_residence_build(1,0,"stale")&&atlas.error()=="World changed; refresh before building a private home"&&
+        atlas.world()->fingerprint()==before,"Atlas runtime rejects stale housing form before Realm command");
+  check(!atlas.private_residence_build(1,0,std::to_string(before))&&atlas.world()->fingerprint()==before&&atlas.world()->invariant(),
+        "Atlas runtime sends a current-view housing request through Realm and rejects its unknown title atomically");
+  check(atlas.step_one_day()&&atlas.world()->day()==day+1&&atlas.paused()&&atlas.inference_count()==0,
+        "Atlas manual-test day advances real Realm lifecycle without pretending NPCs chose actions");
+  const std::string atlasPath=path+".atlas";
+  check(atlas.save(atlasPath),"Atlas manual-test world saves through runtime wrapper");
+  RealmRuntime restoredAtlas;const bool atlasRestored=restoredAtlas.load_atlas_manual_test(20261024,256)&&restoredAtlas.restore_interactive(atlasPath);
+  if(!atlasRestored)std::cerr<<"Atlas manual-test restore error: "<<restoredAtlas.error()<<'\n';
+  check(atlasRestored,"Atlas manual-test save restores through schema67 Realm data");
+  check(restoredAtlas.atlas_manual_test()&&restoredAtlas.world()->fingerprint()==atlas.world()->fingerprint()&&
+        restoredAtlas.world()->invariant(),"Atlas manual-test save/load retains the same world and mode label");
+  std::filesystem::remove(atlasPath);auto atlasBackup=std::filesystem::path(atlasPath);atlasBackup+=".bak";
+  std::filesystem::remove(atlasBackup);
+ }
+ RealmRuntime runtime;
  {RealmRuntime unloaded;uint64_t orderId=99;
   check(!unloaded.market_order(1,MarketOrderOperation::Place,0,0,1,1,100,orderId),
         "unloaded native runtime rejects market order");

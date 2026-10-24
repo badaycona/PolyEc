@@ -43,6 +43,22 @@ py::dict realm_view(const Realm&w,uint64_t observer){
         census.append(item);
     }
     d["urban_census"]=census;
+    py::list residences;const auto holdings=w.land_holdings();
+    for(const auto& home:w.private_residences()){
+        const auto holding=std::find_if(holdings.begin(),holdings.end(),
+            [&](const LandHolding& value){return value.id==home.holding_id;});
+        const bool household_party=home.tenant_household==observer_person.household_membership.household_id||
+            home.offered_household==observer_person.household_membership.household_id;
+        const bool is_title_holder=holding!=holdings.end()&&holding->title_holder==observer;
+        if(!observer_person.sovereign&&home.region!=observer_person.region&&!is_title_holder&&!household_party)continue;
+        py::dict item;item["id"]=home.id;item["holding_id"]=home.holding_id;item["region"]=home.region;
+        item["completed"]=home.completed;item["construction_due_day"]=home.construction_due_day;
+        item["tenant_household"]=home.tenant_household;item["offered_household"]=home.offered_household;
+        item["offered_rent"]=home.offered_rent;item["offer_expires_day"]=home.offer_expires_day;
+        item["rent_per_period"]=home.rent_per_period;item["next_rent_day"]=home.next_rent_day;
+        item["lease_end_day"]=home.lease_end_day;residences.append(item);
+    }
+    d["private_residences"]=residences;
     py::list fs;for(auto&f:v.facts){py::dict x;x["id"]=f.id;x["parent"]=f.parent;x["kind"]=f.kind;x["actor"]=f.actor;x["day"]=f.day;x["amount"]=f.amount;fs.append(x);}d["facts"]=fs;
     py::list knowledge;for(const auto&k:v.knowledge){py::dict x;x["observer"]=k.observer;x["fact"]=k.fact;x["arrives"]=k.arrives;
         x["source_investigation_id"]=k.source_investigation_id;x["kind"]=unsigned(k.kind);x["confidence_basis_points"]=k.confidence_basis_points;knowledge.append(x);}
@@ -100,6 +116,15 @@ class RealmNativeTag {};
 class RealmNativePolicy:public NativePolicy {public:using NativePolicy::NativePolicy;};
 #endif
 void bind_realm(py::module_&m){m.attr("REALM_OBS")=realm_obs;m.attr("REALM_ACTIONS")=realm_actions;m.attr("REALM_SCHEMA")=realm_schema;m.attr("REALM_REWARD_VERSION")=realm_reward_version;m.attr("REALM_TICKS_PER_DAY")=kSubdayUnitsPerDay;
+    m.attr("REALM_PRIVATE_HOUSING_CANDIDATE_BEGIN")=realm_private_housing_candidate_begin;
+    m.attr("REALM_PRIVATE_BUILD_CANDIDATE_BEGIN")=realm_private_build_candidate_begin;
+    m.attr("REALM_PRIVATE_BUILD_CANDIDATE_COUNT")=realm_private_build_candidate_count;
+    m.attr("REALM_PRIVATE_OFFER_CANDIDATE_BEGIN")=realm_private_offer_candidate_begin;
+    m.attr("REALM_PRIVATE_OFFER_CANDIDATE_COUNT")=realm_private_offer_candidate_count;
+    m.attr("REALM_PRIVATE_RESPONSE_CANDIDATE_BEGIN")=realm_private_response_candidate_begin;
+    m.attr("REALM_PRIVATE_RESPONSE_CANDIDATE_COUNT")=realm_private_response_candidate_count;
+    m.attr("REALM_PRIVATE_END_LEASE_CANDIDATE_BEGIN")=realm_private_end_lease_candidate_begin;
+    m.attr("REALM_PRIVATE_END_LEASE_CANDIDATE_COUNT")=realm_private_end_lease_candidate_count;
     py::enum_<MarketOrderOperation>(m,"MarketOrderOperation")
         .value("Place",MarketOrderOperation::Place).value("Cancel",MarketOrderOperation::Cancel);
     py::class_<Realm>(m,"Realm").def(py::init([](uint64_t seed,int regions,int people,const std::string& config_path,bool taxing_authority,uint32_t capability_mask){
@@ -122,6 +147,19 @@ void bind_realm(py::module_&m){m.attr("REALM_OBS")=realm_obs;m.attr("REALM_ACTIO
         const auto result=w.execute(RealmCommand{actor,sequence,{static_cast<Intent>(intent),target,good,amount,term}});
         return py::make_tuple(result.success,result.reason,result.fact);
     },py::arg("actor"),py::arg("sequence"),py::arg("intent"),py::arg("target")=0,py::arg("good")=0,py::arg("amount")=0,py::arg("term")=0)
+    .def("private_residence_build",[](Realm&w,uint64_t actor,uint64_t sequence,uint64_t holding_id){
+        const auto result=w.execute(PrivateResidenceBuildCommand{actor,sequence,holding_id});
+        return py::make_tuple(result.success,result.reason,result.fact);
+    },py::arg("actor"),py::arg("sequence"),py::arg("holding_id"))
+    .def("private_housing_command",[](Realm&w,uint64_t actor,uint64_t sequence,uint64_t residence_id,
+                                      int operation,uint64_t tenant_household,int64_t rent_per_period){
+        if(operation<0||operation>int(PrivateHousingOperation::EndLease))
+            return py::make_tuple(bool(false),std::string("Unknown private housing operation"),uint64_t(0));
+        const auto result=w.execute(PrivateHousingCommand{actor,sequence,residence_id,tenant_household,
+            static_cast<PrivateHousingOperation>(operation),rent_per_period});
+        return py::make_tuple(bool(result.success),std::string(result.reason),uint64_t(result.fact));
+    },py::arg("actor"),py::arg("sequence"),py::arg("residence_id"),py::arg("operation"),
+      py::arg("tenant_household")=0,py::arg("rent_per_period")=0)
     .def("transport_shipment_command",[](Realm&w,uint64_t actor,uint64_t sequence,uint64_t shipment_id,int operation,int destination,int good,int64_t quantity,int goal,bool military_ration_depot)->py::tuple{
         if(operation<0||operation>int(TransportShipmentOperation::Cancel))
             return py::make_tuple(false,std::string("Unknown shipment operation"),uint64_t(0),uint64_t(0));

@@ -1,10 +1,10 @@
-"""Check schema65 housing and council projection through the shared C++ binding."""
+"""Check current-schema housing and council projection through the shared C++ binding."""
 
 import polyec_env as core
 
 
 assert core.REALM_SCHEMA == "realm-v34"
-assert core.REALM_ACTIONS == 336 and core.REALM_OBS == 4414
+assert core.REALM_ACTIONS == 400 and core.REALM_OBS == 5182
 
 world = core.Realm(20261024, 26, 512)
 governor = 8  # Atlas region 6 Governance actor
@@ -18,7 +18,7 @@ assert row["available_beds"] == max(0, row["housing_capacity"] - row["urban_resi
 assert row["council_representative_id"] == 0 and row["council_nominee_id"] == 0
 
 saved = world.serialize("urban-housing-binding-v1")
-assert saved.startswith('POLYEC_REALM_66 "')
+assert saved.startswith('POLYEC_REALM_67 "')
 restored = core.Realm(1, 1, 128)
 ok, error = restored.deserialize(saved, "urban-housing-binding-v1")
 assert ok, error

@@ -47,7 +47,7 @@ int main(){try{
     const uint64_t authority=region+2;
     const uint64_t worker=adult_civilian(world,region);
     check(worker&&world.person(authority).taxing_authority,"Atlas region12 has a governing authority and adult civilian household head");
-    check(world.model_contract()=="realm-household-fund-goods30-config-v47"&&realm_actions==400&&realm_obs==5182,
+    check(world.model_contract()=="realm-household-fund-goods30-config-v48"&&realm_actions==400&&realm_obs==5182,
           "Silk action advances the model contract and keeps the existing tensor sizes");
     check(world.candidates(worker)[realm_silk_social_candidate].kind==Intent::Hold,
           "Silk social action is absent when the Civilian owns no Silk");
@@ -115,12 +115,12 @@ int main(){try{
           world.person(worker).social==std::min(100,socialBefore+12)&&world.person(worker).busy_until==world.day()+7&&world.invariant(),
           "Silk gift consumes its owner's item, pays the regional fund, raises social by 12 and occupies seven days");
     const auto saved=world.serialize(saveName);
-    check(saved.rfind("POLYEC_REALM_69 ",0)==0,"Silkworm Farm is written in save schema69");
+    check(saved.rfind("POLYEC_REALM_70 ",0)==0,"Silkworm Farm is written in save schema70");
     Realm restored(1,1,128);std::string error;
     check(restored.deserialize(saved,saveName,error)&&restored.fingerprint()==world.fingerprint()&&
           restored.establishments()[0].industry==EstablishmentIndustry::SilkwormFarm&&
           RealmSilkSocialTestAccess::consumed(restored)==consumedBefore+1&&restored.invariant(),
-          "schema69 roundtrip preserves the Farm, consumed Silk, money, social and busy time: "+error);
+          "schema70 roundtrip preserves the Farm, consumed Silk, money, social and busy time: "+error);
     auto badSave=saved;
     const size_t marker=badSave.find(" ESTABLISH_14 1 ");
     const size_t regionStart=badSave.find(' ',marker+std::string(" ESTABLISH_14 1 ").size())+1;
@@ -128,7 +128,7 @@ int main(){try{
     badSave.replace(regionStart,regionEnd-regionStart,"11");
     const auto restoredBefore=restored.fingerprint();
     check(!restored.deserialize(badSave,saveName,error)&&restored.fingerprint()==restoredBefore,
-          "schema69 refuses a Farm moved away from region12 without replacing the loaded world");
+          "schema70 refuses a Farm moved away from region12 without replacing the loaded world");
 
     Realm seasons(20261076,int(kAtlasTerritoryCount)-1,256);
     const uint64_t seasonAuthority=region+2;
@@ -199,7 +199,7 @@ int main(){try{
     Realm old(20261075,26,128);
     auto oldSave=old.serialize("silk-legacy");oldSave.replace(0,15,"POLYEC_REALM_68");
     Realm migrated(1,1,128);
-    check(migrated.deserialize(oldSave,"silk-legacy",error)&&migrated.serialize("silk-legacy").rfind("POLYEC_REALM_69 ",0)==0,
-          "schema68 saves without a Silkworm Farm migrate forward to schema69");
+    check(migrated.deserialize(oldSave,"silk-legacy",error)&&migrated.serialize("silk-legacy").rfind("POLYEC_REALM_70 ",0)==0,
+          "schema68 saves without a Silkworm Farm migrate forward to schema70");
     std::cout<<"Silk social gift checks="<<checks<<'\n';return 0;
 }catch(const std::exception& error){std::cerr<<"Silk social gift failure after "<<checks<<": "<<error.what()<<'\n';return 1;}}

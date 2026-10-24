@@ -56,7 +56,8 @@ RealmResult Realm::execute(const EstablishmentCommand& cmd){
         cmd.industry != EstablishmentIndustry::SeedPressWorks &&
         cmd.industry != EstablishmentIndustry::SawmillWorks &&
         cmd.industry != EstablishmentIndustry::Apiary &&
-        cmd.industry != EstablishmentIndustry::SilkwormFarm) return {false, "Invalid industry"};
+        cmd.industry != EstablishmentIndustry::SilkwormFarm &&
+        cmd.industry != EstablishmentIndustry::GoldMine) return {false, "Invalid industry"};
     if(cmd.industry==EstablishmentIndustry::Saltworks&&cmd.region!=8)return {false,"Saltworks requires atlas region 8"};
     if(cmd.industry==EstablishmentIndustry::Forestry){
         if(cmd.region!=6)return {false,"Forestry requires atlas region 6"};
@@ -149,6 +150,13 @@ RealmResult Realm::execute(const EstablishmentCommand& cmd){
         if(std::any_of(establishments_.begin(),establishments_.end(),[](const Establishment& site){
             return site.industry==EstablishmentIndustry::SilkwormFarm&&site.region==12;
         }))return {false,"Silk source site already exists in region 12"};
+    }
+    if(cmd.industry==EstablishmentIndustry::GoldMine){
+        if(regions_!=int(kAtlasTerritoryCount)-1||cmd.region!=23)
+            return {false,"Gold Mine requires Atlas region 23"};
+        if(std::any_of(establishments_.begin(),establishments_.end(),[](const Establishment& site){
+            return site.industry==EstablishmentIndustry::GoldMine&&site.region==23;
+        }))return {false,"Gold source site already exists in region 23"};
     }
     const int cap = cmd.capacity==-1?config_.default_capacity():cmd.capacity;
     if (cap < 1 || cap > kEstablishmentCapacityMax) return {false, "Invalid capacity"};

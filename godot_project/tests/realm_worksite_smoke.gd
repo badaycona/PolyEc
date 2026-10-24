@@ -27,10 +27,13 @@ func run() -> void:
 	check(RealmPanel.good_name(12) == "lụa" and RealmPanel.silk_social_action_description().contains("trả 4 đồng") and
 		RealmPanel.silk_social_action_description().contains("thêm 12") and RealmPanel.silk_social_action_description().contains("ngoài quân vụ"),
 		"the player-facing Silk action explains its personal item, fund payment, social gain and eligibility")
+	check(RealmPanel.good_name(8) == "vàng" and RealmPanel.gold_social_action_description().contains("trả 20 đồng") and
+		RealmPanel.gold_social_action_description().contains("thêm 20") and RealmPanel.gold_social_action_description().contains("trưởng thành"),
+		"the player-facing Gold action explains the personal item, fund payment, social gain and adult eligibility")
 	var session = ClassDB.instantiate("PolyEcSession")
 	var schema = session.realm_schema()
-	check(schema == "realm-v36", "native core schema")
-	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v47", "native core model contract")
+	check(schema == "realm-v37", "native core schema")
+	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v48", "native core model contract")
 	for case in [[10, 12, 27, "thủy tinh thường", 90], [15, 13, 28, "đồ gốm thường", 55], [17, 14, 29, "da thuộc", 80]]:
 		var stock := []
 		stock.resize(30)
@@ -60,6 +63,13 @@ func run() -> void:
 	var silk_farm_line: String = RealmPanel.establishment_text([{"id": 54, "region": 12, "industry": 19, "stock": silk_stock, "source_units": 25}], 12)
 	check(silk_farm_line.contains("trại nuôi tằm") and silk_farm_line.contains("lụa") and silk_farm_line.contains("25 source units") and silk_farm_line.contains("16 tick Work"),
 		"Silkworm Farm UI distinguishes its finite source from saleable Silk and explains production work")
+	var gold_stock := []
+	gold_stock.resize(30)
+	gold_stock.fill(0)
+	gold_stock[8] = 1
+	var gold_mine_line: String = RealmPanel.establishment_text([{"id": 55, "region": 23, "industry": 20, "stock": gold_stock, "source_units": 100}], 23)
+	check(gold_mine_line.contains("mỏ vàng") and gold_mine_line.contains("vàng") and gold_mine_line.contains("100 source units") and gold_mine_line.contains("không tái tạo") and gold_mine_line.contains("16 tick Work"),
+		"Gold Mine UI distinguishes finite ore from saleable Gold and explains production work")
 	var census_line: String = RealmPanel.urban_census_text([{"site_name": "Nam Cảng", "urban_residents": 24, "housing_capacity": 24, "unhoused_residents": 0, "available_beds": 0}], true)
 	check(census_line.contains("sức chứa 24") and census_line.contains("còn thiếu chỗ 0") and census_line.contains("giường trống 0"),
 		"housing census UI explains resident count, capacity, unhoused residents and vacant beds")

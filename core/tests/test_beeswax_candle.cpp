@@ -198,12 +198,12 @@ int main(){try{
     check(seasonal.establishments()[0].source_units==100,"seasonal replenishment stops at the source cap of 100");
 
     const auto currentSave=world.serialize("beeswax-schema");
-    check(currentSave.rfind("POLYEC_REALM_69 ",0)==0&&currentSave.find(" ESTABLISH_14 1 ")!=std::string::npos,
-          "schema69 extends the establishment industry enum without changing record fields");
+    check(currentSave.rfind("POLYEC_REALM_70 ",0)==0&&currentSave.find(" ESTABLISH_14 1 ")!=std::string::npos,
+          "schema70 extends the establishment industry enum without changing record fields");
     Realm roundTrip(1,1,128);
     check(roundTrip.deserialize(currentSave,"beeswax-schema",error)&&
           roundTrip.establishments()[0].industry==EstablishmentIndustry::Apiary&&roundTrip.invariant(),
-          "schema69 roundtrip restores the Apiary and its source record");
+          "schema70 roundtrip restores the Apiary and its source record");
     auto badSave=currentSave;
     const auto siteAt=badSave.find(" ESTABLISH_14 1 ");
     const auto regionAt=badSave.find(' ',siteAt+std::string(" ESTABLISH_14 1 ").size());
@@ -211,16 +211,16 @@ int main(){try{
     badSave.replace(regionAt+1,regionEnd-regionAt-1,"20");
     const auto before=roundTrip.fingerprint();
     check(!roundTrip.deserialize(badSave,"beeswax-schema",error)&&roundTrip.fingerprint()==before,
-          "a schema69 Apiary moved away from its Atlas source region is rejected atomically");
+          "a schema70 Apiary moved away from its Atlas source region is rejected atomically");
     Realm oldBaseline(20261066,int(kAtlasTerritoryCount)-1,256);
     auto oldSave=oldBaseline.serialize("beeswax-legacy");oldSave.replace(0,15,"POLYEC_REALM_67");
     Realm oldLoaded(1,1,128);
     check(oldLoaded.deserialize(oldSave,"beeswax-legacy",error)&&
-          oldLoaded.serialize("beeswax-legacy").rfind("POLYEC_REALM_69 ",0)==0&&oldLoaded.invariant(),
-          "schema67 saves without Apiary migrate and are written as schema69");
+          oldLoaded.serialize("beeswax-legacy").rfind("POLYEC_REALM_70 ",0)==0&&oldLoaded.invariant(),
+          "schema67 saves without Apiary migrate and are written as schema70");
 
-    check(world.model_contract()=="realm-worksite-payroll-goods30-config-v47"&&
-          std::string_view(realm_schema)=="realm-v36",
+    check(world.model_contract()=="realm-worksite-payroll-goods30-config-v48"&&
+          std::string_view(realm_schema)=="realm-v37",
           "the new rule advances the model contract without changing tensor sizes");
     std::cout<<"Beeswax source and candle checks="<<checks<<'\n';return 0;
 }catch(const std::exception& error){std::cerr<<"Beeswax source and candle failure after "<<checks<<": "<<error.what()<<'\n';return 1;}}

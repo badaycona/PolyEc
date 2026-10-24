@@ -48,7 +48,8 @@ enum class EstablishmentIndustry : int {
     SeedPressWorks = 16,
     SawmillWorks = 17,
     Apiary = 18,
-    SilkwormFarm = 19
+    SilkwormFarm = 19,
+    GoldMine = 20
 };
 
 inline constexpr int kEstablishmentCapacityMax = 1000000;
@@ -68,6 +69,7 @@ inline constexpr int establishment_source_good(EstablishmentIndustry industry,in
     if(industry==EstablishmentIndustry::SawmillWorks&&region==6)return kNoEstablishmentSourceGood;
     if(industry==EstablishmentIndustry::Apiary&&region==21)return int(GoodId::Beeswax);
     if(industry==EstablishmentIndustry::SilkwormFarm&&region==12)return int(GoodId::Silk);
+    if(industry==EstablishmentIndustry::GoldMine&&region==23)return int(GoodId::Gold);
     return kNoEstablishmentSourceGood;
 }
 inline constexpr int kEstablishmentStockSlots = kGoodIdCount;

@@ -9,6 +9,8 @@
 
 namespace polyec::test_fixtures {
 inline void normalize_schema68_fixture(std::string& source){
+    if(source.rfind("POLYEC_REALM_70 ",0)==0)
+        source.replace(0,std::string("POLYEC_REALM_70").size(),"POLYEC_REALM_69");
     if(source.rfind("POLYEC_REALM_69 ",0)==0)
         source.replace(0,std::string("POLYEC_REALM_69").size(),"POLYEC_REALM_68");
     if(source.rfind("POLYEC_REALM_68 ",0)==0)

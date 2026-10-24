@@ -24,7 +24,7 @@ void test_land_title_registry(){
     check(world->invariant(),"genesis land registry satisfies Realm invariant");
 
     const auto current=world->serialize("land-title");
-    check(current.rfind("POLYEC_REALM_73 ",0)==0&&current.find(" LAND_1 ")!=std::string::npos&&
+    check(current.rfind("POLYEC_REALM_74 ",0)==0&&current.find(" LAND_1 ")!=std::string::npos&&
               current.find(" LANDUSE_1 0 ")!=std::string::npos,
           "land titles and empty use-right registry persist in current schema70");
     auto restored=std::make_unique<Realm>(1,1,128);std::string error;

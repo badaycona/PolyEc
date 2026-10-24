@@ -63,8 +63,8 @@ int main(){try{
     const uint64_t buyer=civilian_at(world,region,porcelainWorker);
     check(authority<=uint64_t(world.count())&&world.person(authority).taxing_authority&&potteryWorker&&porcelainWorker&&buyer,
           "Atlas region15 has the public authority and three local adult civilians");
-    check(realm_schema==std::string_view("realm-v40")&&world.model_contract()==
-          "realm-household-fund-goods30-config-v51"&&realm_actions==400&&realm_obs==5182,
+    check(realm_schema==std::string_view("realm-v41")&&world.model_contract()==
+          "realm-household-fund-goods30-config-v52"&&realm_actions==400&&realm_obs==5182,
           "FinePorcelain advances the model/config versions without changing tensor dimensions");
 
     const auto potteryCandidate=world.candidates(authority)[size_t(realm_specialty_product_candidate_begin+3)];
@@ -176,7 +176,7 @@ int main(){try{
           "hosting consumes the personal item, pays the region, adds18 social and occupies seven game days");
 
     const auto saved=world.serialize("fine-porcelain-production-use-v1");
-    check(saved.rfind("POLYEC_REALM_73 ",0)==0,"new save writes schema73 for FinePorcelain Works");
+    check(saved.rfind("POLYEC_REALM_74 ",0)==0,"new save writes schema74 for FinePorcelain Works");
     Realm restored(1,1,128);std::string error;
     const bool roundtripOk=restored.deserialize(saved,"fine-porcelain-production-use-v1",error);
     check(roundtripOk&&
@@ -185,14 +185,14 @@ int main(){try{
           RealmFinePorcelainTestAccess::consumed(restored)==consumedBefore+1,
           "schema73 roundtrip preserves both producers, stock, social use, money and busy time: "+error);
     std::string legacy=Realm(20261089,int(kAtlasTerritoryCount)-1,256).serialize("fine-porcelain-legacy");
-    legacy.replace(0,std::string("POLYEC_REALM_73").size(),"POLYEC_REALM_72");
+    legacy.replace(0,std::string("POLYEC_REALM_74").size(),"POLYEC_REALM_73");
     Realm legacyLoaded(1,1,128);
     check(legacyLoaded.deserialize(legacy,"fine-porcelain-legacy",error)&&
-          legacyLoaded.serialize("fine-porcelain-legacy").rfind("POLYEC_REALM_73 ",0)==0,
-          "schema72 worlds without the new industry still load and write the newest save version");
+          legacyLoaded.serialize("fine-porcelain-legacy").rfind("POLYEC_REALM_74 ",0)==0,
+          "schema73 worlds without the new industry still load and write the newest save version");
 
     std::string invalidLegacy=saved;
-    invalidLegacy.replace(0,std::string("POLYEC_REALM_73").size(),"POLYEC_REALM_72");
+    invalidLegacy.replace(0,std::string("POLYEC_REALM_74").size(),"POLYEC_REALM_72");
     Realm rejectedLegacy(1,1,128);
     check(!rejectedLegacy.deserialize(invalidLegacy,"porcelain-glass-invalid-legacy",error),
           "a schema72 save cannot smuggle in the schema73-only FinePorcelain Works");

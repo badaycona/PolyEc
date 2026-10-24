@@ -577,7 +577,7 @@ int main(int argc,char** argv){
         const auto halfway=world.serialize("transport-roundtrip");
         Realm restored;
         std::string error;
-        check(halfway.rfind("POLYEC_REALM_73 ",0)==0&&restored.deserialize(halfway,"transport-roundtrip",error)&&
+        check(halfway.rfind("POLYEC_REALM_74 ",0)==0&&restored.deserialize(halfway,"transport-roundtrip",error)&&
               restored.fingerprint()==world.fingerprint()&&restored.invariant(),
               "current schema47 preserves in-flight and waiting cargo, remaining fee escrow, and next-day capacity state");
         Realm restored_schema46;

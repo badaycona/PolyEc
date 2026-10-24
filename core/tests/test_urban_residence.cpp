@@ -97,7 +97,7 @@ int main() {
     check(first.fingerprint() == before_query, "census query does not mutate the world");
 
     const std::string current = first.serialize("urban-residence-test");
-    check(current.rfind("POLYEC_REALM_73 ", 0) == 0, "new save uses schema 69");
+    check(current.rfind("POLYEC_REALM_74 ", 0) == 0, "new save uses schema 69");
     Realm restored;
     std::string error;
     const bool loaded = restored.deserialize(current, "urban-residence-test", error);

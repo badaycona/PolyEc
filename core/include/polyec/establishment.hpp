@@ -53,7 +53,8 @@ enum class EstablishmentIndustry : int {
     LivestockRanch = 21,
     Butchery = 22,
     DecorativeGlassWorks = 23,
-    FinePorcelainWorks = 24
+    FinePorcelainWorks = 24,
+    GeneralLuxuryAtelier = 25
 };
 
 inline constexpr int kEstablishmentCapacityMax = 1000000;

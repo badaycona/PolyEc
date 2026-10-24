@@ -26,7 +26,7 @@ uint64_t adult_civilian_at(Realm& world,int region,uint64_t exclude=0){
 }
 std::string as_schema43_with_28_funds(const std::string& current){
     std::string schema47=current;
-    if(schema47.rfind("POLYEC_REALM_73 ",0)==0)test_fixtures::downgrade_save_55_to_54(schema47);
+    if(schema47.rfind("POLYEC_REALM_74 ",0)==0)test_fixtures::downgrade_save_55_to_54(schema47);
     if(schema47.rfind("POLYEC_REALM_54 ",0)==0)test_fixtures::downgrade_save_49_to_48(schema47);
     if(schema47.rfind("POLYEC_REALM_48 ",0)==0)test_fixtures::downgrade_save_48_to_47(schema47);
     std::istringstream input(schema47);std::vector<std::string> tokens;std::string token;
@@ -105,7 +105,7 @@ int main(){
         check(world.fingerprint()==after_member_action,"wrong-region reject leaves money and world unchanged");
 
         const auto save=world.serialize("organization-territories-v1");
-        check(save.rfind("POLYEC_REALM_73 ",0)==0,"current save writes schema70");
+        check(save.rfind("POLYEC_REALM_74 ",0)==0,"current save writes schema70");
         Realm restored(1,1,128);std::string error;
         check(restored.deserialize(save,"organization-territories-v1",error),error.c_str());
         check(restored.person(member).organization==49&&restored.establishments().size()==1&&restored.invariant(),"schema45 round trip keeps region12 membership and owned site");
@@ -120,7 +120,7 @@ int main(){
         check(migrated.deserialize(old_save,"organization-territories-v1",error),error.c_str());
         check(migrated.person(old_member).organization==25&&migrated.invariant(),"schema43 migration preserves existing membership");
         check(std::abs(migrated.observation(old_member)[96]-legacy.observation(old_member)[96])<1e-6f,"schema43 migration keeps old account funds");
-        check(migrated.serialize("organization-territories-v1").rfind("POLYEC_REALM_73 ",0)==0,"migrated world writes current schema70 on next save");
+        check(migrated.serialize("organization-territories-v1").rfind("POLYEC_REALM_74 ",0)==0,"migrated world writes current schema70 on next save");
 
         Realm upper_bound(49503,26,256);
         const auto upper_member=adult_civilian_at(upper_bound,26);

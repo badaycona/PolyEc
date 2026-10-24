@@ -30,7 +30,7 @@ int main(){try{
         check(authority<=uint64_t(world.count())&&world.person(authority).taxing_authority&&worker,
               "the source region has a public authority and an adult worker");
         const auto candidates=world.candidates(authority);
-        check(realm_schema==std::string_view("realm-v40")&&realm_actions==400&&realm_obs==5182,
+        check(realm_schema==std::string_view("realm-v41")&&realm_actions==400&&realm_obs==5182,
               "the product additions use the versioned v31 observation and action contract");
         const auto& create=candidates[size_t(product.candidate)];
         check(create.kind==Intent::CreateEstablishment&&create.target==product.region&&
@@ -77,7 +77,7 @@ int main(){try{
             reports_product|=worksite[i].good==int(product.good);
         check(reports_product,"worksite actions report the exact canonical output GoodId");
         const std::string saved=world.serialize("atlas-specialty-products-v1");
-        check(saved.rfind("POLYEC_REALM_73 ",0)==0&&saved.find(" ESTABLISH_14 1 ")!=std::string::npos,
+        check(saved.rfind("POLYEC_REALM_74 ",0)==0&&saved.find(" ESTABLISH_14 1 ")!=std::string::npos,
               "the current save records 30 goods and establishment schema14");
         Realm loaded(1,1,128);std::string error;
         if(!loaded.deserialize(saved,"atlas-specialty-products-v1",error)){
@@ -124,7 +124,7 @@ int main(){try{
           migrated.establishments()[0].source_good==int(GoodId::Timber)&&
           migrated.establishments()[0].source_units==kEstablishmentSourceUnitsMaximum&&
           migrated.invariant()&&
-          migrated.serialize("atlas-specialty-migration-v1").rfind("POLYEC_REALM_73 ",0)==0,
+          migrated.serialize("atlas-specialty-migration-v1").rfind("POLYEC_REALM_74 ",0)==0,
           "a real schema54 world retains its existing Forestry site and loads forward as schema55");
     for(uint64_t person=1;person<=uint64_t(migrated.count());++person)
         for(int good=27;good<30;++good)

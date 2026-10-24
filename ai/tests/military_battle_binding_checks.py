@@ -30,7 +30,7 @@ assert world.military_raids == [{
     "defenders": [],
     "supplied_defenders": [],
 }]
-assert core.REALM_SCHEMA == "realm-v40"
+assert core.REALM_SCHEMA == "realm-v41"
 
 pending_save = world.serialize("military-battle-binding")
 restored = core.Realm(1, 1, 128)

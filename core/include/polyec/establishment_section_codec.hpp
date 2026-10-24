@@ -72,7 +72,7 @@ inline bool read_establishment_section(std::istream& in, size_t people_count, in
             error = "Save establishment owner kind";
             return false;
         }
-        if (industry < 1 || industry > (realm_schema >= 73 ? 24 : realm_schema >= 72 ? 23 : realm_schema >= 71 ? 22 : realm_schema >= 70 ? 20 : realm_schema >= 69 ? 19 : realm_schema >= 68 ? 18 : realm_schema >= 64 ? 17 : realm_schema >= 63 ? 16 : realm_schema >= 62 ? 15 : realm_schema >= 55 ? 14 : realm_schema >= 43 ? 11 : realm_schema >= 42 ? 10 : realm_schema >= 41 ? 9 : realm_schema >= 40 ? 8 : realm_schema >= 39 ? 7 : realm_schema >= 38 ? 6 : realm_schema >= 37 ? 5 : realm_schema >= 36 ? 4 : 3)) {
+        if (industry < 1 || industry > (realm_schema >= 74 ? 25 : realm_schema >= 73 ? 24 : realm_schema >= 72 ? 23 : realm_schema >= 71 ? 22 : realm_schema >= 70 ? 20 : realm_schema >= 69 ? 19 : realm_schema >= 68 ? 18 : realm_schema >= 64 ? 17 : realm_schema >= 63 ? 16 : realm_schema >= 62 ? 15 : realm_schema >= 55 ? 14 : realm_schema >= 43 ? 11 : realm_schema >= 42 ? 10 : realm_schema >= 41 ? 9 : realm_schema >= 40 ? 8 : realm_schema >= 39 ? 7 : realm_schema >= 38 ? 6 : realm_schema >= 37 ? 5 : realm_schema >= 36 ? 4 : 3)) {
             error = "Save establishment industry";
             return false;
         }
@@ -264,6 +264,13 @@ inline bool read_establishment_section(std::istream& in, size_t people_count, in
         }
         if(realm_schema<73&&e.industry==EstablishmentIndustry::FinePorcelainWorks){
             error="Save Fine Porcelain Works requires schema73";return false;
+        }
+        if(realm_schema>=74&&e.industry==EstablishmentIndustry::GeneralLuxuryAtelier&&
+           (regions!=int(kAtlasTerritoryCount)-1||e.region!=12)){
+            error="Save General Luxury Atelier requires Atlas region 12";return false;
+        }
+        if(realm_schema<74&&e.industry==EstablishmentIndustry::GeneralLuxuryAtelier){
+            error="Save General Luxury Atelier requires schema74";return false;
         }
         if((sourceIndustry&&(e.source_good!=expectedSource||e.source_units<0||
                             e.source_units>kEstablishmentSourceUnitsMaximum))||

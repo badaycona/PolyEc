@@ -31,13 +31,14 @@ struct ProductionRecipe {
     int64_t output_amount = 1;
     int source_good = kNoEstablishmentSourceGood;
     int64_t source_units_per_batch = 0;
+    int64_t work_units_per_batch = 1;
 };
 
 inline constexpr int64_t kProductionTicksPerUnit = kAttendanceTicksPerWorkUnit;
 inline constexpr int64_t kProductionShortageForfeit = 1; // no labor debt or carryover
 inline constexpr int64_t kLaborProductivityDenominator = 200;
 
-inline constexpr std::array<ProductionRecipe, 25> kProductionRecipes{{
+inline constexpr std::array<ProductionRecipe, 26> kProductionRecipes{{
     {EstablishmentIndustry::ClothWorkshop, {{ProductionGoodAmount{9, 1}}}, 1, 11},
     {EstablishmentIndustry::ToolWorkshop, {{ProductionGoodAmount{5, 1}, ProductionGoodAmount{6, 1}, ProductionGoodAmount{4, 1}}}, 3, 16},
     {EstablishmentIndustry::MilitarySupplyWorkshop, {{ProductionGoodAmount{16, 1}, ProductionGoodAmount{11, 1}}}, 2, 17},
@@ -68,6 +69,10 @@ inline constexpr std::array<ProductionRecipe, 25> kProductionRecipes{{
     {EstablishmentIndustry::FinePorcelainWorks,
         {{ProductionGoodAmount{size_t(GoodId::Pottery),1},ProductionGoodAmount{size_t(GoodId::Fuel),1}}},
         2,size_t(GoodId::FinePorcelain),1},
+    {EstablishmentIndustry::GeneralLuxuryAtelier,
+        {{ProductionGoodAmount{size_t(GoodId::Tea),1},ProductionGoodAmount{size_t(GoodId::Incense),1},
+          ProductionGoodAmount{size_t(GoodId::Silk),1}}},
+        3,size_t(GoodId::GeneralLuxury),3,kNoEstablishmentSourceGood,0,3},
 }};
 
 inline ProductionRecipe production_recipe(EstablishmentIndustry industry,const GameplayConfig& config={},
@@ -88,6 +93,7 @@ inline ProductionRecipe production_recipe(EstablishmentIndustry industry,const G
         case EstablishmentIndustry::LivestockRanch:case EstablishmentIndustry::Butchery:break;
         case EstablishmentIndustry::DecorativeGlassWorks:break;
         case EstablishmentIndustry::FinePorcelainWorks:break;
+        case EstablishmentIndustry::GeneralLuxuryAtelier:break;
         case EstablishmentIndustry::SawmillWorks:break;
         }
         return r;
@@ -299,10 +305,13 @@ public:
             int64_t batches = 0;
             if (site.capacity <= 0 || site.capacity > kEstablishmentCapacityMax)
                 throw std::logic_error("invalid production capacity");
+            if(recipe.work_units_per_batch<=0)
+                throw std::logic_error("invalid production work requirement");
             const int64_t eligible_units = new_living_units[i];
             if (eligible_units > 0) {
-                if (site.capacity < eligible_units) batches = site.capacity;
-                else batches = eligible_units;
+                const int64_t completed_work_batches=eligible_units/recipe.work_units_per_batch;
+                if (site.capacity < completed_work_batches) batches = site.capacity;
+                else batches = completed_work_batches;
                 for (size_t r = 0; r < recipe.input_count; ++r) {
                     const int64_t amount = recipe.inputs[r].amount;
                     if (amount <= 0) throw std::logic_error("invalid production recipe input");

@@ -101,7 +101,7 @@ inline void write_schedule_section(std::ostream& out, const ScheduleBook& book) 
 inline bool read_schedule_section(std::istream& in, int realm_schema,
                           size_t people_count, int regions, int realm_day,
                           ScheduleBook& out, std::string& error, int64_t ticks_per_unit=16) {
-    if (realm_schema < 7 || realm_schema > 73 || ticks_per_unit<1 || ticks_per_unit>64) {
+    if (realm_schema < 7 || realm_schema > 74 || ticks_per_unit<1 || ticks_per_unit>64) {
         error = "Save schedule schema or tick rate";
         return false;
     }

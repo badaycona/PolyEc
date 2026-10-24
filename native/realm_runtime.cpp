@@ -104,12 +104,12 @@ bool RealmRuntime::pause(std::optional<uint64_t> expected_pause_revision) {
 }
 bool RealmRuntime::resume(std::optional<uint64_t> expected_pause_revision) {
     if (!loaded_ || !world_) { error_ = "Realm not loaded"; return false; }
-    if (world_->timeline_contract()) { error_ = "Learned pilot policies are unavailable for timeline worlds"; return false; }
+    if (world_->timeline_contract() && !atlas_manual_test_) { error_ = "Learned pilot policies are unavailable for timeline worlds"; return false; }
     auto result = world_->execute(RealmClockCommand{RealmClockCommand::Operation::Resume, expected_pause_revision});
     error_ = result.success ? "" : result.reason;
     return result.success;
 }
-bool RealmRuntime::advance(int days){if(!loaded_||!world_||days<1||days>30){error_="Realm not loaded or day chunk outside1..30";return false;}if(world_->timeline_contract()){error_="Learned pilot policies are unavailable for timeline worlds";return false;}const int64_t maxTick=365000LL*kSubdayUnitsPerDay;const int64_t requestedTicks=static_cast<int64_t>(days)*kSubdayUnitsPerDay;if(world_->game_tick()>maxTick||requestedTicks>maxTick-world_->game_tick()){error_="Realm advance exceeds maximum horizon";return false;}if(!atlas_manual_test_&&world_->draft().chosen<0){error_="Choose a draft card first";return false;}if(world_->paused()){error_="Realm is paused";return false;}
+bool RealmRuntime::advance(int days){if(!loaded_||!world_||days<1||days>30){error_="Realm not loaded or day chunk outside1..30";return false;}if(world_->timeline_contract()&&!atlas_manual_test_){error_="Learned pilot policies are unavailable for timeline worlds";return false;}const int64_t maxTick=365000LL*kSubdayUnitsPerDay;const int64_t requestedTicks=static_cast<int64_t>(days)*kSubdayUnitsPerDay;if(world_->game_tick()>maxTick||requestedTicks>maxTick-world_->game_tick()){error_="Realm advance exceeds maximum horizon";return false;}if(!atlas_manual_test_&&world_->draft().chosen<0){error_="Choose a draft card first";return false;}if(world_->paused()){error_="Realm is paused";return false;}
     try {
         for(int day=0;day<days;++day){
             if(!atlas_manual_test_)for(auto f:{Family::Governance,Family::Economic,Family::Civilian})if(!decisions(f))return false;
@@ -133,7 +133,7 @@ bool RealmRuntime::advance(int days){if(!loaded_||!world_||days<1||days>30){erro
         }error_.clear();return true;
     } catch(const std::exception&e){error_=e.what();return false;}
 }
-bool RealmRuntime::step_one_day(){if(!loaded_||!world_){error_="Realm not loaded";return false;}if(world_->timeline_contract()){error_="Learned pilot policies are unavailable for timeline worlds";return false;}const int64_t maxTick=365000LL*kSubdayUnitsPerDay;if(world_->game_tick()>maxTick||64>maxTick-world_->game_tick()){error_="Realm advance exceeds maximum horizon";return false;}if(!atlas_manual_test_&&world_->draft().chosen<0){error_="Choose a draft card first";return false;}
+bool RealmRuntime::step_one_day(){if(!loaded_||!world_){error_="Realm not loaded";return false;}if(world_->timeline_contract()&&!atlas_manual_test_){error_="Learned pilot policies are unavailable for timeline worlds";return false;}const int64_t maxTick=365000LL*kSubdayUnitsPerDay;if(world_->game_tick()>maxTick||64>maxTick-world_->game_tick()){error_="Realm advance exceeds maximum horizon";return false;}if(!atlas_manual_test_&&world_->draft().chosen<0){error_="Choose a draft card first";return false;}
     try {
         if(!atlas_manual_test_)for(auto f:{Family::Governance,Family::Economic,Family::Civilian})if(!decisions(f))return false;
         auto result=world_->execute(RealmClockCommand{RealmClockCommand::Operation::StepOneDay,world_->pause_revision()});
@@ -143,7 +143,7 @@ bool RealmRuntime::step_one_day(){if(!loaded_||!world_){error_="Realm not loaded
         error_.clear();return true;
     } catch(const std::exception&e){error_=e.what();return false;}
 }
-bool RealmRuntime::command(uint64_t id,int action,const std::string&expected){if(!loaded_||action<0||action>=realm_actions||!id||id>uint64_t(world_->count())){error_="Invalid player command";return false;}if(world_->timeline_contract()){error_="Legacy policy actions are unavailable for timeline worlds";return false;}if(!expected.empty()&&expected!=std::to_string(world_->fingerprint())){error_="World changed; refresh before committing this command";return false;}auto r=world_->execute({id,world_->person(id).decisions+1,world_->candidates(id)[action]});if(r.success)sync_roles();error_=r.success?"":r.reason;return r.success;}
+bool RealmRuntime::command(uint64_t id,int action,const std::string&expected){if(!loaded_||action<0||action>=realm_actions||!id||id>uint64_t(world_->count())){error_="Invalid player command";return false;}if(world_->timeline_contract()&&!atlas_manual_test_){error_="Legacy policy actions are unavailable for timeline worlds";return false;}if(!expected.empty()&&expected!=std::to_string(world_->fingerprint())){error_="World changed; refresh before committing this command";return false;}auto r=world_->execute({id,world_->person(id).decisions+1,world_->candidates(id)[action]});if(r.success)sync_roles();error_=r.success?"":r.reason;return r.success;}
 bool RealmRuntime::military_combat_consent(uint64_t actor,bool consent,const std::string&expected){
     if(!loaded_||!world_||!actor||actor>uint64_t(world_->count())){error_="Invalid military-consent actor";return false;}
     if(!expected.empty()&&expected!=std::to_string(world_->fingerprint())){error_="World changed; refresh before changing combat consent";return false;}
@@ -324,13 +324,17 @@ bool RealmRuntime::restore(const std::string&path, bool interactive){
     if(!s){error_="Save incomplete";return false;}
     Realm restored(1,1,128);std::string error;
     if(!restored.deserialize(world,bundle_,error)||n!=size_t(restored.count())){error_="Save world invalid: "+error;return false;}
-    if(restored.timeline_contract()){error_="Timeline world not supported by this runtime";return false;}
+    if(restored.timeline_contract()&&!atlas_manual_test_){error_="Timeline world not supported by this runtime";return false;}
+    if(atlas_manual_test_&&(restored.regions()!=int(kAtlasTerritoryCount)-1||
+       restored.gameplay_config()!=world_->gameplay_config())){
+        error_="Manual Atlas save does not match the active Atlas scenario";return false;
+    }
     if(!restored.gameplay_config().historical_defaults()&&
        (!atlas_manual_test_||restored.regions()!=int(kAtlasTerritoryCount)-1||
         restored.gameplay_config()!=world_->gameplay_config())){
         error_="Gameplay configuration not supported by this model bundle";return false;
     }
-    if(restored.model_contract()!=loaded_model_contract_&&!allow_incompatible_pilot_for_development_){error_="Model contract mismatch: "+std::string(restored.model_contract());return false;}
+    if(restored.model_contract()!=loaded_model_contract_&&!allow_incompatible_pilot_for_development_&&!atlas_manual_test_){error_="Model contract mismatch: "+std::string(restored.model_contract());return false;}
     if(interactive&&!restored.paused()){
         auto pauseResult=restored.execute(RealmClockCommand{RealmClockCommand::Operation::Pause,restored.pause_revision()});
         if(!pauseResult.success){error_="Restore pause normalization failed: "+pauseResult.reason;return false;}

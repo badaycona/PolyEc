@@ -560,6 +560,8 @@ func refresh() -> void:
                     break
         var action_index=int(a.index)
         var b=button(commands,text,func(): run_actor_command(actor,action_index,str(v.fingerprint)))
+        b.set_meta("realm_actor",actor)
+        b.set_meta("realm_action_index",action_index)
         b.disabled=not a.legal
         if a.name.begins_with("Nhập từ đối tác ") or a.name.begins_with("Xuất cho đối tác "):
             var partner_id=int(int(a.term)/2)
@@ -639,7 +641,7 @@ func step_day() -> void:
 func start_atlas_manual_test() -> void:
     if running:
         pause_core_and_stop_ui()
-    var ok=session.realm_atlas_manual_start(20261024,512)
+    var ok=session.realm_atlas_manual_start(20261038,512)
     running=false
     feedback.text="Đã tạo thế giới Atlas 27 vùng, 512 cá thể. NPC không tự quyết định; mọi lệnh vẫn đi qua luật Realm." if ok else str(session.realm_snapshot(actor).get("error","Không tạo được thế giới Atlas"))
     refresh()
@@ -651,6 +653,15 @@ func run_private_residence_build(holding_id: int, expected: String) -> void:
         return
     var result=session.realm_private_residence_build(actor,holding_id,expected)
     feedback.text="Đã bắt đầu xây nhà trên thửa #%d; cần 30 ngày game để hoàn tất." % holding_id if result.success else private_housing_error_text(str(result.error))
+    refresh()
+
+func run_private_housing_market_order(good: int, quantity: int, maximum_unit_price: int, region: int, expected: String) -> void:
+    if not pause_core_and_stop_ui():
+        feedback.text="Không tạm dừng được lõi Realm"
+        refresh()
+        return
+    var result=session.realm_market_order(actor,0,0,region,good,quantity,maximum_unit_price,expected)
+    feedback.text="Đã giữ tiền cho đơn mua; chợ sẽ giao hàng khi hết ngày game." if result.success else "Không đặt được đơn mua: "+str(result.get("error","Realm từ chối giao dịch"))
     refresh()
 
 func run_private_housing_command(residence_id: int, operation: int, household_id: int, expected: String) -> void:
@@ -691,6 +702,25 @@ func add_private_housing_controls(v: Dictionary, p: Dictionary) -> void:
     heading.text="NHÀ TƯ / CHO THUÊ · mọi khoản tiền và quyền do Realm kiểm tra"
     heading.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
     commands.add_child(heading)
+    var market_region=clampi(int(p.get("region",0)),0,26)
+    var region_market: Dictionary=v.get("regions",[])[market_region]
+    var stock: Array=region_market.get("stock",[])
+    var prices: Array=region_market.get("prices",[])
+    var inventory: Array=p.get("inventory",[])
+    for requirement in [{"good":19,"quantity":2,"label":"vật liệu xây dựng"},{"good":16,"quantity":1,"label":"công cụ"}]:
+        var good=int(requirement.good)
+        var owned=int(inventory[good] if good<inventory.size() else 0)
+        var needed=maxi(0,int(requirement.quantity)-owned)
+        if needed==0: continue
+        var available=int(stock[good] if good<stock.size() else 0)
+        var maximum_price=int(prices[good] if good<prices.size() else 0)
+        var buy=button(commands,"Đặt lệnh mua %d %s · tối đa %d đ/món · hoàn tất sau một ngày" % [needed,str(requirement.label),maximum_price],func():
+            run_private_housing_market_order(good,needed,maximum_price,int(p.get("region",0)),str(v.fingerprint)))
+        buy.disabled=available<needed or maximum_price<=0 or int(p.get("cash",0))<needed*maximum_price
+        if available<needed:
+            buy.tooltip_text="Chợ vùng hiện chỉ có %d món; cần %d. Hàng phải được sản xuất hoặc vận chuyển vào chợ trước." % [available,needed]
+        elif int(p.get("cash",0))<needed*maximum_price:
+            buy.tooltip_text="Tiền cá nhân chưa đủ khoản tối đa cần giữ cho đơn hàng này."
     var holdings: Array=v.get("land_holdings",[])
     var own=OptionButton.new()
     var own_count=0

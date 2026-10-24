@@ -89,6 +89,32 @@ int main(int argc,char**argv){if(argc!=6)return 2;try{
         "Atlas runtime sends a current-view housing request through Realm and rejects its unknown title atomically");
   check(atlas.step_one_day()&&atlas.world()->day()==day+1&&atlas.paused()&&atlas.inference_count()==0,
         "Atlas manual-test day advances real Realm lifecycle without pretending NPCs chose actions");
+  auto createCandidates=atlas.world()->candidates(8);const auto createMask=atlas.world()->mask(8);
+  int createIndex=-1;for(int action=0;action<realm_actions;++action){const auto&candidate=createCandidates[size_t(action)];
+   if(candidate.kind==Intent::CreateEstablishment&&candidate.target==6&&
+      candidate.good==int(EstablishmentIndustry::Forestry)&&candidate.amount==25&&candidate.term==-1&&createMask[size_t(action)]>0){createIndex=action;break;}}
+  check(createIndex>=0&&atlas.command(8,createIndex,std::to_string(atlas.world()->fingerprint())),
+        "manual Atlas accepts an ordinary authorized production command through the Realm pipeline");
+  const auto forest=atlas.world()->establishments().back();auto authorizationCandidates=atlas.world()->candidates(8);
+  const auto authorizationMask=atlas.world()->mask(8);int authorizationIndex=-1;
+  for(int action=0;action<realm_actions;++action){const auto&candidate=authorizationCandidates[size_t(action)];
+   if(candidate.kind==Intent::AuthorizeWorkAtSite&&candidate.target==int(forest.id)&&authorizationMask[size_t(action)]>0){authorizationIndex=action;break;}}
+  check(authorizationIndex>=0,"the production authority sees a legal worker authorization for the new Forestry site");
+  const auto worker=uint64_t(authorizationCandidates[size_t(authorizationIndex)].good);
+  check(atlas.command(8,authorizationIndex,std::to_string(atlas.world()->fingerprint())),
+        "manual Atlas applies ordinary work authorization to the selected worker");
+  auto workCandidates=atlas.world()->candidates(worker);const auto workMask=atlas.world()->mask(worker);int workIndex=-1;
+  for(int action=0;action<realm_actions;++action)if(workCandidates[size_t(action)].kind==Intent::WorkAtSite&&
+      workCandidates[size_t(action)].target==int(forest.id)&&workMask[size_t(action)]>0){workIndex=action;break;}
+  check(workIndex>=0&&atlas.command(worker,workIndex,std::to_string(atlas.world()->fingerprint())),
+        "authorized worker submits a normal scheduled work command");
+  check(atlas.world()->timeline_contract(),"scheduled work activates the current timeline save contract");
+  check(atlas.step_one_day()&&atlas.world()->day()==day+2&&atlas.paused()&&atlas.inference_count()==0,
+        "manual Atlas continues a scheduled Realm day after the timeline save contract activates");
+  check(atlas.world()->establishments().back().stock[size_t(GoodId::Timber)]>0&&atlas.world()->invariant(),
+        "scheduled Forestry work produces real Timber while preserving Realm accounting");
+  check(atlas.resume()&&atlas.advance(1)&&atlas.pause()&&atlas.paused()&&atlas.inference_count()==0,
+        "manual Atlas can resume, advance and pause timeline gameplay without policy inference");
   const std::string atlasPath=path+".atlas";
   check(atlas.save(atlasPath),"Atlas manual-test world saves through runtime wrapper");
   RealmRuntime restoredAtlas;const bool atlasRestored=restoredAtlas.load_atlas_manual_test(20261024,256)&&restoredAtlas.restore_interactive(atlasPath);

@@ -43,6 +43,9 @@ static func incense_social_action_description(amount: int) -> String:
 static func silver_social_action_description(amount: int) -> String:
     return "Dùng 1 Silver của chính mình và trả %d đồng · tăng điểm giao lưu thêm 10 (tối đa 100) · bận 7 ngày game" % amount
 
+static func pottery_meal_vessel_description() -> String:
+    return "Đồ gốm cá nhân bền: sau bữa lương khô đã ăn, thêm tối đa 5 dinh dưỡng (giới hạn 100); bản thân đồ gốm không bị tiêu."
+
 static func travel_action_description(destination: String, days: int, mounted: bool) -> String:
     var text="Đi tới %s · %d ngày game · phí %d đồng" % [destination,days,4+2*days]
     if mounted:
@@ -428,6 +431,9 @@ func refresh() -> void:
         ration_stock=int(v.regions[p.region].get("military_ration_stock",0))
         supplementary_ration_stock=int(v.regions[p.region].get("military_supplementary_ration_stock",0))
     profile.text="Cá thể #%d · %d tuổi · %s\n%s · %s\nTiền %d · Nợ %d · Sức khỏe %d\nDinh dưỡng %d · %s\nKho quân nhu vùng này: Lương khô %d phần · Khẩu phần bổ sung %d phần\n%s\n%s\n%s\nGia đình #%d · Quyết định %d · Mục tiêu %d" % [p.id,p.age,role_text,region_label(p.region),"Còn sống" if p.alive else "Đã mất",p.cash,p.debt,p.health,p.nutrition,labor_skill_text(p.skill),ration_stock,supplementary_ration_stock,body_status_text(p),legacy_capability_text(p.legacy_capabilities),service_text,p.household,p.decisions,p.goal]
+    var personal_goods: Array=p.get("inventory",[])
+    if p.role==2 and not bool(p.get("military_service",{}).get("active",false)) and personal_goods.size()>28 and int(personal_goods[28])>0:
+        profile.text+="\n"+pottery_meal_vessel_description()
     if p.role==0: profile.text+="\n"+military_unit_roster_text(v.get("military_unit_rosters",[]),p.region)
     profile.text+="\n"+establishment_text(v.get("establishments",[]),p.region)
     var residence_text=urban_census_text(v.get("urban_census",[]),bool(p.get("sovereign",false)))

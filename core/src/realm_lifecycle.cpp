@@ -114,6 +114,10 @@ void Realm::day_people(){
                 ++consumed_[size_t(GoodId::SupplementaryFood)];
                 p.nutrition=std::min(100,p.nutrition+10);
             }else if(p.family==Family::Civilian&&!p.military_service.active&&base_meal_consumed&&
+                     p.inventory[size_t(GoodId::Pottery)]>0&&p.nutrition<100){
+                p.nutrition=std::min(100,p.nutrition+5);
+            }
+            if(p.family==Family::Civilian&&!p.military_service.active&&base_meal_consumed&&
                      p.nutrition<100&&
                      p.inventory[size_t(GoodId::SupplementaryFood)]>0&&
                      consumed_[size_t(GoodId::SupplementaryFood)]<std::numeric_limits<int64_t>::max()){

@@ -511,6 +511,7 @@ class Realm {
     friend struct RealmUrbanResidenceTestAccess;
     friend struct RealmMedicineTestAccess;
     friend struct RealmSupplementaryFoodTestAccess;
+    friend struct RealmPotteryMealVesselTestAccess;
     friend struct RealmMunicipalCouncilTestAccess;
     friend struct RealmPrivateHousingTestAccess;
 public:
@@ -635,8 +636,8 @@ std::vector<Establishment> establishments() const { return establishments_; }
     std::string model_contract() const {
         std::string result;
         if (schedule_book_.timeline_contract)
-            result=config_.historical_defaults() ? "realm-worksite-payroll-goods30-v44" : "realm-worksite-payroll-goods30-config-v44";
-        else result=config_.historical_defaults() ? "realm-household-fund-goods30-v44" : "realm-household-fund-goods30-config-v44";
+            result=config_.historical_defaults() ? "realm-worksite-payroll-goods30-v45" : "realm-worksite-payroll-goods30-config-v45";
+        else result=config_.historical_defaults() ? "realm-household-fund-goods30-v45" : "realm-household-fund-goods30-config-v45";
         if(capability_mask_!=kDefaultCapabilityMask)result+="-caps-"+std::to_string(capability_mask_);
         return result;
     }

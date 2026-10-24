@@ -50,7 +50,7 @@ int main(){try{
     Realm world(20261061,26,256);
     const uint64_t authority=region+2;
     const uint64_t worker=find_adult(world,region);
-    check(world.model_contract()=="realm-household-fund-goods30-config-v44"&&
+    check(world.model_contract()=="realm-household-fund-goods30-config-v45"&&
           realm_actions==400&&realm_obs==5182,
           "the changed house-material rule is represented by model contract v44 without changing tensor shape");
     check(worker!=0&&world.person(authority).taxing_authority,

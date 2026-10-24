@@ -52,7 +52,7 @@ int main(){try{
         if(with_vessel.person(id).family==Family::Civilian&&with_vessel.person(id).age_days>=18*365){actor=id;break;}
     check(actor>0,
           "paired actor is an adult Civilian");
-    check(with_vessel.model_contract()=="realm-household-fund-goods30-config-v50"&&
+    check(with_vessel.model_contract()=="realm-household-fund-goods30-config-v51"&&
           realm_actions==400&&realm_obs==5182,
           "the meal transition change advances the model contract without changing observation or action shapes");
     RealmPotteryMealVesselTestAccess::set_inventory(with_vessel,actor,GoodId::DryFood,1);

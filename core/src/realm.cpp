@@ -521,6 +521,9 @@ std::array<Candidate,realm_actions> Realm::candidates(uint64_t id)const{
         if(p.family==Family::Civilian&&p.alive&&p.age_days>=14*365&&!p.military_service.active&&
            p.busy_until<=day_&&p.inventory[size_t(GoodId::DecorativeGlass)]>0&&p.cash>=6)
             c[size_t(realm_decorative_glass_social_candidate)]={Intent::Social,p.region,int(GoodId::DecorativeGlass),6,7};
+        if(p.family==Family::Civilian&&p.alive&&p.age_days>=18*365&&!p.military_service.active&&
+           p.busy_until<=day_&&p.inventory[size_t(GoodId::FinePorcelain)]>0&&p.cash>=12)
+            c[size_t(realm_fine_porcelain_social_candidate)]={Intent::Social,p.region,int(GoodId::FinePorcelain),12,7};
         for(int group=1;group<4;++group)c[20+group]={Intent::Join,p.region,group,2,30};
         auto authority=household_authority(p.household_membership.household_id);if(authority)c[19]={Intent::Support,int(authority),0,5};c[20]={Intent::Buy,p.region,0,1};
     }
@@ -648,6 +651,13 @@ std::array<Candidate,realm_actions> Realm::candidates(uint64_t id)const{
             c[size_t(realm_municipal_specialty_product_candidate_begin+3+tier)]={Intent::CreateEstablishment,p.region,
                 int(EstablishmentIndustry::DecorativeGlassWorks),establishmentFunding[size_t(tier)],-2};
     }
+    if(p.region==15)for(int tier=0;tier<3;++tier){
+        c[size_t(realm_specialty_product_candidate_begin+6+tier)]={Intent::CreateEstablishment,p.region,
+            int(EstablishmentIndustry::FinePorcelainWorks),establishmentFunding[size_t(tier)],-1};
+        if(p.family==Family::Governance)
+            c[size_t(realm_municipal_specialty_product_candidate_begin+6+tier)]={Intent::CreateEstablishment,p.region,
+                int(EstablishmentIndustry::FinePorcelainWorks),establishmentFunding[size_t(tier)],-2};
+    }
     if(p.region==18)for(int tier=0;tier<3;++tier){
         c[size_t(realm_specialty_product_candidate_begin+tier)]={Intent::CreateEstablishment,p.region,
             int(EstablishmentIndustry::LivestockRanch),establishmentFunding[size_t(tier)],-1};
@@ -713,6 +723,7 @@ std::array<Candidate,realm_actions> Realm::candidates(uint64_t id)const{
         case EstablishmentIndustry::LivestockRanch:return GoodId::Livestock;
         case EstablishmentIndustry::Butchery:return GoodId::DryFood;
         case EstablishmentIndustry::DecorativeGlassWorks:return GoodId::DecorativeGlass;
+        case EstablishmentIndustry::FinePorcelainWorks:return GoodId::FinePorcelain;
         }
         return GoodId::Fiber;
     };
@@ -740,6 +751,7 @@ std::array<Candidate,realm_actions> Realm::candidates(uint64_t id)const{
         case EstablishmentIndustry::LivestockRanch:return GoodId::Livestock;
         case EstablishmentIndustry::Butchery:return GoodId::Livestock;
         case EstablishmentIndustry::DecorativeGlassWorks:return GoodId::PlainGlass;
+        case EstablishmentIndustry::FinePorcelainWorks:return GoodId::Pottery;
         }
         return GoodId::Fiber;
     };
@@ -770,6 +782,7 @@ std::array<Candidate,realm_actions> Realm::candidates(uint64_t id)const{
         case EstablishmentIndustry::Forestry:case EstablishmentIndustry::Mining:case EstablishmentIndustry::TeaGarden:case EstablishmentIndustry::IncenseWorks:case EstablishmentIndustry::MedicinalGarden:case EstablishmentIndustry::SeedPressWorks:case EstablishmentIndustry::Apiary:case EstablishmentIndustry::SilkwormFarm:case EstablishmentIndustry::GoldMine:case EstablishmentIndustry::LivestockRanch:output=1;break;
         case EstablishmentIndustry::Butchery:inputOne=1;output=3;break;
         case EstablishmentIndustry::DecorativeGlassWorks:inputOne=1;inputTwo=1;input2=GoodId::Fuel;output=1;break;
+        case EstablishmentIndustry::FinePorcelainWorks:inputOne=1;inputTwo=1;input2=GoodId::Fuel;output=1;break;
         case EstablishmentIndustry::PaperMill:case EstablishmentIndustry::WarhorseStable:case EstablishmentIndustry::SawmillWorks:inputOne=1;output=1;break;
         case EstablishmentIndustry::WeaponForge:inputOne=1;inputTwo=1;input2=GoodId::Tools;output=1;break;
         case EstablishmentIndustry::Glassworks:case EstablishmentIndustry::PotteryKiln:inputOne=1;output=1;break;
@@ -920,7 +933,7 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
     if(c.kind==Intent::CreateEstablishment){
         constexpr std::array<int64_t,3> establishmentFunding{25,50,100};
         const bool validFunding=std::find(establishmentFunding.begin(),establishmentFunding.end(),c.amount)!=establishmentFunding.end();
-        if(c.target!=p.region||c.good<1||c.good>23||(c.term!=-1&&c.term!=-2)||!validFunding||
+        if(c.target!=p.region||c.good<1||c.good>24||(c.term!=-1&&c.term!=-2)||!validFunding||
            (c.good==int(EstablishmentIndustry::Saltworks)&&c.target!=8)||
            (c.good==int(EstablishmentIndustry::Forestry)&&c.target!=6)||
            (c.good==int(EstablishmentIndustry::Forestry)&&std::any_of(establishments_.begin(),establishments_.end(),
@@ -980,6 +993,10 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
                 (regions_!=int(kAtlasTerritoryCount)-1||c.target!=10))||
            (c.good==int(EstablishmentIndustry::DecorativeGlassWorks)&&std::any_of(establishments_.begin(),establishments_.end(),
                 [&](const Establishment& site){return site.industry==EstablishmentIndustry::DecorativeGlassWorks&&site.region==10;}))||
+           (c.good==int(EstablishmentIndustry::FinePorcelainWorks)&&
+                (regions_!=int(kAtlasTerritoryCount)-1||c.target!=15))||
+           (c.good==int(EstablishmentIndustry::FinePorcelainWorks)&&std::any_of(establishments_.begin(),establishments_.end(),
+                [&](const Establishment& site){return site.industry==EstablishmentIndustry::FinePorcelainWorks&&site.region==15;}))||
            next_id_==UINT64_MAX||next_fact_==UINT64_MAX||establishments_.size()>=1000000)return false;
         if(c.term==-2)
             return p.family==Family::Governance&&p.taxing_authority&&provinces_[size_t(p.region)].charter&&
@@ -1292,6 +1309,10 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
         if(c.good==int(GoodId::DecorativeGlass)&&p.age_days>=14*365&&!p.military_service.active&&
            p.busy_until<=day_&&c.amount==6&&c.term==7&&p.inventory[decorativeGlass]>0&&
            consumed_[decorativeGlass]<std::numeric_limits<int64_t>::max())return true;
+        const size_t finePorcelain=size_t(GoodId::FinePorcelain);
+        if(c.good==int(GoodId::FinePorcelain)&&p.age_days>=18*365&&!p.military_service.active&&
+           p.busy_until<=day_&&c.amount==12&&c.term==7&&p.inventory[finePorcelain]>0&&
+           consumed_[finePorcelain]<std::numeric_limits<int64_t>::max())return true;
         break;
     }
     case Intent::Join:if(p.family==Family::Civilian&&p.age_days>=6*365&&c.target==p.region&&c.good>=0&&c.good<4&&p.organization!=1+4*p.region+c.good&&p.cash>=c.amount&&c.term>0&&c.term<=30)return true;break;
@@ -1597,6 +1618,14 @@ RealmResult Realm::execute(const RealmCommand&cmd){
             --p.inventory[glass];
             ++consumed_[glass];
             p.social=std::min(100,p.social+15);
+        }else if(c.good==int(GoodId::FinePorcelain)){
+            const size_t porcelain=size_t(GoodId::FinePorcelain);
+            if(p.age_days<18*365||p.military_service.active||p.busy_until>day_||p.inventory[porcelain]<1||
+               c.amount!=12||c.term!=7||consumed_[porcelain]==std::numeric_limits<int64_t>::max())
+                throw std::logic_error("validated fine porcelain use changed before commit");
+            --p.inventory[porcelain];
+            ++consumed_[porcelain];
+            p.social=std::min(100,p.social+18);
         }else p.social=std::min(100,p.social+2);
         p.busy_until=day_+c.term;
         break;
@@ -3139,7 +3168,8 @@ bool Realm::invariant(const std::array<int64_t,kGoodIdCount>& bonded_goods)const
             e.industry != EstablishmentIndustry::GoldMine &&
             e.industry != EstablishmentIndustry::LivestockRanch &&
             e.industry != EstablishmentIndustry::Butchery &&
-            e.industry != EstablishmentIndustry::DecorativeGlassWorks) return false;
+            e.industry != EstablishmentIndustry::DecorativeGlassWorks &&
+            e.industry != EstablishmentIndustry::FinePorcelainWorks) return false;
         if(e.industry==EstablishmentIndustry::Saltworks&&e.region!=8)return false;
         if(e.industry==EstablishmentIndustry::Forestry&&e.region!=6)return false;
         if(e.industry==EstablishmentIndustry::Mining&&e.region!=7&&e.region!=23)return false;
@@ -3166,6 +3196,8 @@ bool Realm::invariant(const std::array<int64_t,kGoodIdCount>& bonded_goods)const
            (regions_!=int(kAtlasTerritoryCount)-1||e.region!=18))return false;
         if(e.industry==EstablishmentIndustry::DecorativeGlassWorks&&
            (regions_!=int(kAtlasTerritoryCount)-1||e.region!=10))return false;
+        if(e.industry==EstablishmentIndustry::FinePorcelainWorks&&
+           (regions_!=int(kAtlasTerritoryCount)-1||e.region!=15))return false;
         const bool sourceIndustry=e.industry==EstablishmentIndustry::Forestry||e.industry==EstablishmentIndustry::Mining||
             e.industry==EstablishmentIndustry::TeaGarden||e.industry==EstablishmentIndustry::IncenseWorks||
             e.industry==EstablishmentIndustry::Glassworks||e.industry==EstablishmentIndustry::PotteryKiln||
@@ -3240,7 +3272,8 @@ bool Realm::invariant(const std::array<int64_t,kGoodIdCount>& bonded_goods)const
         establishments_[i].industry==EstablishmentIndustry::GoldMine||
         establishments_[i].industry==EstablishmentIndustry::LivestockRanch||
             establishments_[i].industry==EstablishmentIndustry::Butchery||
-            establishments_[i].industry==EstablishmentIndustry::DecorativeGlassWorks)
+            establishments_[i].industry==EstablishmentIndustry::DecorativeGlassWorks||
+            establishments_[i].industry==EstablishmentIndustry::FinePorcelainWorks)
         for(size_t j=i+1;j<establishments_.size();++j)
             if(establishments_[j].industry==establishments_[i].industry&&establishments_[j].region==establishments_[i].region)return false;
     // sorted
@@ -3492,6 +3525,7 @@ std::string Realm::action_name(const Candidate&c){
     if(c.kind==Intent::Social&&c.good==int(GoodId::Silk))return "Giao lưu bằng lụa";
     if(c.kind==Intent::Social&&c.good==int(GoodId::Gold))return "Giao lưu với trang sức vàng";
     if(c.kind==Intent::Social&&c.good==int(GoodId::DecorativeGlass))return "Giao lưu bằng kính trang trí";
+    if(c.kind==Intent::Social&&c.good==int(GoodId::FinePorcelain))return "Tiếp khách bằng đồ sứ tinh xảo";
     if(c.kind==Intent::NominateCouncil&&c.target>=0&&c.target<int(kAtlasTerritoryCount)){
         const std::string site(kAtlasUrbanSites[size_t(c.target)].name);
         if(c.good==0)return "Tự ứng cử đại diện hội đồng tại "+site;

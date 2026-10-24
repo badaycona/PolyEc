@@ -43,7 +43,7 @@ int main(){
               "Tea in another person's inventory does not unlock the actor's choice");
 
         Realm world(82,1,128);
-        check(world.model_contract()=="realm-household-fund-goods30-config-v50"&&realm_actions==400,
+        check(world.model_contract()=="realm-household-fund-goods30-config-v51"&&realm_actions==400,
               "Tea, Copper, Incense and WarHorse travel use the current contract without changing tensor size");
         RealmObservationTestAccess::add_personal_tea(world,civilian,2);
         check(world.invariant(),"test Tea holdings preserve the opening goods ledger");

@@ -56,7 +56,7 @@ uint64_t hash_text(const std::string& s) {
 
 // Text format uses explicit scalar fields, not compiler-dependent struct bytes.
 std::string Realm::serialize(const std::string&bundle)const{
-    std::ostringstream s;s<<"POLYEC_REALM_72 "<<std::quoted(bundle)<<' ';
+    std::ostringstream s;s<<"POLYEC_REALM_73 "<<std::quoted(bundle)<<' ';
     detail::RealmPrimaryHeader header{};
     header.day=day_;header.regions=regions_;header.seed=seed_;header.next_id=next_id_;header.next_fact=next_fact_;
     header.opening_money=opening_money_;header.carrier=carrier_;header.estate=estate_;header.endowment=endowment_;
@@ -111,7 +111,8 @@ bool Realm::deserialize(const std::string&data,const std::string&bundle,std::str
     if(data.size()>256*1024*1024)throw std::runtime_error("Save size limit");
     auto stagedWorld=std::make_unique<Realm>(1,1,128);Realm& w=*stagedWorld;w.land_holdings_.clear();w.land_use_rights_.clear();std::istringstream s(data);std::string magic,b;s>>magic>>std::quoted(b);
     int schema=0;
-    if(magic=="POLYEC_REALM_72")schema=72;
+    if(magic=="POLYEC_REALM_73")schema=73;
+    else if(magic=="POLYEC_REALM_72")schema=72;
     else if(magic=="POLYEC_REALM_71")schema=71;
     else if(magic=="POLYEC_REALM_70")schema=70;
     else if(magic=="POLYEC_REALM_69")schema=69;

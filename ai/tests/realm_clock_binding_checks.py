@@ -164,7 +164,7 @@ def main():
     # Timeline contract keeps the current candidate surface usable for v11 agents.
     check(p.timeline_contract, "timeline contract true")
     check(not p.pilot_policy_compatible, "pilot compatibility false")
-    check(p.model_contract == "realm-worksite-payroll-goods30-config-v50",
+    check(p.model_contract == "realm-worksite-payroll-goods30-config-v51",
           "model contract timeline/worksite/catalog action surface with configured gameplay values")
     observed_after_timeline = p.observe(actor)
     mask_after_timeline = p.mask(actor)
@@ -370,7 +370,7 @@ def main():
     for i, (cpp, py) in enumerate(zip(cpp_checkpoints, py_checkpoints)):
         check(cpp["serialized"] == py[0], "serialized mismatch at %d" % i)
         check(cpp["sessions"] == py[1], "sessions mismatch at %d" % i)
-        check(py[0].startswith("POLYEC_REALM_72 "), "serialized current schema 69 magic at %d" % i)
+        check(py[0].startswith("POLYEC_REALM_73 "), "serialized current schema 69 magic at %d" % i)
         check(" SCHEDULE_7 " in py[0], "serialized current schedule tag at %d" % i)
 
     print("REALM CLOCK BINDING CHECKS: %d Python checks passed" % CHECKS)

@@ -63,8 +63,8 @@ int main(){try{
     const uint64_t buyer=civilian_at(world,region,decorativeWorker);
     check(authority<=uint64_t(world.count())&&world.person(authority).taxing_authority&&glassWorker&&decorativeWorker&&buyer,
           "Atlas region10 has the public authority and three local adult civilians");
-    check(realm_schema==std::string_view("realm-v39")&&world.model_contract()==
-          "realm-household-fund-goods30-config-v50"&&realm_actions==400&&realm_obs==5182,
+    check(realm_schema==std::string_view("realm-v40")&&world.model_contract()==
+          "realm-household-fund-goods30-config-v51"&&realm_actions==400&&realm_obs==5182,
           "DecorativeGlass advances the model/config versions without changing tensor dimensions");
 
     const auto glassCandidate=world.candidates(authority)[size_t(realm_specialty_product_candidate_begin)];
@@ -176,7 +176,7 @@ int main(){try{
           "social use consumes the personal item, pays the region, adds15 social and occupies seven game days");
 
     const auto saved=world.serialize("decorative-glass-production-use-v1");
-    check(saved.rfind("POLYEC_REALM_72 ",0)==0,"new save writes schema72 for DecorativeGlass Works");
+    check(saved.rfind("POLYEC_REALM_73 ",0)==0,"new save writes schema72 for DecorativeGlass Works");
     Realm restored(1,1,128);std::string error;
     check(restored.deserialize(saved,"decorative-glass-production-use-v1",error)&&
           restored.fingerprint()==world.fingerprint()&&restored.invariant()&&
@@ -187,7 +187,7 @@ int main(){try{
     legacy.replace(0,std::string("POLYEC_REALM_72").size(),"POLYEC_REALM_71");
     Realm legacyLoaded(1,1,128);
     check(legacyLoaded.deserialize(legacy,"decorative-glass-legacy",error)&&
-          legacyLoaded.serialize("decorative-glass-legacy").rfind("POLYEC_REALM_72 ",0)==0,
+          legacyLoaded.serialize("decorative-glass-legacy").rfind("POLYEC_REALM_73 ",0)==0,
           "schema71 worlds without the new industry still load and write the newest save version");
 
     std::string invalidLegacy=saved;

@@ -60,7 +60,8 @@ RealmResult Realm::execute(const EstablishmentCommand& cmd){
         cmd.industry != EstablishmentIndustry::GoldMine &&
         cmd.industry != EstablishmentIndustry::LivestockRanch &&
         cmd.industry != EstablishmentIndustry::Butchery &&
-        cmd.industry != EstablishmentIndustry::DecorativeGlassWorks) return {false, "Invalid industry"};
+        cmd.industry != EstablishmentIndustry::DecorativeGlassWorks &&
+        cmd.industry != EstablishmentIndustry::FinePorcelainWorks) return {false, "Invalid industry"};
     if(cmd.industry==EstablishmentIndustry::Saltworks&&cmd.region!=8)return {false,"Saltworks requires atlas region 8"};
     if(cmd.industry==EstablishmentIndustry::Forestry){
         if(cmd.region!=6)return {false,"Forestry requires atlas region 6"};
@@ -175,6 +176,13 @@ RealmResult Realm::execute(const EstablishmentCommand& cmd){
         if(std::any_of(establishments_.begin(),establishments_.end(),[](const Establishment& site){
             return site.industry==EstablishmentIndustry::DecorativeGlassWorks&&site.region==10;
         }))return {false,"Decorative Glass Works already exists in region 10"};
+    }
+    if(cmd.industry==EstablishmentIndustry::FinePorcelainWorks){
+        if(regions_!=int(kAtlasTerritoryCount)-1||cmd.region!=15)
+            return {false,"Fine Porcelain Works requires Atlas region 15"};
+        if(std::any_of(establishments_.begin(),establishments_.end(),[](const Establishment& site){
+            return site.industry==EstablishmentIndustry::FinePorcelainWorks&&site.region==15;
+        }))return {false,"Fine Porcelain Works already exists in region 15"};
     }
     const int cap = cmd.capacity==-1?config_.default_capacity():cmd.capacity;
     if (cap < 1 || cap > kEstablishmentCapacityMax) return {false, "Invalid capacity"};

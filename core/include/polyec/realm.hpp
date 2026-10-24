@@ -26,7 +26,7 @@
 namespace polyec {
 inline constexpr size_t kOrganizationGroupsPerTerritory=4;
 inline constexpr size_t kOrganizationCount=kAtlasTerritoryCount*kOrganizationGroupsPerTerritory;
-inline constexpr const char* realm_schema="realm-v39";
+inline constexpr const char* realm_schema="realm-v40";
 inline constexpr const char* realm_reward_version="realm-v14-person-enterprise-equity-atlas-products-v1";
 inline constexpr int realm_base_state=128, realm_features=12;
 inline constexpr int realm_pre_ration_state=realm_base_state+int((kAtlasTerritoryCount-7)*kLegacyGoodCount);
@@ -45,6 +45,7 @@ inline constexpr int realm_silver_social_candidate=26;
 inline constexpr int realm_silk_social_candidate=27;
 inline constexpr int realm_gold_social_candidate=28;
 inline constexpr int realm_decorative_glass_social_candidate=29;
+inline constexpr int realm_fine_porcelain_social_candidate=30;
 inline constexpr int realm_council_nomination_candidate=71;
 inline constexpr int realm_council_accept_candidate_begin=282;
 inline constexpr int realm_council_reject_candidate_begin=309;
@@ -520,6 +521,7 @@ class Realm {
     friend struct RealmGoldSocialTestAccess;
     friend struct RealmLivestockFoodChainTestAccess;
     friend struct RealmDecorativeGlassTestAccess;
+    friend struct RealmFinePorcelainTestAccess;
     friend struct RealmMunicipalCouncilTestAccess;
     friend struct RealmPrivateHousingTestAccess;
 public:
@@ -644,8 +646,8 @@ std::vector<Establishment> establishments() const { return establishments_; }
     std::string model_contract() const {
         std::string result;
         if (schedule_book_.timeline_contract)
-            result=config_.historical_defaults() ? "realm-worksite-payroll-goods30-v50" : "realm-worksite-payroll-goods30-config-v50";
-        else result=config_.historical_defaults() ? "realm-household-fund-goods30-v50" : "realm-household-fund-goods30-config-v50";
+            result=config_.historical_defaults() ? "realm-worksite-payroll-goods30-v51" : "realm-worksite-payroll-goods30-config-v51";
+        else result=config_.historical_defaults() ? "realm-household-fund-goods30-v51" : "realm-household-fund-goods30-config-v51";
         if(capability_mask_!=kDefaultCapabilityMask)result+="-caps-"+std::to_string(capability_mask_);
         return result;
     }

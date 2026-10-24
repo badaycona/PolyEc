@@ -32,8 +32,8 @@ func run() -> void:
 		"the player-facing Gold action explains the personal item, fund payment, social gain and adult eligibility")
 	var session = ClassDB.instantiate("PolyEcSession")
 	var schema = session.realm_schema()
-	check(schema == "realm-v39", "native core schema")
-	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v50", "native core model contract")
+	check(schema == "realm-v40", "native core schema")
+	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v51", "native core model contract")
 	for case in [[10, 12, 27, "thủy tinh thường", 90], [15, 13, 28, "đồ gốm thường", 55], [17, 14, 29, "da thuộc", 80]]:
 		var stock := []
 		stock.resize(30)
@@ -95,6 +95,17 @@ func run() -> void:
 		"Decorative Glass Works UI explains its output and both real recipe inputs")
 	check(RealmPanel.decorative_glass_social_description().contains("trả 6 đồng") and RealmPanel.decorative_glass_social_description().contains("thêm 15") and RealmPanel.decorative_glass_social_description().contains("từ 14 tuổi"),
 		"the player-facing DecorativeGlass action explains personal item, money, benefit and age eligibility")
+	var porcelain_stock := []
+	porcelain_stock.resize(30)
+	porcelain_stock.fill(0)
+	porcelain_stock[25] = 1
+	porcelain_stock[28] = 2
+	porcelain_stock[4] = 3
+	var porcelain_line: String = RealmPanel.establishment_text([{"id": 59, "region": 15, "industry": 24, "stock": porcelain_stock}], 15)
+	check(porcelain_line.contains("xưởng hoàn thiện đồ sứ") and porcelain_line.contains("đồ sứ tinh xảo") and porcelain_line.contains("2 đồ gốm thường") and porcelain_line.contains("3 nhiên liệu") and porcelain_line.contains("24 tick Work"),
+		"FinePorcelain Works UI explains its finished product and both real recipe inputs")
+	check(RealmPanel.fine_porcelain_social_description().contains("trả 12 đồng") and RealmPanel.fine_porcelain_social_description().contains("thêm 18") and RealmPanel.fine_porcelain_social_description().contains("trưởng thành"),
+		"the hosting action explains personal item, money, benefit and adult eligibility")
 	var census_line: String = RealmPanel.urban_census_text([{"site_name": "Nam Cảng", "urban_residents": 24, "housing_capacity": 24, "unhoused_residents": 0, "available_beds": 0}], true)
 	check(census_line.contains("sức chứa 24") and census_line.contains("còn thiếu chỗ 0") and census_line.contains("giường trống 0"),
 		"housing census UI explains resident count, capacity, unhoused residents and vacant beds")

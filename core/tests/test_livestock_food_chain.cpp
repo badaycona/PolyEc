@@ -45,8 +45,8 @@ int main(){try{
     const uint64_t butcherWorker=adult_worker(world,region,ranchWorker);
     check(authority<=uint64_t(world.count())&&world.person(authority).taxing_authority&&ranchWorker&&butcherWorker,
           "Atlas region18 has a public authority and two adult civilian workers");
-    check(realm_schema==std::string_view("realm-v39")&&world.model_contract()==
-          "realm-household-fund-goods30-config-v50"&&realm_actions==400&&realm_obs==5182,
+    check(realm_schema==std::string_view("realm-v40")&&world.model_contract()==
+          "realm-household-fund-goods30-config-v51"&&realm_actions==400&&realm_obs==5182,
           "Livestock advances the model and config versions without changing tensor dimensions");
 
     const auto ranchCandidate=world.candidates(authority)[size_t(realm_specialty_product_candidate_begin)];
@@ -132,7 +132,7 @@ int main(){try{
     check(world.day()==450&&world.establishments()[0].source_units==100,
           "another regeneration date cannot increase a full100-unit herd");
     auto saved=world.serialize("livestock-food-chain-v1");
-    check(saved.rfind("POLYEC_REALM_72 ",0)==0,"current save writes schema71 for the new industries");
+    check(saved.rfind("POLYEC_REALM_73 ",0)==0,"current save writes schema71 for the new industries");
     Realm restored(1,1,128);std::string error;
     check(restored.deserialize(saved,"livestock-food-chain-v1",error)&&restored.invariant()&&
           restored.fingerprint()==world.fingerprint()&&restored.establishments().size()==2,

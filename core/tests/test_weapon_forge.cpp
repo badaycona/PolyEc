@@ -80,7 +80,7 @@ int main(){try{
           "worksite actions identify the exact two inputs and Weapon output");
 
     const auto saved=world.serialize("weapon-forge-trial-1");
-    check(saved.rfind("POLYEC_REALM_72 ",0)==0&&saved.find(" ESTABLISH_14 1 ")!=std::string::npos,
+    check(saved.rfind("POLYEC_REALM_73 ",0)==0&&saved.find(" ESTABLISH_14 1 ")!=std::string::npos,
           "save uses schema43 and the new establishment section tag");
     Realm resumed(1,1,128);std::string error;
     check(resumed.deserialize(saved,"weapon-forge-trial-1",error),error.c_str());
@@ -108,7 +108,7 @@ int main(){try{
     const auto emptyTag=empty42.find("ESTABLISH_13");empty42.replace(emptyTag,std::string("ESTABLISH_13").size(),"ESTABLISH_12");
     Realm migrated(1,1,128);
     check(migrated.deserialize(empty42,"weapon-forge-trial-1",error)&&migrated.establishments().empty()&&
-          migrated.serialize("weapon-forge-trial-1").rfind("POLYEC_REALM_72 ",0)==0,
+          migrated.serialize("weapon-forge-trial-1").rfind("POLYEC_REALM_73 ",0)==0,
           "schema42 migrates without inventing Forge, Iron, Tools or Weapon stock");
     std::cout<<"Weapon Forge checks="<<checks<<'\n';return 0;
 }catch(const std::exception& error){

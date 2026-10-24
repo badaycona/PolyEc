@@ -50,7 +50,7 @@ int main(){try{
     Realm world(20261061,26,256);
     const uint64_t authority=region+2;
     const uint64_t worker=find_adult(world,region);
-    check(world.model_contract()=="realm-household-fund-goods30-config-v45"&&
+    check(world.model_contract()=="realm-household-fund-goods30-config-v46"&&
           realm_actions==400&&realm_obs==5182,
           "the changed house-material rule is represented by model contract v44 without changing tensor shape");
     check(worker!=0&&world.person(authority).taxing_authority,
@@ -113,8 +113,8 @@ int main(){try{
           "building the private home consumes its owner's pane exactly once in the same transaction");
 
     const std::string saved=world.serialize("plain-glass-housing-use-v1");
-    check(saved.rfind("POLYEC_REALM_67 ",0)==0&&saved.find(" PRIVATE_HOUSING_1 1 ")!=std::string::npos,
-          "the new material requirement does not add a save field or change schema67");
+    check(saved.rfind("POLYEC_REALM_68 ",0)==0&&saved.find(" PRIVATE_HOUSING_1 1 ")!=std::string::npos,
+          "the new material requirement does not add a save field or change schema68");
     Realm restored(1,1,128);std::string error;
     check(restored.deserialize(saved,"plain-glass-housing-use-v1",error),
           "the world with a home under construction loads: "+error);

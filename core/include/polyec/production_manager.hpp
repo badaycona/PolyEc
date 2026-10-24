@@ -37,7 +37,7 @@ inline constexpr int64_t kProductionTicksPerUnit = kAttendanceTicksPerWorkUnit;
 inline constexpr int64_t kProductionShortageForfeit = 1; // no labor debt or carryover
 inline constexpr int64_t kLaborProductivityDenominator = 200;
 
-inline constexpr std::array<ProductionRecipe, 18> kProductionRecipes{{
+inline constexpr std::array<ProductionRecipe, 19> kProductionRecipes{{
     {EstablishmentIndustry::ClothWorkshop, {{ProductionGoodAmount{9, 1}}}, 1, 11},
     {EstablishmentIndustry::ToolWorkshop, {{ProductionGoodAmount{5, 1}, ProductionGoodAmount{6, 1}, ProductionGoodAmount{4, 1}}}, 3, 16},
     {EstablishmentIndustry::MilitarySupplyWorkshop, {{ProductionGoodAmount{16, 1}, ProductionGoodAmount{11, 1}}}, 2, 17},
@@ -56,6 +56,7 @@ inline constexpr std::array<ProductionRecipe, 18> kProductionRecipes{{
     {EstablishmentIndustry::MedicinalGarden, {}, 0, size_t(GoodId::Medicine), 1, int(GoodId::Medicine), 1},
     {EstablishmentIndustry::SeedPressWorks, {}, 0, size_t(GoodId::SupplementaryFood), 1, int(GoodId::SupplementaryFood), 1},
     {EstablishmentIndustry::SawmillWorks, {{ProductionGoodAmount{3, 1}}}, 1, size_t(GoodId::ConstructionMaterial), 1},
+    {EstablishmentIndustry::Apiary, {}, 0, size_t(GoodId::Beeswax), 1, int(GoodId::Beeswax), 1},
 }};
 
 inline ProductionRecipe production_recipe(EstablishmentIndustry industry,const GameplayConfig& config={},
@@ -71,7 +72,8 @@ inline ProductionRecipe production_recipe(EstablishmentIndustry industry,const G
         case EstablishmentIndustry::Forestry:case EstablishmentIndustry::Mining:case EstablishmentIndustry::PaperMill:
         case EstablishmentIndustry::TeaGarden:case EstablishmentIndustry::IncenseWorks:case EstablishmentIndustry::WarhorseStable:case EstablishmentIndustry::WeaponForge:
         case EstablishmentIndustry::Glassworks:case EstablishmentIndustry::PotteryKiln:case EstablishmentIndustry::Tannery:
-        case EstablishmentIndustry::MedicinalGarden:case EstablishmentIndustry::SeedPressWorks:break;
+        case EstablishmentIndustry::MedicinalGarden:case EstablishmentIndustry::SeedPressWorks:
+        case EstablishmentIndustry::Apiary:break;
         case EstablishmentIndustry::SawmillWorks:break;
         }
         return r;

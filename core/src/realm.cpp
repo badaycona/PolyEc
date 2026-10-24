@@ -611,6 +611,13 @@ std::array<Candidate,realm_actions> Realm::candidates(uint64_t id)const{
             c[size_t(realm_municipal_specialty_product_candidate_begin+tier)]={Intent::CreateEstablishment,
                 p.region,int(EstablishmentIndustry::SawmillWorks),establishmentFunding[size_t(tier)],-2};
     }
+    if(p.region==21)for(int tier=0;tier<3;++tier){
+        c[size_t(realm_specialty_product_candidate_begin+tier)]={Intent::CreateEstablishment,p.region,
+            int(EstablishmentIndustry::Apiary),establishmentFunding[size_t(tier)],-1};
+        if(p.family==Family::Governance)
+            c[size_t(realm_municipal_specialty_product_candidate_begin+tier)]={Intent::CreateEstablishment,
+                p.region,int(EstablishmentIndustry::Apiary),establishmentFunding[size_t(tier)],-2};
+    }
     if(p.family==Family::Governance){
         for(int industry=1;industry<=7;++industry)for(int tier=0;tier<3;++tier){
             const int slot=realm_municipal_workshop_candidate_begin+(industry-1)*3+tier;
@@ -658,6 +665,7 @@ std::array<Candidate,realm_actions> Realm::candidates(uint64_t id)const{
         case EstablishmentIndustry::MedicinalGarden:return GoodId::Medicine;
         case EstablishmentIndustry::SeedPressWorks:return GoodId::SupplementaryFood;
         case EstablishmentIndustry::SawmillWorks:return GoodId::ConstructionMaterial;
+        case EstablishmentIndustry::Apiary:return GoodId::Beeswax;
         }
         return GoodId::Fiber;
     };
@@ -679,6 +687,7 @@ std::array<Candidate,realm_actions> Realm::candidates(uint64_t id)const{
         case EstablishmentIndustry::MedicinalGarden:return GoodId::Medicine;
         case EstablishmentIndustry::SeedPressWorks:return GoodId::SupplementaryFood;
         case EstablishmentIndustry::SawmillWorks:return GoodId::Timber;
+        case EstablishmentIndustry::Apiary:return GoodId::Beeswax;
         }
         return GoodId::Fiber;
     };
@@ -706,7 +715,7 @@ std::array<Candidate,realm_actions> Realm::candidates(uint64_t id)const{
             break;
         case EstablishmentIndustry::MilitarySupplyWorkshop:inputOne=values[8];inputTwo=values[9];input2=GoodId::Cloth;output=values[10];break;
         case EstablishmentIndustry::Saltworks:inputOne=values[16];output=values[17];break;
-        case EstablishmentIndustry::Forestry:case EstablishmentIndustry::Mining:case EstablishmentIndustry::TeaGarden:case EstablishmentIndustry::IncenseWorks:case EstablishmentIndustry::MedicinalGarden:case EstablishmentIndustry::SeedPressWorks:output=1;break;
+        case EstablishmentIndustry::Forestry:case EstablishmentIndustry::Mining:case EstablishmentIndustry::TeaGarden:case EstablishmentIndustry::IncenseWorks:case EstablishmentIndustry::MedicinalGarden:case EstablishmentIndustry::SeedPressWorks:case EstablishmentIndustry::Apiary:output=1;break;
         case EstablishmentIndustry::PaperMill:case EstablishmentIndustry::WarhorseStable:case EstablishmentIndustry::SawmillWorks:inputOne=1;output=1;break;
         case EstablishmentIndustry::WeaponForge:inputOne=1;inputTwo=1;input2=GoodId::Tools;output=1;break;
         case EstablishmentIndustry::Glassworks:case EstablishmentIndustry::PotteryKiln:inputOne=1;output=1;break;
@@ -857,7 +866,7 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
     if(c.kind==Intent::CreateEstablishment){
         constexpr std::array<int64_t,3> establishmentFunding{25,50,100};
         const bool validFunding=std::find(establishmentFunding.begin(),establishmentFunding.end(),c.amount)!=establishmentFunding.end();
-        if(c.target!=p.region||c.good<1||c.good>17||(c.term!=-1&&c.term!=-2)||!validFunding||
+        if(c.target!=p.region||c.good<1||c.good>18||(c.term!=-1&&c.term!=-2)||!validFunding||
            (c.good==int(EstablishmentIndustry::Saltworks)&&c.target!=8)||
            (c.good==int(EstablishmentIndustry::Forestry)&&c.target!=6)||
            (c.good==int(EstablishmentIndustry::Forestry)&&std::any_of(establishments_.begin(),establishments_.end(),
@@ -898,6 +907,9 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
            (c.good==int(EstablishmentIndustry::SawmillWorks)&&(regions_!=int(kAtlasTerritoryCount)-1||c.target!=6))||
            (c.good==int(EstablishmentIndustry::SawmillWorks)&&std::any_of(establishments_.begin(),establishments_.end(),
                [&](const Establishment& site){return site.industry==EstablishmentIndustry::SawmillWorks&&site.region==6;}))||
+           (c.good==int(EstablishmentIndustry::Apiary)&&(regions_!=int(kAtlasTerritoryCount)-1||c.target!=21))||
+           (c.good==int(EstablishmentIndustry::Apiary)&&std::any_of(establishments_.begin(),establishments_.end(),
+               [&](const Establishment& site){return site.industry==EstablishmentIndustry::Apiary&&site.region==21;}))||
            next_id_==UINT64_MAX||next_fact_==UINT64_MAX||establishments_.size()>=1000000)return false;
         if(c.term==-2)
             return p.family==Family::Governance&&p.taxing_authority&&provinces_[size_t(p.region)].charter&&
@@ -1842,6 +1854,15 @@ void Realm::day_body(){
         body.sleep_debt=nextDebt;
         body.sleep_balance_remainder=(nextDebt==100&&delta>0)||(nextDebt==0&&delta<0)?0:int(remainder);
         if(body.rest_health_pending&&body.rest_until_tick<=dayEnd){
+            const size_t beeswax=size_t(GoodId::Beeswax);
+            if(person.family==Family::Civilian&&!person.military_service.active&&
+               person.destination==-1&&person.region==body.rest_region&&body.sleep_debt>0&&
+               person.inventory[beeswax]>0&&consumed_[beeswax]<std::numeric_limits<int64_t>::max()&&
+               next_fact_<UINT64_MAX){
+                --person.inventory[beeswax];++consumed_[beeswax];
+                body.sleep_debt=std::max(0,body.sleep_debt-5);
+                event(person.id,person.region,239,5,int(GoodId::Beeswax));
+            }
             if(person.region==body.rest_region&&person.nutrition>=40){
                 const int old=person.health;
                 const int64_t completedRestTicks=body.rest_until_tick-body.rest_begin_tick;
@@ -2002,6 +2023,9 @@ void Realm::day_harvest(){
             site.source_good==int(GoodId::Tea))site.source_units=std::min<int64_t>(kEstablishmentSourceUnitsMaximum,site.source_units+25);
         for(auto& site:establishments_)if(site.industry==EstablishmentIndustry::SeedPressWorks&&r==2&&
             site.source_good==int(GoodId::SupplementaryFood))site.source_units=std::min<int64_t>(
+                kEstablishmentSourceUnitsMaximum,site.source_units+25);
+        for(auto& site:establishments_)if(site.industry==EstablishmentIndustry::Apiary&&r==21&&
+            site.source_good==int(GoodId::Beeswax))site.source_units=std::min<int64_t>(
                 kEstablishmentSourceUnitsMaximum,site.source_units+25);
     }
     }
@@ -2999,7 +3023,8 @@ bool Realm::invariant(const std::array<int64_t,kGoodIdCount>& bonded_goods)const
             e.industry != EstablishmentIndustry::Tannery &&
             e.industry != EstablishmentIndustry::MedicinalGarden &&
             e.industry != EstablishmentIndustry::SeedPressWorks &&
-            e.industry != EstablishmentIndustry::SawmillWorks) return false;
+            e.industry != EstablishmentIndustry::SawmillWorks &&
+            e.industry != EstablishmentIndustry::Apiary) return false;
         if(e.industry==EstablishmentIndustry::Saltworks&&e.region!=8)return false;
         if(e.industry==EstablishmentIndustry::Forestry&&e.region!=6)return false;
         if(e.industry==EstablishmentIndustry::Mining&&e.region!=7&&e.region!=23)return false;
@@ -3016,11 +3041,13 @@ bool Realm::invariant(const std::array<int64_t,kGoodIdCount>& bonded_goods)const
         if(e.industry==EstablishmentIndustry::SawmillWorks&&
            (regions_!=int(kAtlasTerritoryCount)-1||e.region!=6))return false;
         if(e.industry==EstablishmentIndustry::SawmillWorks&&e.region!=6)return false;
+        if(e.industry==EstablishmentIndustry::Apiary&&
+           (regions_!=int(kAtlasTerritoryCount)-1||e.region!=21))return false;
         const bool sourceIndustry=e.industry==EstablishmentIndustry::Forestry||e.industry==EstablishmentIndustry::Mining||
             e.industry==EstablishmentIndustry::TeaGarden||e.industry==EstablishmentIndustry::IncenseWorks||
             e.industry==EstablishmentIndustry::Glassworks||e.industry==EstablishmentIndustry::PotteryKiln||
             e.industry==EstablishmentIndustry::Tannery||e.industry==EstablishmentIndustry::MedicinalGarden||
-            e.industry==EstablishmentIndustry::SeedPressWorks;
+            e.industry==EstablishmentIndustry::SeedPressWorks||e.industry==EstablishmentIndustry::Apiary;
         const int expectedSource=establishment_source_good(e.industry,e.region);
         if((sourceIndustry&&(e.source_good!=expectedSource||e.source_units<0||
                             e.source_units>kEstablishmentSourceUnitsMaximum))||
@@ -3082,7 +3109,8 @@ bool Realm::invariant(const std::array<int64_t,kGoodIdCount>& bonded_goods)const
         establishments_[i].industry==EstablishmentIndustry::Tannery||
         establishments_[i].industry==EstablishmentIndustry::MedicinalGarden||
         establishments_[i].industry==EstablishmentIndustry::SeedPressWorks||
-        establishments_[i].industry==EstablishmentIndustry::SawmillWorks)
+        establishments_[i].industry==EstablishmentIndustry::SawmillWorks||
+        establishments_[i].industry==EstablishmentIndustry::Apiary)
         for(size_t j=i+1;j<establishments_.size();++j)
             if(establishments_[j].industry==establishments_[i].industry&&establishments_[j].region==establishments_[i].region)return false;
     // sorted

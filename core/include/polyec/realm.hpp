@@ -26,7 +26,7 @@
 namespace polyec {
 inline constexpr size_t kOrganizationGroupsPerTerritory=4;
 inline constexpr size_t kOrganizationCount=kAtlasTerritoryCount*kOrganizationGroupsPerTerritory;
-inline constexpr const char* realm_schema="realm-v34";
+inline constexpr const char* realm_schema="realm-v35";
 inline constexpr const char* realm_reward_version="realm-v14-person-enterprise-equity-atlas-products-v1";
 inline constexpr int realm_base_state=128, realm_features=12;
 inline constexpr int realm_pre_ration_state=realm_base_state+int((kAtlasTerritoryCount-7)*kLegacyGoodCount);
@@ -512,6 +512,7 @@ class Realm {
     friend struct RealmMedicineTestAccess;
     friend struct RealmSupplementaryFoodTestAccess;
     friend struct RealmPotteryMealVesselTestAccess;
+    friend struct RealmBeeswaxCandleTestAccess;
     friend struct RealmMunicipalCouncilTestAccess;
     friend struct RealmPrivateHousingTestAccess;
 public:
@@ -636,8 +637,8 @@ std::vector<Establishment> establishments() const { return establishments_; }
     std::string model_contract() const {
         std::string result;
         if (schedule_book_.timeline_contract)
-            result=config_.historical_defaults() ? "realm-worksite-payroll-goods30-v45" : "realm-worksite-payroll-goods30-config-v45";
-        else result=config_.historical_defaults() ? "realm-household-fund-goods30-v45" : "realm-household-fund-goods30-config-v45";
+            result=config_.historical_defaults() ? "realm-worksite-payroll-goods30-v46" : "realm-worksite-payroll-goods30-config-v46";
+        else result=config_.historical_defaults() ? "realm-household-fund-goods30-v46" : "realm-household-fund-goods30-config-v46";
         if(capability_mask_!=kDefaultCapabilityMask)result+="-caps-"+std::to_string(capability_mask_);
         return result;
     }

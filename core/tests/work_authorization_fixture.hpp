@@ -8,8 +8,12 @@
 #include <stdexcept>
 
 namespace polyec::test_fixtures {
+inline void normalize_schema68_fixture(std::string& source){
+    if(source.rfind("POLYEC_REALM_68 ",0)==0)
+        source.replace(0,std::string("POLYEC_REALM_68").size(),"POLYEC_REALM_67");
+}
 inline void downgrade_save_67_to_66(std::string& source){
-    if(source.rfind("POLYEC_REALM_67 ",0)!=0)throw std::runtime_error("fixture is not schema67");
+        normalize_schema68_fixture(source);if(source.rfind("POLYEC_REALM_67 ",0)!=0)throw std::runtime_error("fixture is not schema67");
     const size_t section=source.rfind(" PRIVATE_HOUSING_1 ");
     if(section==std::string::npos)throw std::runtime_error("schema67 fixture lacks PRIVATE_HOUSING_1");
     std::istringstream in(source.substr(section+1));std::string tag;size_t count=0;in>>tag>>count;
@@ -19,7 +23,7 @@ inline void downgrade_save_67_to_66(std::string& source){
     source.replace(0,std::string("POLYEC_REALM_67").size(),"POLYEC_REALM_66");
 }
 inline void downgrade_save_66_to_65(std::string& source){
-    if(source.rfind("POLYEC_REALM_67 ",0)==0)downgrade_save_67_to_66(source);
+        normalize_schema68_fixture(source);if(source.rfind("POLYEC_REALM_67 ",0)==0)downgrade_save_67_to_66(source);
     if(source.rfind("POLYEC_REALM_66 ",0)!=0)throw std::runtime_error("fixture is not schema66");
     const size_t section=source.rfind(" MILITARY_RAID_2 ");
     if(section==std::string::npos)throw std::runtime_error("schema66 fixture lacks MILITARY_RAID_2");
@@ -45,7 +49,7 @@ inline void downgrade_save_66_to_65(std::string& source){
     source.replace(0,std::string("POLYEC_REALM_66").size(),"POLYEC_REALM_65");
 }
 inline void downgrade_save_64_to_63(std::string& source){
-    if(source.rfind("POLYEC_REALM_67 ",0)==0||source.rfind("POLYEC_REALM_66 ",0)==0)downgrade_save_66_to_65(source);
+        normalize_schema68_fixture(source);if(source.rfind("POLYEC_REALM_67 ",0)==0||source.rfind("POLYEC_REALM_66 ",0)==0)downgrade_save_66_to_65(source);
     if(source.rfind("POLYEC_REALM_65 ",0)==0){
         const auto council=source.rfind(" MUNICIPAL_COUNCIL_1 ");
         if(council==std::string::npos)throw std::runtime_error("schema65 fixture lacks MUNICIPAL_COUNCIL_1");
@@ -59,7 +63,7 @@ inline void downgrade_save_64_to_63(std::string& source){
     source.replace(0,std::string("POLYEC_REALM_64").size(),"POLYEC_REALM_63");
 }
 inline void downgrade_save_60_to_59(std::string& source){
-    if(source.rfind("POLYEC_REALM_67 ",0)==0||source.rfind("POLYEC_REALM_66 ",0)==0)downgrade_save_66_to_65(source);
+        normalize_schema68_fixture(source);if(source.rfind("POLYEC_REALM_67 ",0)==0||source.rfind("POLYEC_REALM_66 ",0)==0)downgrade_save_66_to_65(source);
     if(source.rfind("POLYEC_REALM_65 ",0)==0)downgrade_save_64_to_63(source);
     if(source.rfind("POLYEC_REALM_64 ",0)==0)downgrade_save_64_to_63(source);
     if((source.rfind("POLYEC_REALM_63 ",0)==0||source.rfind("POLYEC_REALM_62 ",0)==0))
@@ -77,7 +81,7 @@ inline void downgrade_save_60_to_59(std::string& source){
     source.replace(0,std::string("POLYEC_REALM_60").size(),"POLYEC_REALM_59");
 }
 inline void downgrade_save_59_to_58(std::string& source){
-    if(source.rfind("POLYEC_REALM_67 ",0)==0||source.rfind("POLYEC_REALM_66 ",0)==0)downgrade_save_66_to_65(source);
+        normalize_schema68_fixture(source);if(source.rfind("POLYEC_REALM_67 ",0)==0||source.rfind("POLYEC_REALM_66 ",0)==0)downgrade_save_66_to_65(source);
     if(source.rfind("POLYEC_REALM_65 ",0)==0)downgrade_save_64_to_63(source);
     if(source.rfind("POLYEC_REALM_64 ",0)==0)downgrade_save_64_to_63(source);
     if((source.rfind("POLYEC_REALM_63 ",0)==0||source.rfind("POLYEC_REALM_62 ",0)==0)||source.rfind("POLYEC_REALM_61 ",0)==0||source.rfind("POLYEC_REALM_60 ",0)==0)downgrade_save_60_to_59(source);
@@ -108,7 +112,7 @@ inline void downgrade_save_59_to_58(std::string& source){
     source.replace(0,std::string("POLYEC_REALM_59").size(),"POLYEC_REALM_58");
 }
 inline void downgrade_save_58_to_57(std::string& source){
-    if((source.rfind("POLYEC_REALM_63 ",0)==0||source.rfind("POLYEC_REALM_62 ",0)==0)||source.rfind("POLYEC_REALM_61 ",0)==0||source.rfind("POLYEC_REALM_60 ",0)==0)downgrade_save_60_to_59(source);
+        normalize_schema68_fixture(source);if((source.rfind("POLYEC_REALM_63 ",0)==0||source.rfind("POLYEC_REALM_62 ",0)==0)||source.rfind("POLYEC_REALM_61 ",0)==0||source.rfind("POLYEC_REALM_60 ",0)==0)downgrade_save_60_to_59(source);
     if((source.rfind("POLYEC_REALM_63 ",0)==0||source.rfind("POLYEC_REALM_62 ",0)==0)||source.rfind("POLYEC_REALM_61 ",0)==0||source.rfind("POLYEC_REALM_60 ",0)==0||source.rfind("POLYEC_REALM_59 ",0)==0)downgrade_save_59_to_58(source);
     if(source.rfind("POLYEC_REALM_58 ",0)!=0)throw std::runtime_error("fixture is not schema58");
     std::vector<std::pair<size_t,size_t>> tokens;
@@ -133,7 +137,7 @@ inline void downgrade_save_58_to_57(std::string& source){
     source.replace(0,std::string("POLYEC_REALM_58").size(),"POLYEC_REALM_57");
 }
 inline void downgrade_save_57_to_56(std::string& source){
-    if(source.rfind("POLYEC_REALM_57 ",0)!=0)throw std::runtime_error("fixture is not schema57");
+        normalize_schema68_fixture(source);if(source.rfind("POLYEC_REALM_57 ",0)!=0)throw std::runtime_error("fixture is not schema57");
     struct Span{size_t begin=0,end=0;std::string value;};
     std::vector<Span> words;
     for(size_t pos=0;pos<source.size();){
@@ -164,7 +168,7 @@ inline void downgrade_save_57_to_56(std::string& source){
     source.replace(0,std::string("POLYEC_REALM_57").size(),"POLYEC_REALM_56");
 }
 inline void downgrade_save_56_to_55(std::string& source){
-    if((source.rfind("POLYEC_REALM_63 ",0)==0||source.rfind("POLYEC_REALM_62 ",0)==0)||source.rfind("POLYEC_REALM_61 ",0)==0||source.rfind("POLYEC_REALM_60 ",0)==0||source.rfind("POLYEC_REALM_59 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_58 ",0)==0)downgrade_save_58_to_57(source);
+        normalize_schema68_fixture(source);if((source.rfind("POLYEC_REALM_63 ",0)==0||source.rfind("POLYEC_REALM_62 ",0)==0)||source.rfind("POLYEC_REALM_61 ",0)==0||source.rfind("POLYEC_REALM_60 ",0)==0||source.rfind("POLYEC_REALM_59 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_58 ",0)==0)downgrade_save_58_to_57(source);
     if(source.rfind("POLYEC_REALM_57 ",0)==0)downgrade_save_57_to_56(source);
     if(source.rfind("POLYEC_REALM_56 ",0)!=0)throw std::runtime_error("fixture is not schema56");
     struct Span{size_t begin=0,end=0;std::string value;};
@@ -189,7 +193,7 @@ inline void downgrade_save_56_to_55(std::string& source){
     source.replace(service+1,std::string("MILITARY_SERVICE_3").size(),"MILITARY_SERVICE_2");
 }
 inline void downgrade_save_55_to_54(std::string& source){
-    if(source.rfind("POLYEC_REALM_67 ",0)==0||source.rfind("POLYEC_REALM_66 ",0)==0)downgrade_save_66_to_65(source);
+        normalize_schema68_fixture(source);if(source.rfind("POLYEC_REALM_67 ",0)==0||source.rfind("POLYEC_REALM_66 ",0)==0)downgrade_save_66_to_65(source);
     if(source.rfind("POLYEC_REALM_65 ",0)==0)downgrade_save_64_to_63(source);
     if(source.rfind("POLYEC_REALM_64 ",0)==0)downgrade_save_64_to_63(source);
     if((source.rfind("POLYEC_REALM_63 ",0)==0||source.rfind("POLYEC_REALM_62 ",0)==0)||source.rfind("POLYEC_REALM_61 ",0)==0||source.rfind("POLYEC_REALM_60 ",0)==0||source.rfind("POLYEC_REALM_59 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_58 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_57 ",0)==0)downgrade_save_57_to_56(source);
@@ -460,7 +464,7 @@ inline void downgrade_military_service_2_to_1(std::string& source){
 }
 inline void downgrade_save_51_to_50(std::string& source);
 inline void downgrade_save_54_to_53(std::string& source){
-    if((source.rfind("POLYEC_REALM_63 ",0)==0||source.rfind("POLYEC_REALM_62 ",0)==0)||source.rfind("POLYEC_REALM_61 ",0)==0||source.rfind("POLYEC_REALM_60 ",0)==0||source.rfind("POLYEC_REALM_59 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_58 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_57 ",0)==0)downgrade_save_57_to_56(source);
+        normalize_schema68_fixture(source);if((source.rfind("POLYEC_REALM_63 ",0)==0||source.rfind("POLYEC_REALM_62 ",0)==0)||source.rfind("POLYEC_REALM_61 ",0)==0||source.rfind("POLYEC_REALM_60 ",0)==0||source.rfind("POLYEC_REALM_59 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_58 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_57 ",0)==0)downgrade_save_57_to_56(source);
     if(source.rfind("POLYEC_REALM_56 ",0)==0)downgrade_save_56_to_55(source);
     if(source.rfind("POLYEC_REALM_55 ",0)==0)downgrade_save_55_to_54(source);
     if(source.rfind("POLYEC_REALM_54 ",0)!=0)throw std::runtime_error("fixture is not schema54");
@@ -474,7 +478,7 @@ inline void downgrade_save_54_to_53(std::string& source){
     source.replace(0,std::string("POLYEC_REALM_54").size(),"POLYEC_REALM_53");
 }
 inline void downgrade_save_53_to_52(std::string& source){
-    if(source.rfind("POLYEC_REALM_67 ",0)==0||source.rfind("POLYEC_REALM_66 ",0)==0)downgrade_save_66_to_65(source);
+        normalize_schema68_fixture(source);if(source.rfind("POLYEC_REALM_67 ",0)==0||source.rfind("POLYEC_REALM_66 ",0)==0)downgrade_save_66_to_65(source);
     if(source.rfind("POLYEC_REALM_65 ",0)==0)downgrade_save_64_to_63(source);
     if(source.rfind("POLYEC_REALM_64 ",0)==0)downgrade_save_64_to_63(source);
     if((source.rfind("POLYEC_REALM_63 ",0)==0||source.rfind("POLYEC_REALM_62 ",0)==0)||source.rfind("POLYEC_REALM_61 ",0)==0||source.rfind("POLYEC_REALM_60 ",0)==0||source.rfind("POLYEC_REALM_59 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_58 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_57 ",0)==0)downgrade_save_57_to_56(source);
@@ -492,7 +496,7 @@ inline void downgrade_save_53_to_52(std::string& source){
     source.replace(0,std::string("POLYEC_REALM_53").size(),"POLYEC_REALM_52");
 }
 inline void downgrade_save_52_to_51(std::string& source){
-    if((source.rfind("POLYEC_REALM_63 ",0)==0||source.rfind("POLYEC_REALM_62 ",0)==0)||source.rfind("POLYEC_REALM_61 ",0)==0||source.rfind("POLYEC_REALM_60 ",0)==0||source.rfind("POLYEC_REALM_59 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_58 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_57 ",0)==0)downgrade_save_57_to_56(source);
+        normalize_schema68_fixture(source);if((source.rfind("POLYEC_REALM_63 ",0)==0||source.rfind("POLYEC_REALM_62 ",0)==0)||source.rfind("POLYEC_REALM_61 ",0)==0||source.rfind("POLYEC_REALM_60 ",0)==0||source.rfind("POLYEC_REALM_59 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_58 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_57 ",0)==0)downgrade_save_57_to_56(source);
     if(source.rfind("POLYEC_REALM_56 ",0)==0||source.rfind("POLYEC_REALM_55 ",0)==0||source.rfind("POLYEC_REALM_54 ",0)==0||source.rfind("POLYEC_REALM_53 ",0)==0)downgrade_save_53_to_52(source);
     if(source.rfind("POLYEC_REALM_52 ",0)!=0)throw std::runtime_error("fixture is not schema52");
     const std::string foreign_marker=" FOREIGN_TRADE_2 ";
@@ -563,7 +567,7 @@ inline void downgrade_save_52_to_51(std::string& source){
     source.replace(0,std::string("POLYEC_REALM_52").size(),"POLYEC_REALM_51");
 }
 inline void downgrade_save_50_to_49(std::string& source){
-    if(source.rfind("POLYEC_REALM_67 ",0)==0||source.rfind("POLYEC_REALM_66 ",0)==0)downgrade_save_66_to_65(source);
+        normalize_schema68_fixture(source);if(source.rfind("POLYEC_REALM_67 ",0)==0||source.rfind("POLYEC_REALM_66 ",0)==0)downgrade_save_66_to_65(source);
     if(source.rfind("POLYEC_REALM_65 ",0)==0)downgrade_save_64_to_63(source);
     if(source.rfind("POLYEC_REALM_64 ",0)==0)downgrade_save_64_to_63(source);
     if((source.rfind("POLYEC_REALM_63 ",0)==0||source.rfind("POLYEC_REALM_62 ",0)==0)||source.rfind("POLYEC_REALM_61 ",0)==0||source.rfind("POLYEC_REALM_60 ",0)==0||source.rfind("POLYEC_REALM_59 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_58 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_57 ",0)==0)downgrade_save_57_to_56(source);
@@ -596,7 +600,7 @@ inline void downgrade_save_50_to_49(std::string& source){
     source.replace(0,std::string("POLYEC_REALM_50").size(),"POLYEC_REALM_49");
 }
 inline void downgrade_save_51_to_50(std::string& source){
-    if(source.rfind("POLYEC_REALM_51 ",0)!=0)throw std::runtime_error("fixture is not schema51");
+        normalize_schema68_fixture(source);if(source.rfind("POLYEC_REALM_51 ",0)!=0)throw std::runtime_error("fixture is not schema51");
     const auto section=source.find(" MILITARY_OBLIGATION_1 ");
     if(section==std::string::npos)throw std::runtime_error("fixture missing MILITARY_OBLIGATION_1 section");
     std::istringstream header(source.substr(section));std::string tag;size_t count=0;header>>tag>>count;
@@ -607,7 +611,7 @@ inline void downgrade_save_51_to_50(std::string& source){
 }
 inline void downgrade_save_49_to_48(std::string& source);
 inline void downgrade_save_48_to_47(std::string& source){
-    if(source.rfind("POLYEC_REALM_67 ",0)==0||source.rfind("POLYEC_REALM_66 ",0)==0)downgrade_save_66_to_65(source);
+        normalize_schema68_fixture(source);if(source.rfind("POLYEC_REALM_67 ",0)==0||source.rfind("POLYEC_REALM_66 ",0)==0)downgrade_save_66_to_65(source);
     if(source.rfind("POLYEC_REALM_65 ",0)==0)downgrade_save_64_to_63(source);
     if(source.rfind("POLYEC_REALM_64 ",0)==0)downgrade_save_64_to_63(source);
     if((source.rfind("POLYEC_REALM_63 ",0)==0||source.rfind("POLYEC_REALM_62 ",0)==0)||source.rfind("POLYEC_REALM_61 ",0)==0||source.rfind("POLYEC_REALM_60 ",0)==0||source.rfind("POLYEC_REALM_59 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_58 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_57 ",0)==0)downgrade_save_57_to_56(source);
@@ -621,7 +625,7 @@ inline void downgrade_save_48_to_47(std::string& source){
     source.replace(0,std::string("POLYEC_REALM_48").size(),"POLYEC_REALM_47");
 }
 inline void downgrade_save_49_to_48(std::string& source){
-    if(source.rfind("POLYEC_REALM_67 ",0)==0||source.rfind("POLYEC_REALM_66 ",0)==0)downgrade_save_66_to_65(source);
+        normalize_schema68_fixture(source);if(source.rfind("POLYEC_REALM_67 ",0)==0||source.rfind("POLYEC_REALM_66 ",0)==0)downgrade_save_66_to_65(source);
     if(source.rfind("POLYEC_REALM_65 ",0)==0)downgrade_save_64_to_63(source);
     if(source.rfind("POLYEC_REALM_64 ",0)==0)downgrade_save_64_to_63(source);
     if((source.rfind("POLYEC_REALM_63 ",0)==0||source.rfind("POLYEC_REALM_62 ",0)==0)||source.rfind("POLYEC_REALM_61 ",0)==0||source.rfind("POLYEC_REALM_60 ",0)==0||source.rfind("POLYEC_REALM_59 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_58 ",0)==0)downgrade_save_58_to_57(source);if(source.rfind("POLYEC_REALM_57 ",0)==0)downgrade_save_57_to_56(source);
@@ -637,6 +641,7 @@ inline void downgrade_save_49_to_48(std::string& source){
 }
 inline std::string downgrade_establishments_13_to_12(const std::string& source){
     std::string current=source;
+    normalize_schema68_fixture(current);
     if((current.rfind("POLYEC_REALM_63 ",0)==0||current.rfind("POLYEC_REALM_62 ",0)==0)||current.rfind("POLYEC_REALM_61 ",0)==0||current.rfind("POLYEC_REALM_60 ",0)==0||current.rfind("POLYEC_REALM_59 ",0)==0)downgrade_save_58_to_57(current);if(current.rfind("POLYEC_REALM_58 ",0)==0)downgrade_save_58_to_57(current);if(current.rfind("POLYEC_REALM_57 ",0)==0)downgrade_save_57_to_56(current);
     if(current.rfind("POLYEC_REALM_56 ",0)==0||current.rfind("POLYEC_REALM_55 ",0)==0||current.rfind("POLYEC_REALM_54 ",0)==0||current.rfind("POLYEC_REALM_53 ",0)==0)downgrade_save_53_to_52(current);
     if(current.rfind("POLYEC_REALM_52 ",0)==0)downgrade_save_52_to_51(current);
@@ -656,6 +661,7 @@ inline std::string downgrade_establishments_13_to_12(const std::string& source){
 }
 inline std::string downgrade_organization_funds_44_to_43(const std::string& source){
     std::string normalized=source;
+    normalize_schema68_fixture(normalized);
     // Current feature tests reuse old migration fixtures. Normalize the new
     // council/housing/Atlas save sections before walking back to schema44.
     if(normalized.rfind("POLYEC_REALM_67 ",0)==0||normalized.rfind("POLYEC_REALM_66 ",0)==0)downgrade_save_66_to_65(normalized);
@@ -726,6 +732,7 @@ inline std::string downgrade_establishments_10_to_9(const std::string& source){
 }
 inline std::string save_as_v34(const std::string& source){
     std::string current=source;
+    normalize_schema68_fixture(current);
     if(current.rfind("POLYEC_REALM_67 ",0)==0||current.rfind("POLYEC_REALM_66 ",0)==0)downgrade_save_66_to_65(current);
     if(current.rfind("POLYEC_REALM_65 ",0)==0)downgrade_save_64_to_63(current);
     if(current.rfind("POLYEC_REALM_64 ",0)==0)downgrade_save_64_to_63(current);

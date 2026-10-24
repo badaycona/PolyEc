@@ -6,7 +6,7 @@ const NAMES=["Thanh Điền","Hắc Sơn","Bạch Khâu","Thiết Lĩnh","Lâm G
 const CARDS=["Sổ Bộ Chuẩn Mực","Lò Đào Tạo Hoàng Gia","Người Đứng Giữa","Kho Thóc Tiền Triều","Liên Minh Công Thương","Đoàn Công Trình Hoàng Gia","Môn Sinh Khắp Chốn","Mạng Lưới Thư Trạm","Ngân Quỹ Kiến Quốc","Hiến Ước Liên Lãnh","Học Viện Bách Nghệ","Hội Đồng Khai Quốc"]
 const ACTION_NAMES=["Chờ","Mua","Bán","Vận tải","Vay","Trả nợ","Dự án","Tuyển dụng","Thuế","Cứu trợ","Điều tra","Đề nghị","Chấp thuận","Từ chối","Làm việc","Học","Nghỉ","Giao lưu","Tham gia hội","Di cư","Giúp gia đình","Bổ nhiệm","Huy động","Từ chức"]
 const GOODS=["lương khô","thực phẩm bổ sung","muối","gỗ","nhiên liệu","sắt","đồng","bạc","vàng","xơ sợi","sáp ong","vải","lụa","gia súc","ngựa","ngựa chiến","công cụ","quân nhu","vũ khí","vật liệu xây dựng","giấy","thuốc","trà","trầm hương","thủy tinh trang trí","đồ sứ tinh xảo","hàng xa xỉ","thủy tinh thường","đồ gốm thường","da thuộc"]
-const ESTABLISHMENT_NAMES=["","xưởng dệt","xưởng công cụ","xưởng quân nhu","xưởng muối","xưởng gỗ","mỏ","xưởng giấy","vườn trà","xưởng trầm","trại ngựa","lò rèn vũ khí","lò thủy tinh thường","lò gốm thường","xưởng thuộc da","vườn dược liệu","cơ sở ép và sấy hạt","xưởng cưa"]
+const ESTABLISHMENT_NAMES=["","xưởng dệt","xưởng công cụ","xưởng quân nhu","xưởng muối","xưởng gỗ","mỏ","xưởng giấy","vườn trà","xưởng trầm","trại ngựa","lò rèn vũ khí","lò thủy tinh thường","lò gốm thường","xưởng thuộc da","vườn dược liệu","cơ sở ép và sấy hạt","xưởng cưa","trại nuôi ong"]
 
 const SPECIALTY_TRIAL_PRICES=[90,55,80]
 var session: RefCounted
@@ -29,7 +29,7 @@ var save_path=ProjectSettings.globalize_path("user://realm-save.polyec")
 static func fact_kind_name(kind: int) -> String:
     if kind >= 0 and kind < ACTION_NAMES.size():
         return ACTION_NAMES[kind]
-    return {100:"Qua đời",101:"Trưởng thành",102:"Thiếu lương thực",103:"Nợ đến hạn",104:"Đề nghị hết hạn",105:"Sinh ra",106:"Augment mở sổ",107:"Đóng/mở tuyến",108:"Báo cáo kho",109:"Kết thúc điều tra",110:"Hết ngân sách lương",111:"Bước sang tuổi 75 · nguy cơ tử vong tăng",112:"Qua đời do tuổi cao",113:"Dinh dưỡng giảm do thiếu bữa",114:"Bắt đầu phục vụ quân tình nguyện",115:"Kết thúc phục vụ quân tình nguyện",227:"Bắt đầu kỳ tập kết tình nguyện",228:"Hết kỳ tập kết tình nguyện",229:"Hai bên lập cam kết giao quân tình nguyện",230:"Đến hạn cam kết nhưng còn thiếu người",231:"Người nhận chấp thuận gia hạn nghĩa vụ",232:"Cấp cứu trợ từ quỹ đô thị",234:"Đến hạn cấp lương khô nhưng còn thiếu",235:"Sovereign chấp thuận cam kết cấp lương khô",236:"Sovereign chấp thuận gia hạn lương khô",237:"Tự dùng Medicine để điều trị",238:"Ăn thêm một món thực phẩm bổ sung",248:"Đối tác khởi phát đột kích ven biển",249:"Nam Cảng đẩy lùi đợt đột kích",250:"Đối phương vượt qua phòng thủ",251:"Tình nguyện viên bị đánh gục",252:"Muối bị lấy khỏi cảng"}.get(kind,"Sự việc")
+    return {100:"Qua đời",101:"Trưởng thành",102:"Thiếu lương thực",103:"Nợ đến hạn",104:"Đề nghị hết hạn",105:"Sinh ra",106:"Augment mở sổ",107:"Đóng/mở tuyến",108:"Báo cáo kho",109:"Kết thúc điều tra",110:"Hết ngân sách lương",111:"Bước sang tuổi 75 · nguy cơ tử vong tăng",112:"Qua đời do tuổi cao",113:"Dinh dưỡng giảm do thiếu bữa",114:"Bắt đầu phục vụ quân tình nguyện",115:"Kết thúc phục vụ quân tình nguyện",227:"Bắt đầu kỳ tập kết tình nguyện",228:"Hết kỳ tập kết tình nguyện",229:"Hai bên lập cam kết giao quân tình nguyện",230:"Đến hạn cam kết nhưng còn thiếu người",231:"Người nhận chấp thuận gia hạn nghĩa vụ",232:"Cấp cứu trợ từ quỹ đô thị",234:"Đến hạn cấp lương khô nhưng còn thiếu",235:"Sovereign chấp thuận cam kết cấp lương khô",236:"Sovereign chấp thuận gia hạn lương khô",237:"Tự dùng Medicine để điều trị",238:"Ăn thêm một món thực phẩm bổ sung",239:"Đốt Beeswax cá nhân khi nghỉ · giảm 5 điểm nợ ngủ",248:"Đối tác khởi phát đột kích ven biển",249:"Nam Cảng đẩy lùi đợt đột kích",250:"Đối phương vượt qua phòng thủ",251:"Tình nguyện viên bị đánh gục",252:"Muối bị lấy khỏi cảng"}.get(kind,"Sự việc")
 
 static func good_name(good: int) -> String:
     return GOODS[clampi(good,0,GOODS.size()-1)]
@@ -45,6 +45,9 @@ static func silver_social_action_description(amount: int) -> String:
 
 static func pottery_meal_vessel_description() -> String:
     return "Đồ gốm cá nhân bền: sau bữa lương khô đã ăn, thêm tối đa 5 dinh dưỡng (giới hạn 100); bản thân đồ gốm không bị tiêu."
+
+static func beeswax_rest_description() -> String:
+    return "Nghỉ theo lịch. Khi kỳ nghỉ hoàn tất tại chỗ, Civilian ngoài quân vụ có thể đốt 1 Beeswax cá nhân nếu còn nợ ngủ; giảm thêm 5 điểm (tối thiểu 0). Không dùng sáp từ kho chung."
 
 static func travel_action_description(destination: String, days: int, mounted: bool) -> String:
     var text="Đi tới %s · %d ngày game · phí %d đồng" % [destination,days,4+2*days]
@@ -192,12 +195,12 @@ func _ready() -> void:
     if OS.get_cmdline_user_args().has("--atlas-manual-test"):
         start_atlas_manual_test()
         return
-    if not session.has_method("realm_schema") or session.realm_schema()!="realm-v34":
-        status.text="Lõi mô phỏng không khớp dữ liệu realm-v34; cần build đúng phiên bản"
+    if not session.has_method("realm_schema") or session.realm_schema()!="realm-v35":
+        status.text="Lõi mô phỏng không khớp dữ liệu realm-v35; cần build đúng phiên bản"
         return
     var paths=[]
     var hashes=[]
-    var model_root="res://models/realm-v34"
+    var model_root="res://models/realm-v35"
     for arg in OS.get_cmdline_user_args():
         if arg.begins_with("--model-root="):
             model_root=arg.trim_prefix("--model-root=")
@@ -210,7 +213,7 @@ func _ready() -> void:
             status.text="Chưa có bundle "+family
             return
         var manifest=JSON.parse_string(f.get_as_text())
-        if not manifest is Dictionary or manifest.get("schema","")!="realm-v34":
+        if not manifest is Dictionary or manifest.get("schema","")!="realm-v35":
             status.text="Sai schema policy "+family
             return
         if manifest.get("model_contract","")!=session.realm_model_contract():
@@ -386,6 +389,7 @@ static func establishment_text(items: Array, region: int) -> String:
         elif industry==13: product_good=28;product_name=GOODS[28]
         elif industry==14: product_good=29;product_name=GOODS[29]
         elif industry==17: product_good=19;product_name=GOODS[19]
+        elif industry==18: product_good=10;product_name=GOODS[10]
         var line="#%d %s · tồn kho %d %s" % [int(site.get("id",0)),ESTABLISHMENT_NAMES[industry],int(stock[product_good]) if product_good>=0 and product_good<stock.size() else 0,product_name]
         if industry in [12,13,14]:
             var source=int(site.get("source_units",0))
@@ -396,6 +400,8 @@ static func establishment_text(items: Array, region: int) -> String:
             line+=" · giá tham chiếu thử %d đ/món, chưa hiệu chuẩn" % SPECIALTY_TRIAL_PRICES[industry-12]
         elif industry==17:
             line+=" · dùng 1 Timber cùng vùng và 16 tick Work cho mỗi vật liệu xây dựng"
+        elif industry==18:
+            line+=" · còn %d source units, không phải hàng để bán; 1 Beeswax mỗi 16 tick Work" % int(site.get("source_units",0))
         lines.append(line)
     return "\n".join(lines) if not lines.is_empty() else "Chưa có xưởng trong vùng này"
 
@@ -406,7 +412,7 @@ func refresh() -> void:
         status.text="DỪNG: "+str(v.get("error",""))
         return
     run_button.text="Ⅱ  Tạm dừng" if running else "▶  Chạy thế giới"
-    status.text="KIỂM THỬ ATLAS THỦ CÔNG · NPC không tự ra quyết định; đây chưa phải bản game hoàn chỉnh" if v.get("atlas_manual_test",false) else "Policy realm-v34 · quyết định tự chủ chỉ bật sau khi có đủ 3 bộ tương thích đã huấn luyện và kiểm tra"
+    status.text="KIỂM THỬ ATLAS THỦ CÔNG · NPC không tự ra quyết định; đây chưa phải bản game hoàn chỉnh" if v.get("atlas_manual_test",false) else "Policy realm-v35 · quyết định tự chủ chỉ bật sau khi có đủ 3 bộ tương thích đã huấn luyện và kiểm tra"
     summary.text="Ngày %d  ·  %d cá thể / %d còn sống / %d trẻ em  ·  %d quyết định  ·  %d nợ / %d dự án" % [v.day,v.persons,v.alive,v.children,v.decisions,v.loans,v.projects]
     var atlas_names={}
     for site in v.get("urban_census",[]):
@@ -524,6 +530,7 @@ func refresh() -> void:
         elif a.name=="Giao lưu cùng trà": text=tea_social_action_description(a.amount)
         elif a.name=="Giao lưu cùng trầm hương": text=incense_social_action_description(a.amount)
         elif a.name=="Giao lưu cùng bạc": text=silver_social_action_description(a.amount)
+        elif a.name=="Nghỉ": text=beeswax_rest_description()
         elif a.name in ["Vận tải","Di cư"]: text=travel_action_description(region_label(a.target),a.term,a.good==15)
         elif a.name=="Mua lương quân vụ": text="Mua %d phần %s · trả từ ngân khố vùng" % [a.amount,"lương khô" if a.good==0 else "khẩu phần bổ sung"]
         elif a.name=="Gửi lương quân vụ": text="Gửi tối đa %d phần %s tới vùng #%d" % [a.amount,"lương khô" if a.good==0 else "khẩu phần bổ sung",a.target]
@@ -544,6 +551,8 @@ func refresh() -> void:
                 if a.term==-2: text="Dùng quỹ đô thị để "+text.trim_prefix("Mở ")
             elif industry==17:
                 text+=" · mỗi mẻ cần 1 Timber và 16 tick Work"
+            elif industry==18:
+                text+=" · mỗi mẻ cần 1 source unit và 16 tick Work; nguồn đầu25/100, bổ sung25 mỗi90 ngày game"
         elif a.name=="Chuyển hàng xưởng":
             text=establishment_transfer_action_text(a.good,a.amount,a.target,a.term==2)
         elif a.name.begins_with("Nhập từ đối tác "): text="Nhập %d hàng khô từ %s · giá 24 đ/món, thuế 5%%, phí tàu %d và phí cảng 2 đ/món · đến cuối ngày %d" % [a.amount,a.name.trim_prefix("Nhập từ ").trim_suffix(" qua cảng"),int(foreign_trade.get("import_route",{}).get("fee_per_unit",0)),v.day+1+int(foreign_trade.get("import_route",{}).get("travel_days",0))]

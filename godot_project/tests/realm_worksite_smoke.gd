@@ -21,10 +21,13 @@ func run() -> void:
 		"Copper deposit candidate is named clearly for the player")
 	check(RealmPanel.establishment_transfer_action_text(4, 1, 53, true) == "đưa vào xưởng nhiên liệu · tối đa 1 món · cơ sở #53",
 		"Fuel deposit candidate remains clearly named after Copper is supplied")
+	check(RealmPanel.good_name(10) == "sáp ong" and RealmPanel.beeswax_rest_description().contains("giảm thêm 5 điểm") and
+		RealmPanel.fact_kind_name(239).contains("Beeswax"),
+		"the player-facing Rest description and event explain the personal Beeswax cost and sleep-debt benefit")
 	var session = ClassDB.instantiate("PolyEcSession")
 	var schema = session.realm_schema()
-	check(schema == "realm-v34", "native core schema")
-	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v45", "native core model contract")
+	check(schema == "realm-v35", "native core schema")
+	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v46", "native core model contract")
 	for case in [[10, 12, 27, "thủy tinh thường", 90], [15, 13, 28, "đồ gốm thường", 55], [17, 14, 29, "da thuộc", 80]]:
 		var stock := []
 		stock.resize(30)
@@ -40,6 +43,13 @@ func run() -> void:
 	var sawmill_line: String = RealmPanel.establishment_text([{"id": 52, "region": 6, "industry": 17, "stock": sawmill_stock}], 6)
 	check(sawmill_line.contains("xưởng cưa") and sawmill_line.contains("vật liệu xây dựng") and sawmill_line.contains("Timber") and sawmill_line.contains("16 tick Work"),
 		"Sawmill UI names its real Timber input, construction output and Work requirement")
+	var apiary_stock := []
+	apiary_stock.resize(30)
+	apiary_stock.fill(0)
+	apiary_stock[10] = 1
+	var apiary_line: String = RealmPanel.establishment_text([{"id": 53, "region": 21, "industry": 18, "stock": apiary_stock, "source_units": 24}], 21)
+	check(apiary_line.contains("trại nuôi ong") and apiary_line.contains("sáp ong") and apiary_line.contains("24 source units") and apiary_line.contains("16 tick Work"),
+		"Apiary UI separates saleable Beeswax stock from the finite source and explains production work")
 	var census_line: String = RealmPanel.urban_census_text([{"site_name": "Nam Cảng", "urban_residents": 24, "housing_capacity": 24, "unhoused_residents": 0, "available_beds": 0}], true)
 	check(census_line.contains("sức chứa 24") and census_line.contains("còn thiếu chỗ 0") and census_line.contains("giường trống 0"),
 		"housing census UI explains resident count, capacity, unhoused residents and vacant beds")

@@ -2,7 +2,7 @@
 import polyec_env as core
 
 
-assert core.REALM_SCHEMA == "realm-v34"
+assert core.REALM_SCHEMA == "realm-v35"
 assert core.REALM_ACTIONS == 400 and core.REALM_OBS == 5182
 world = core.Realm(37, 26, 128)
 assert world.military_unit_rosters == []

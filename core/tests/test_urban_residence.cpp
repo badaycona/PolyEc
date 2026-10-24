@@ -97,12 +97,12 @@ int main() {
     check(first.fingerprint() == before_query, "census query does not mutate the world");
 
     const std::string current = first.serialize("urban-residence-test");
-    check(current.rfind("POLYEC_REALM_67 ", 0) == 0, "new save uses schema 67");
+    check(current.rfind("POLYEC_REALM_68 ", 0) == 0, "new save uses schema 68");
     Realm restored;
     std::string error;
     const bool loaded = restored.deserialize(current, "urban-residence-test", error);
-    if (!loaded) std::cerr << "schema 67 roundtrip error: " << error << '\n';
-    check(loaded, "schema 67 roundtrip loads");
+    if (!loaded) std::cerr << "schema 68 roundtrip error: " << error << '\n';
+    check(loaded, "schema 68 roundtrip loads");
     check(restored.invariant() && restored.urban_census() == first.urban_census(), "roundtrip preserves residence and census");
 
     std::string legacy64=current;

@@ -56,7 +56,7 @@ int main(){try{
     check(world.establishments()[0].source_units==99,"Incense source does not regenerate as game days pass");
 
     const std::string saved=world.serialize("incense-works-trial-1");
-    check(saved.rfind("POLYEC_REALM_67 ",0)==0&&saved.find(" ESTABLISH_14 1 ")!=std::string::npos,
+    check(saved.rfind("POLYEC_REALM_68 ",0)==0&&saved.find(" ESTABLISH_14 1 ")!=std::string::npos,
           "save uses schema 41 and the new establishment section");
     Realm resumed(1,1,128);std::string error;
     check(resumed.deserialize(saved,"incense-works-trial-1",error),error.c_str());

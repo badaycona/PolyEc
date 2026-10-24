@@ -32,8 +32,8 @@ func run() -> void:
 		"the player-facing Gold action explains the personal item, fund payment, social gain and adult eligibility")
 	var session = ClassDB.instantiate("PolyEcSession")
 	var schema = session.realm_schema()
-	check(schema == "realm-v37", "native core schema")
-	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v48", "native core model contract")
+	check(schema == "realm-v38", "native core schema")
+	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v49", "native core model contract")
 	for case in [[10, 12, 27, "thủy tinh thường", 90], [15, 13, 28, "đồ gốm thường", 55], [17, 14, 29, "da thuộc", 80]]:
 		var stock := []
 		stock.resize(30)
@@ -70,6 +70,20 @@ func run() -> void:
 	var gold_mine_line: String = RealmPanel.establishment_text([{"id": 55, "region": 23, "industry": 20, "stock": gold_stock, "source_units": 100}], 23)
 	check(gold_mine_line.contains("mỏ vàng") and gold_mine_line.contains("vàng") and gold_mine_line.contains("100 source units") and gold_mine_line.contains("không tái tạo") and gold_mine_line.contains("16 tick Work"),
 		"Gold Mine UI distinguishes finite ore from saleable Gold and explains production work")
+	var livestock_stock := []
+	livestock_stock.resize(30)
+	livestock_stock.fill(0)
+	livestock_stock[13] = 1
+	var ranch_line: String = RealmPanel.establishment_text([{"id": 56, "region": 18, "industry": 21, "stock": livestock_stock, "source_units": 25}], 18)
+	check(ranch_line.contains("trại chăn nuôi") and ranch_line.contains("gia súc") and ranch_line.contains("25/100") and ranch_line.contains("không mô phỏng từng con vật"),
+		"Livestock Ranch UI distinguishes the abstract herd from saleable animals")
+	var butcher_stock := []
+	butcher_stock.resize(30)
+	butcher_stock.fill(0)
+	butcher_stock[0] = 3
+	var butchery_line: String = RealmPanel.establishment_text([{"id": 57, "region": 18, "industry": 22, "stock": butcher_stock}], 18)
+	check(butchery_line.contains("lò mổ và chế biến") and butchery_line.contains("1 Livestock") and butchery_line.contains("3 DryFood"),
+		"Butchery UI explains the real Livestock input and DryFood output")
 	var census_line: String = RealmPanel.urban_census_text([{"site_name": "Nam Cảng", "urban_residents": 24, "housing_capacity": 24, "unhoused_residents": 0, "available_beds": 0}], true)
 	check(census_line.contains("sức chứa 24") and census_line.contains("còn thiếu chỗ 0") and census_line.contains("giường trống 0"),
 		"housing census UI explains resident count, capacity, unhoused residents and vacant beds")
@@ -88,7 +102,7 @@ func run() -> void:
 		var manifest = JSON.parse_string(FileAccess.get_file_as_string(base + "manifest.json"))
 		paths.append(base + family + ".onnx")
 		hashes.append(manifest.sha256)
-	var loaded = session.realm_load(paths, hashes, 37, 10000)
+	var loaded = session.realm_load(paths, hashes, 38, 10000)
 	check(not loaded, "historical realm-v6 model bundle is rejected after service actions and observation length changed")
 	var rejected = session.realm_snapshot(65)
 	check(not rejected.loaded, "incompatible bundle leaves Realm unloaded")

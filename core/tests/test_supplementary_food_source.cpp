@@ -124,7 +124,7 @@ int main(){try{
           "an exhausted source cannot produce a second batch even when another complete Work interval exists");
     RealmSupplementaryFoodTestAccess::set_source(world,site,99);
     const auto saved=world.serialize("supplementary-food-source-v1");
-    check(saved.rfind("POLYEC_REALM_70 ",0)==0&&saved.find(" ESTABLISH_14 1 ")!=std::string::npos,
+    check(saved.rfind("POLYEC_REALM_71 ",0)==0&&saved.find(" ESTABLISH_14 1 ")!=std::string::npos,
           "schema64 records both new industries while keeping establishment records readable");
     Realm loaded(1,1,128);std::string error;
     check(loaded.deserialize(saved,"supplementary-food-source-v1",error)&&

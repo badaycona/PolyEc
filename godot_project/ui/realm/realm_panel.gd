@@ -6,7 +6,7 @@ const NAMES=["Thanh Điền","Hắc Sơn","Bạch Khâu","Thiết Lĩnh","Lâm G
 const CARDS=["Sổ Bộ Chuẩn Mực","Lò Đào Tạo Hoàng Gia","Người Đứng Giữa","Kho Thóc Tiền Triều","Liên Minh Công Thương","Đoàn Công Trình Hoàng Gia","Môn Sinh Khắp Chốn","Mạng Lưới Thư Trạm","Ngân Quỹ Kiến Quốc","Hiến Ước Liên Lãnh","Học Viện Bách Nghệ","Hội Đồng Khai Quốc"]
 const ACTION_NAMES=["Chờ","Mua","Bán","Vận tải","Vay","Trả nợ","Dự án","Tuyển dụng","Thuế","Cứu trợ","Điều tra","Đề nghị","Chấp thuận","Từ chối","Làm việc","Học","Nghỉ","Giao lưu","Tham gia hội","Di cư","Giúp gia đình","Bổ nhiệm","Huy động","Từ chức"]
 const GOODS=["lương khô","thực phẩm bổ sung","muối","gỗ","nhiên liệu","sắt","đồng","bạc","vàng","xơ sợi","sáp ong","vải","lụa","gia súc","ngựa","ngựa chiến","công cụ","quân nhu","vũ khí","vật liệu xây dựng","giấy","thuốc","trà","trầm hương","thủy tinh trang trí","đồ sứ tinh xảo","hàng xa xỉ","thủy tinh thường","đồ gốm thường","da thuộc"]
-const ESTABLISHMENT_NAMES=["","xưởng dệt","xưởng công cụ","xưởng quân nhu","xưởng muối","xưởng gỗ","mỏ","xưởng giấy","vườn trà","xưởng trầm","trại ngựa","lò rèn vũ khí","lò thủy tinh thường","lò gốm thường","xưởng thuộc da","vườn dược liệu","cơ sở ép và sấy hạt","xưởng cưa","trại nuôi ong","trại nuôi tằm","mỏ vàng"]
+const ESTABLISHMENT_NAMES=["","xưởng dệt","xưởng công cụ","xưởng quân nhu","xưởng muối","xưởng gỗ","mỏ","xưởng giấy","vườn trà","xưởng trầm","trại ngựa","lò rèn vũ khí","lò thủy tinh thường","lò gốm thường","xưởng thuộc da","vườn dược liệu","cơ sở ép và sấy hạt","xưởng cưa","trại nuôi ong","trại nuôi tằm","mỏ vàng","trại chăn nuôi","lò mổ và chế biến"]
 
 const SPECIALTY_TRIAL_PRICES=[90,55,80]
 var session: RefCounted
@@ -201,12 +201,12 @@ func _ready() -> void:
     if OS.get_cmdline_user_args().has("--atlas-manual-test"):
         start_atlas_manual_test()
         return
-    if not session.has_method("realm_schema") or session.realm_schema()!="realm-v37":
-        status.text="Lõi mô phỏng không khớp dữ liệu realm-v37; cần build đúng phiên bản"
+    if not session.has_method("realm_schema") or session.realm_schema()!="realm-v38":
+        status.text="Lõi mô phỏng không khớp dữ liệu realm-v38; cần build đúng phiên bản"
         return
     var paths=[]
     var hashes=[]
-    var model_root="res://models/realm-v37"
+    var model_root="res://models/realm-v38"
     for arg in OS.get_cmdline_user_args():
         if arg.begins_with("--model-root="):
             model_root=arg.trim_prefix("--model-root=")
@@ -219,7 +219,7 @@ func _ready() -> void:
             status.text="Chưa có bundle "+family
             return
         var manifest=JSON.parse_string(f.get_as_text())
-        if not manifest is Dictionary or manifest.get("schema","")!="realm-v37":
+        if not manifest is Dictionary or manifest.get("schema","")!="realm-v38":
             status.text="Sai schema policy "+family
             return
         if manifest.get("model_contract","")!=session.realm_model_contract():
@@ -227,7 +227,7 @@ func _ready() -> void:
             return
         paths.append(root+family+".onnx")
         hashes.append(manifest.sha256)
-    if not session.realm_load(paths,hashes,37,10000):
+    if not session.realm_load(paths,hashes,38,10000):
         status.text="Không nạp được model: "+str(session.realm_snapshot().get("error",""))
         return
     refresh()
@@ -398,6 +398,8 @@ static func establishment_text(items: Array, region: int) -> String:
         elif industry==18: product_good=10;product_name=GOODS[10]
         elif industry==19: product_good=12;product_name=GOODS[12]
         elif industry==20: product_good=8;product_name=GOODS[8]
+        elif industry==21: product_good=13;product_name=GOODS[13]
+        elif industry==22: product_good=0;product_name=GOODS[0]
         var line="#%d %s · tồn kho %d %s" % [int(site.get("id",0)),ESTABLISHMENT_NAMES[industry],int(stock[product_good]) if product_good>=0 and product_good<stock.size() else 0,product_name]
         if industry in [12,13,14]:
             var source=int(site.get("source_units",0))
@@ -414,6 +416,10 @@ static func establishment_text(items: Array, region: int) -> String:
             line+=" · còn %d source units, không phải hàng để bán; 1 Silk mỗi 16 tick Work; nguồn bổ sung25 mỗi90 ngày game, tối đa100" % int(site.get("source_units",0))
         elif industry==20:
             line+=" · còn %d source units hữu hạn, không tái tạo; 1 Gold mỗi 16 tick Work" % int(site.get("source_units",0))
+        elif industry==21:
+            line+=" · tồn đàn trừu tượng %d/100; tạo 1 Livestock sau 16 tick Work; bổ sung25 mỗi90 ngày game, tối đa100; không mô phỏng từng con vật" % int(site.get("source_units",0))
+        elif industry==22:
+            line+=" · tiêu 1 Livestock trong kho xưởng để làm 3 DryFood sau 16 tick Work; cần chuyển hàng từ kho vùng vào xưởng trước"
         lines.append(line)
     return "\n".join(lines) if not lines.is_empty() else "Chưa có xưởng trong vùng này"
 
@@ -424,7 +430,7 @@ func refresh() -> void:
         status.text="DỪNG: "+str(v.get("error",""))
         return
     run_button.text="Ⅱ  Tạm dừng" if running else "▶  Chạy thế giới"
-    status.text="KIỂM THỬ ATLAS THỦ CÔNG · NPC không tự ra quyết định; đây chưa phải bản game hoàn chỉnh" if v.get("atlas_manual_test",false) else "Policy realm-v37 · quyết định tự chủ chỉ bật sau khi có đủ 3 bộ tương thích đã huấn luyện và kiểm tra"
+    status.text="KIỂM THỬ ATLAS THỦ CÔNG · NPC không tự ra quyết định; đây chưa phải bản game hoàn chỉnh" if v.get("atlas_manual_test",false) else "Policy realm-v38 · quyết định tự chủ chỉ bật sau khi có đủ 3 bộ tương thích đã huấn luyện và kiểm tra"
     summary.text="Ngày %d  ·  %d cá thể / %d còn sống / %d trẻ em  ·  %d quyết định  ·  %d nợ / %d dự án" % [v.day,v.persons,v.alive,v.children,v.decisions,v.loans,v.projects]
     var atlas_names={}
     for site in v.get("urban_census",[]):
@@ -571,6 +577,10 @@ func refresh() -> void:
                 text+=" · mỗi mẻ cần 1 source unit và 16 tick Work; nguồn đầu25/100, bổ sung25 mỗi90 ngày game"
             elif industry==20:
                 text+=" · mỗi mẻ cần 1 source unit và 16 tick Work; nguồn đầu100/100, hữu hạn và không tái tạo"
+            elif industry==21:
+                text+=" · tồn đàn ban đầu25/100; mỗi mẻ cần 1 đơn vị đàn và 16 tick Work; tăng25 mỗi90 ngày game"
+            elif industry==22:
+                text+=" · mỗi mẻ cần 1 Livestock và 16 tick Work, tạo3 DryFood"
         elif a.name=="Chuyển hàng xưởng":
             text=establishment_transfer_action_text(a.good,a.amount,a.target,a.term==2)
         elif a.name.begins_with("Nhập từ đối tác "): text="Nhập %d hàng khô từ %s · giá 24 đ/món, thuế 5%%, phí tàu %d và phí cảng 2 đ/món · đến cuối ngày %d" % [a.amount,a.name.trim_prefix("Nhập từ ").trim_suffix(" qua cảng"),int(foreign_trade.get("import_route",{}).get("fee_per_unit",0)),v.day+1+int(foreign_trade.get("import_route",{}).get("travel_days",0))]

@@ -57,7 +57,9 @@ RealmResult Realm::execute(const EstablishmentCommand& cmd){
         cmd.industry != EstablishmentIndustry::SawmillWorks &&
         cmd.industry != EstablishmentIndustry::Apiary &&
         cmd.industry != EstablishmentIndustry::SilkwormFarm &&
-        cmd.industry != EstablishmentIndustry::GoldMine) return {false, "Invalid industry"};
+        cmd.industry != EstablishmentIndustry::GoldMine &&
+        cmd.industry != EstablishmentIndustry::LivestockRanch &&
+        cmd.industry != EstablishmentIndustry::Butchery) return {false, "Invalid industry"};
     if(cmd.industry==EstablishmentIndustry::Saltworks&&cmd.region!=8)return {false,"Saltworks requires atlas region 8"};
     if(cmd.industry==EstablishmentIndustry::Forestry){
         if(cmd.region!=6)return {false,"Forestry requires atlas region 6"};
@@ -158,6 +160,14 @@ RealmResult Realm::execute(const EstablishmentCommand& cmd){
             return site.industry==EstablishmentIndustry::GoldMine&&site.region==23;
         }))return {false,"Gold source site already exists in region 23"};
     }
+    if(cmd.industry==EstablishmentIndustry::LivestockRanch||cmd.industry==EstablishmentIndustry::Butchery){
+        if(regions_!=int(kAtlasTerritoryCount)-1||cmd.region!=18)
+            return {false,"Livestock Ranch and Butchery require Atlas region 18"};
+        if(std::any_of(establishments_.begin(),establishments_.end(),[&](const Establishment& site){
+            return site.industry==cmd.industry&&site.region==18;
+        }))return {false,cmd.industry==EstablishmentIndustry::LivestockRanch?
+            "Livestock Ranch already exists in region 18":"Butchery already exists in region 18"};
+    }
     const int cap = cmd.capacity==-1?config_.default_capacity():cmd.capacity;
     if (cap < 1 || cap > kEstablishmentCapacityMax) return {false, "Invalid capacity"};
     if (cmd.funding < 1) return {false, "Insufficient funding"};
@@ -210,7 +220,7 @@ RealmResult Realm::execute(const EstablishmentCommand& cmd){
     if(sourceGood!=kNoEstablishmentSourceGood){
         e.source_good=sourceGood;
         e.source_units=(cmd.industry==EstablishmentIndustry::TeaGarden||cmd.industry==EstablishmentIndustry::Apiary||
-                        cmd.industry==EstablishmentIndustry::SilkwormFarm)?25:kEstablishmentSourceUnitsMaximum;
+                        cmd.industry==EstablishmentIndustry::SilkwormFarm||cmd.industry==EstablishmentIndustry::LivestockRanch)?25:kEstablishmentSourceUnitsMaximum;
     }
     RealmResult result{true, "Committed", 0, newId};
     reserve_append(establishments_,1000000);

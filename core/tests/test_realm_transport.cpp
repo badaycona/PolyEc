@@ -704,7 +704,7 @@ int main(int argc,char** argv){
         {
             Realm seasonal(901,26,128);
             check(seasonal.model_contract()==
-                  "realm-household-fund-goods30-config-v54-atlas-north-pass-v1"&&
+                  "realm-household-fund-goods30-config-v54-atlas-north-pass-v1-salted-meal-v1"&&
                   std::string_view(realm_schema)=="realm-v45",
                   "seasonal route semantics version the model compatibility string without changing save/model layout tag");
             RealmTransportTestAccess::set_day_for_fixture(seasonal,272);

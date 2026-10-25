@@ -551,6 +551,7 @@ class Realm {
     friend struct RealmMedicineTestAccess;
     friend struct RealmSupplementaryFoodTestAccess;
     friend struct RealmPotteryMealVesselTestAccess;
+    friend struct RealmSaltedMealTestAccess;
     friend struct RealmBeeswaxCandleTestAccess;
     friend struct RealmSilkSocialTestAccess;
     friend struct RealmGoldSocialTestAccess;
@@ -692,7 +693,7 @@ std::vector<Establishment> establishments() const { return establishments_; }
         if (schedule_book_.timeline_contract)
             result=config_.historical_defaults() ? "realm-worksite-payroll-goods30-v54" : "realm-worksite-payroll-goods30-config-v54";
         else result=config_.historical_defaults() ? "realm-household-fund-goods30-v54" : "realm-household-fund-goods30-config-v54";
-        result+="-atlas-north-pass-v1";
+        result+="-atlas-north-pass-v1-salted-meal-v1";
         if(capability_mask_!=kDefaultCapabilityMask)result+="-caps-"+std::to_string(capability_mask_);
         return result;
     }

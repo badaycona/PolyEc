@@ -167,6 +167,13 @@ void Realm::day_people(){
             }else if(p.family==Family::Civilian&&!p.military_service.active&&base_meal_consumed&&
                      p.inventory[size_t(GoodId::Pottery)]>0&&p.nutrition<100){
                 p.nutrition=std::min(100,p.nutrition+5);
+            }            if(p.family==Family::Civilian&&!p.military_service.active&&base_meal_consumed&&
+                     p.inventory[size_t(GoodId::Salt)]>0&&p.nutrition<100&&
+                     consumed_[size_t(GoodId::Salt)]<std::numeric_limits<int64_t>::max()){
+                --p.inventory[size_t(GoodId::Salt)];
+                ++consumed_[size_t(GoodId::Salt)];
+                p.nutrition=std::min(100,p.nutrition+5);
+                event(p.id,p.region,238,1,int(GoodId::Salt));
             }
             if(p.family==Family::Civilian&&!p.military_service.active&&base_meal_consumed&&
                      p.nutrition<100&&

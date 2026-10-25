@@ -289,3 +289,7 @@ add_test(NAME military_battle_tests COMMAND polyec_military_battle_tests)
 add_executable(polyec_realm_clock_replay tests/realm_clock_replay.cpp)
 target_link_libraries(polyec_realm_clock_replay PRIVATE polyec_core)
 add_test(NAME realm_clock_replay COMMAND polyec_realm_clock_replay)
+
+add_executable(polyec_salted_meal_consumer_tests tests/test_salted_meal_consumer.cpp)
+target_link_libraries(polyec_salted_meal_consumer_tests PRIVATE polyec_core)
+add_test(NAME salted_meal_consumer_tests COMMAND polyec_salted_meal_consumer_tests)

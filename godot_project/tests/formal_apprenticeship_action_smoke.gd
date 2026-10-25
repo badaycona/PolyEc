@@ -27,7 +27,7 @@ func _initialize() -> void:
 func run() -> void:
 	var session = ClassDB.instantiate("PolyEcSession")
 	check(session.realm_schema() == "realm-v45", "native extension reports the current model contract with terrain route time")
-	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v54-atlas-north-pass-v1", "native extension reports config v54")
+	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v54-atlas-north-pass-v1-salted-meal-v1", "native extension reports config v54")
 	check(session.realm_atlas_manual_start(444438, 512), "deterministic Atlas fixture starts without an old policy")
 	if failed:
 		quit(1)

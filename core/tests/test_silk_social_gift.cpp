@@ -48,7 +48,7 @@ int main(){try{
     const uint64_t authority=region+2;
     const uint64_t worker=adult_civilian(world,region);
     check(worker&&world.person(authority).taxing_authority,"Atlas region12 has a governing authority and adult civilian household head");
-    check(world.model_contract()=="realm-household-fund-goods30-config-v54-atlas-north-pass-v1"&&realm_actions==400&&realm_obs==5182,
+    check(world.model_contract()=="realm-household-fund-goods30-config-v54-atlas-north-pass-v1-salted-meal-v1"&&realm_actions==400&&realm_obs==5182,
           "Silk action advances the model contract and keeps the existing tensor sizes");
     check(world.candidates(worker)[realm_silk_social_candidate].kind==Intent::Hold,
           "Silk social action is absent when the Civilian owns no Silk");

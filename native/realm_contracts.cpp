@@ -62,9 +62,9 @@ int main(int argc,char**argv){if(argc!=6)return 2;try{
   check(!compatible_model_manifest(parsed,"civilian","wrong-contract",true,legacy,manifestError),"reject contract mismatch under dev override");
   ModelManifest preNorthPass=parsed;preNorthPass.schema=realm_schema;preNorthPass.model_contract="realm-household-fund-goods30-config-v54";
   preNorthPass.observation=realm_obs;preNorthPass.actions=realm_actions;preNorthPass.hidden=64;
-  check(!compatible_model_manifest(preNorthPass,"civilian","realm-household-fund-goods30-config-v54-atlas-north-pass-v1",false,legacy,manifestError),
+  check(!compatible_model_manifest(preNorthPass,"civilian","realm-household-fund-goods30-config-v54-atlas-north-pass-v1-salted-meal-v1",false,legacy,manifestError),
         "reject a same-shape model trained before Atlas north-pass seasonality changed route candidates and travel timing");
-  check(!compatible_model_manifest(preNorthPass,"civilian","realm-household-fund-goods30-config-v54-atlas-north-pass-v1",true,legacy,manifestError),
+  check(!compatible_model_manifest(preNorthPass,"civilian","realm-household-fund-goods30-config-v54-atlas-north-pass-v1-salted-meal-v1",true,legacy,manifestError),
         "development override cannot relabel a pre-seasonality model as trained for the current route calendar");
   parsed.actions=80;check(!compatible_model_manifest(parsed,"civilian","realm-household-fund-goods27-v20",true,legacy,manifestError),"reject old action dimension under dev override");
  parsed.actions=89;parsed.observation=1196;check(!compatible_model_manifest(parsed,"civilian","realm-household-fund-goods27-v20",true,legacy,manifestError),"dev override cannot bypass current tensor shape");

@@ -6,7 +6,7 @@ import polyec_env as core
 assert core.REALM_SCHEMA == "realm-v45"
 assert core.REALM_ACTIONS == 400 and core.REALM_OBS == 5182
 world = core.Realm(20261098, 6, 256)
-assert world.model_contract == "realm-household-fund-goods30-config-v54-atlas-north-pass-v1"
+assert world.model_contract == "realm-household-fund-goods30-config-v54-atlas-north-pass-v1-salted-meal-v1"
 assert world.apprenticeships == []
 
 saved = world.serialize("formal-apprenticeship-python-v1")

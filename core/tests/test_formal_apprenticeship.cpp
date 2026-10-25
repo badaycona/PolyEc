@@ -74,7 +74,7 @@ int main(){try{
     check(sites.size()==1,"the apprenticeship fixture has one identifiable workshop");
     const uint64_t site=sites.front().id;
     check(realm_schema==std::string_view("realm-v45")&&
-          world.model_contract()=="realm-household-fund-goods30-config-v54-atlas-north-pass-v1"&&
+          world.model_contract()=="realm-household-fund-goods30-config-v54-atlas-north-pass-v1-salted-meal-v1"&&
           realm_state==382&&realm_actions==400&&realm_obs==5182,
           "the new action meaning receives a new contract while tensor dimensions stay the same");
     const auto mentorCandidates=world.candidates(mentor);

@@ -542,6 +542,8 @@ func refresh() -> void:
         for offer in foreign_trade.get("offers",[]):
             profile.text+="\n"+foreign_trade_offer_text(offer,v.day)
     for child in commands.get_children(): commands.remove_child(child);child.queue_free()
+    if bool(p.get("sovereign",false)):
+        add_national_route_controls(v)
 
     if v.get("atlas_manual_test",false):
         add_private_housing_controls(v,p)
@@ -915,6 +917,46 @@ func add_private_housing_controls(v: Dictionary, p: Dictionary) -> void:
         if tenant>0 and (owner==actor or int(p.get("household",0))==tenant):
             button(commands,"Kết thúc hợp đồng nhà #%d" % home_id,func(): run_private_housing_command(home_id,3,tenant,str(v.fingerprint)))
 
+func add_national_route_controls(v: Dictionary) -> void:
+    var routes: Array=v.get("national_routes",[])
+    if routes.is_empty():
+        return
+    var heading=Label.new()
+    heading.text="ĐƯỜNG QUỐC GIA · CHỈ SOVEREIGN"
+    commands.add_child(heading)
+    var selector=OptionButton.new()
+    selector.name="NationalRouteSelector"
+    selector.custom_minimum_size=Vector2(0,38)
+    var route_by_index={}
+    for route in routes:
+        var route_index=int(route.get("index",-1))
+        route_by_index[route_index]=route
+        var route_state="đang mở" if bool(route.get("open",false)) else "đang đóng"
+        selector.add_item("%s → %s · %s · %d ngày · %s" % [str(route.get("from_name","")),str(route.get("to_name","")),str(route.get("corridor","tuyến")),int(route.get("travel_days",0)),route_state],route_index)
+    commands.add_child(selector)
+    var route_button=Button.new()
+    route_button.name="NationalRouteAction"
+    route_button.custom_minimum_size=Vector2(0,38)
+    commands.add_child(route_button)
+    var update_button=func(item_index: int):
+        var route_index=selector.get_item_id(item_index)
+        var route: Dictionary=route_by_index.get(route_index,{})
+        route_button.text="Đóng tuyến đã chọn" if bool(route.get("open",false)) else "Mở lại tuyến đã chọn"
+        route_button.disabled=bool(route.get("occupied_endpoint",false))
+        route_button.tooltip_text="Core sẽ từ chối nếu một đầu tuyến đang bị chiếm đóng." if route_button.disabled else "Lệnh thay đổi việc hàng mới lên đường. Hàng đã chạy tiếp tục; hàng chưa tải sẽ chờ tới khi mở lại."
+    selector.item_selected.connect(func(item_index): update_button.call(item_index))
+    selector.select(0)
+    update_button.call(0)
+    route_button.pressed.connect(func():
+        var route_index=selector.get_selected_id()
+        var route: Dictionary=route_by_index.get(route_index,{})
+        run_national_route_command(route_index,not bool(route.get("open",false)),str(v.get("fingerprint","")))
+    )
+    var notice=Label.new()
+    notice.text="Đóng tuyến: hàng đang đi vẫn tới; hàng chưa tải chờ. Mở lại tuyến để tiếp tục."
+    notice.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+    commands.add_child(notice)
+
 func refresh_route_preview() -> void:
     if route_preview_label==null or route_destination==null:
         return
@@ -945,6 +987,28 @@ func refresh_route_preview() -> void:
     else:
         text+="\nMigrate hiện không hợp lệ; lệnh thật sẽ kiểm tra lại khi gửi."
     route_preview_label.text=text
+
+func run_national_route_command(route_index: int, open: bool, expected: String) -> void:
+    if not pause_core_and_stop_ui():
+        feedback.text="Không tạm dừng được lõi Realm"
+        refresh()
+        return
+    var result: Dictionary=session.realm_national_transport_route(actor,route_index,open,expected)
+    if bool(result.get("success",false)):
+        feedback.text="Đã mở tuyến quốc gia" if open else "Đã đóng tuyến quốc gia; hàng đang đi vẫn tiếp tục"
+    else:
+        feedback.text=national_route_error_text(str(result.get("error","")))
+    refresh()
+
+func national_route_error_text(reason: String) -> String:
+    match reason:
+        "World changed; refresh before changing the national route": return "Thế giới đã đổi; hãy xem lại tuyến trước khi gửi lệnh."
+        "The Sovereign cannot change a transport route while either endpoint is occupied": return "Không thể đổi tuyến khi một trong hai vùng đang bị chiếm đóng."
+        "National transport routes require the sovereign's authority": return "Chỉ Sovereign mới được đổi tuyến quốc gia."
+        "Route already has the requested open state": return "Tuyến đã ở trạng thái được chọn."
+        "Invalid national-route index": return "Tuyến đã chọn không còn hợp lệ; hãy xem lại danh sách."
+        "National route is unavailable in this Realm profile": return "Quản lý tuyến này chỉ có trong Realm Atlas27."
+        _: return reason
 
 func toggle_run() -> void:
     if running:

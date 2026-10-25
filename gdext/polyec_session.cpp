@@ -10,6 +10,7 @@
 #include <godot_cpp/variant/packed_vector2_array.hpp>
 #include <chrono>
 #include <algorithm>
+#include <limits>
 #include <set>
 #include <memory>
 #ifdef POLYEC_AI_ENABLED
@@ -90,6 +91,7 @@ protected:
         ClassDB::bind_method(D_METHOD("realm_save", "path", "restore"), &PolyEcSession::realm_save);
         ClassDB::bind_method(D_METHOD("realm_route", "actor", "from", "to", "open"), &PolyEcSession::realm_route);
         ClassDB::bind_method(D_METHOD("realm_route_preview", "actor", "destination"), &PolyEcSession::realm_route_preview);
+        ClassDB::bind_method(D_METHOD("realm_national_transport_route", "actor", "route_index", "open", "expected"), &PolyEcSession::realm_national_transport_route);
 #endif
     }
 public:
@@ -315,6 +317,20 @@ public:
         return result;
     }
     bool realm_route(int64_t actor,int64_t from,int64_t to,bool open){return active&&realm.route(uint64_t(actor),int(from),int(to),open);}
+    Dictionary realm_national_transport_route(int64_t actor,int64_t routeIndex,bool open,const String&expected=String()){
+        Dictionary result;
+        bool success=false;
+        if(routeIndex<0||routeIndex>std::numeric_limits<uint8_t>::max())
+            result["error"]="Invalid national-route index";
+        else if(!active)
+            result["error"]="Cửa sổ không hoạt động";
+        else
+            success=realm.national_transport_route(actor>0?uint64_t(actor):0,int(routeIndex),open,expected.utf8().get_data());
+        result["success"]=success;
+        if(!result.has("error"))result["error"]=String::utf8(realm.error().c_str());
+        if(success&&realm.world())result["fingerprint"]=String::num_uint64(realm.world()->fingerprint());
+        return result;
+    }
     Dictionary realm_route_preview(int64_t actor,int64_t destination) const {
         Dictionary result;
         const auto preview = realm.route_preview(actor > 0 ? uint64_t(actor) : 0, int(destination));
@@ -395,6 +411,32 @@ public:
             row["status"]=int(course.status);row["tuition"]=course.tuition;apprenticeships.push_back(row);
         }d["apprenticeships"]=apprenticeships;
         auto&p=w->person(actor);Dictionary person;person["id"]=actor;person["age"]=p.age_days/365;person["role"]=int(p.family);person["sovereign"]=p.sovereign;person["cash"]=p.cash;person["region"]=p.region;Array personalInventory;for(const auto quantity:p.inventory)personalInventory.push_back(quantity);person["inventory"]=personalInventory;person["health"]=p.health;person["nutrition"]=p.nutrition;person["sleep_debt"]=p.body_state.sleep_debt;person["exertion"]=p.body_state.exertion;person["authority"]=p.taxing_authority;person["office"]=p.office_appointment.office;person["candidate"]=p.candidate;person["job_kind"]=p.work_assignment.job_kind;person["skill"]=p.skill;person["goal"]=p.goal;person["alive"]=p.alive;person["debt"]=w->debt(actor);person["decisions"]=int64_t(p.decisions);person["household"]=int64_t(p.household_membership.household_id);const auto&service=p.military_service;Dictionary serviceView;serviceView["active"]=service.active;serviceView["combat_consent"]=service.combat_consent;serviceView["commander"]=int64_t(service.commander);serviceView["start_day"]=service.start_day;serviceView["end_day"]=service.end_day;serviceView["source_region"]=service.source_region;serviceView["wage_per_day"]=service.wage_per_day;serviceView["escrow"]=service.escrow;serviceView["paid_total"]=service.paid_total;person["military_service"]=serviceView;Array stats;Dictionary namedStats;Array activeCapabilities;for(size_t i=0;i<polyec::kLegacyCapabilities.size();++i){const int value=p.stats.get(polyec::kLegacyCapabilities[i]);stats.push_back(value);namedStats[String::utf8(polyec::kLegacyCapabilityKeys[i])]=value;if(w->capability_active(polyec::kLegacyCapabilities[i]))activeCapabilities.push_back(String::utf8(polyec::kLegacyCapabilityKeys[i]));}person["stats"]=stats;person["legacy_capabilities"]=namedStats;person["active_capabilities"]=activeCapabilities;Dictionary capabilities;for(size_t i=0;i<polyec::kCapabilityCount;++i)capabilities[String::utf8(polyec::kCapabilityKeys[i])]=w->capability_value(actor,static_cast<polyec::CapabilityId>(i));Array capabilitySchema;for(const auto capabilityId:w->capability_schema())capabilitySchema.push_back(String::utf8(polyec::kCapabilityKeys[static_cast<size_t>(capabilityId)]));person["capabilities"]=capabilities;person["capability_schema"]=capabilitySchema;d["person"]=person;
+        if(p.sovereign&&w->regions()==int(polyec::kAtlasTerritoryCount)-1){
+            Array nationalRoutes;
+            const auto&routes=w->national_transport_routes();
+            for(size_t routeIndex=0;routeIndex<routes.size();++routeIndex){
+                const auto&route=routes[routeIndex];
+                Dictionary item;item["index"]=int(routeIndex);item["from"]=int(route.from);item["to"]=int(route.to);
+                item["from_name"]=String::utf8(polyec::kWorldAtlas[route.from].name.data());
+                item["to_name"]=String::utf8(polyec::kWorldAtlas[route.to].name.data());
+                item["open"]=route.open;item["travel_days"]=route.travel_days;item["fee_per_unit"]=route.fee_per_unit;
+                item["occupied_endpoint"]=w->region_military_occupied(route.from)||w->region_military_occupied(route.to);
+                if(route.atlas_link<polyec::kWorldAtlasLinks.size()){
+                    const auto&link=polyec::kWorldAtlasLinks[route.atlas_link];
+                    switch(link.corridor){
+                        case polyec::AtlasCorridor::GreatRiver:item["corridor"]="Đại Giang";break;
+                        case polyec::AtlasCorridor::RoadImprovement:item["corridor"]="Đường cải thiện";break;
+                        case polyec::AtlasCorridor::Coastal:item["corridor"]="Duyên hải";break;
+                        case polyec::AtlasCorridor::East:item["corridor"]="Hành lang phía Đông";break;
+                        case polyec::AtlasCorridor::North:item["corridor"]="Hành lang phía Bắc";break;
+                        case polyec::AtlasCorridor::West:item["corridor"]="Hành lang phía Tây";break;
+                        case polyec::AtlasCorridor::RoyalDomains:item["corridor"]="Đường miền triều đình";break;
+                    }
+                }
+                nationalRoutes.push_back(item);
+            }
+            d["national_routes"]=nationalRoutes;
+        }
         Array census;const auto councils=w->municipal_councils();for(const auto& row:w->urban_census())if(p.sovereign||row.territory_id==p.region){Dictionary item;item["site_id"]=int(row.site_id);item["territory_id"]=int(row.territory_id);item["site_name"]=String::utf8(polyec::kAtlasUrbanSites[row.site_id].name.data());item["urban_residents"]=int64_t(row.urban_residents);item["rural_residents"]=int64_t(row.rural_residents);item["unknown_residence"]=int64_t(row.unknown_residence);item["housing_capacity"]=row.housing_capacity;item["unhoused_residents"]=row.unhoused_residents;item["available_beds"]=row.available_beds;if(row.site_id<councils.size()){const auto&council=councils[row.site_id];item["council_representative_id"]=int64_t(council.representative);item["council_nominee_id"]=int64_t(council.nominee);item["council_nomination_day"]=council.nomination_day;item["council_term_end_day"]=council.term_end_day;}census.push_back(item);}d["urban_census"]=census;
         const auto holdings=w->land_holdings();Array visibleHoldings;Array tenantHouseholds;
         for(const auto&land:holdings)if(land.title_holder==uint64_t(actor)||p.sovereign||land.region==p.region){

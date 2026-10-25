@@ -248,6 +248,22 @@ RealmRoutePreview RealmRuntime::route_preview(uint64_t actor,int destination) co
     }
     return result;
 }
+bool RealmRuntime::national_transport_route(uint64_t actor,int route_index,bool open,
+                                           const std::string& expected){
+    if(!loaded_||!world_){error_="Realm not loaded";return false;}
+    if(world_->regions()!=int(kAtlasTerritoryCount)-1){error_="National route controls require an Atlas27 Realm";return false;}
+    if(!actor||actor>uint64_t(world_->count())){error_="Invalid national-route actor";return false;}
+    const auto&routes=world_->national_transport_routes();
+    if(route_index<0||size_t(route_index)>=routes.size()||route_index>UINT8_MAX){error_="Invalid national-route index";return false;}
+    if(!expected.empty()&&expected!=std::to_string(world_->fingerprint())){
+        error_="World changed; refresh before changing the national route";return false;
+    }
+    const auto decisions=world_->person(actor).decisions;
+    if(decisions==UINT64_MAX){error_="National-route decision sequence overflow";return false;}
+    const auto result=world_->execute(TransportRouteCommand{actor,decisions+1,uint8_t(route_index),open});
+    error_=result.success?"":result.reason;
+    return result.success;
+}
 bool RealmRuntime::land_title_transfer(uint64_t actor,uint64_t holding_id,uint64_t recipient,const std::string&expected){
     if(!loaded_||!world_||!actor||actor>uint64_t(world_->count())){error_="Invalid title transfer actor";return false;}
     if(!expected.empty()&&expected!=std::to_string(world_->fingerprint())){error_="World changed; refresh before committing this title transfer";return false;}

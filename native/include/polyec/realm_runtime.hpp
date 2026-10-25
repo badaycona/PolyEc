@@ -48,6 +48,8 @@ public:
     bool foreign_trade_offer(uint64_t actor,int partner_id,ForeignTradeOperation operation,int good,
                              int64_t quantity,const std::string& expected="");
     RealmRoutePreview route_preview(uint64_t actor,int destination) const;
+    bool national_transport_route(uint64_t actor,int route_index,bool open,
+                                  const std::string& expected="");
     bool land_title_transfer(uint64_t actor,uint64_t holding_id,uint64_t recipient,const std::string& expected="");
     bool land_use_grant(uint64_t actor,uint64_t holding_id,uint64_t grantee,const std::string& expected="");
     bool land_use_revoke(uint64_t actor,uint64_t holding_id,const std::string& expected="");

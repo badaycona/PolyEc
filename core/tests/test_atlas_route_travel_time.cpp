@@ -46,6 +46,10 @@ expected_days(const std::vector<polyec::NationalTransportRoute>& routes) {
 int main() {
     using namespace polyec;
     Realm world(20261023, 26, 512);
+    check(world.travel_days(16,17)==3,
+          "the direct northern-border road applies the three-day highland corridor time");
+    check(world.travel_days(6,7)==4,
+          "the direct western road applies the four-day forest-pass corridor time");
     auto expected = expected_days(world.national_transport_routes());
     for (size_t from = 0; from < kAtlasTerritoryCount; ++from)
         for (size_t to = 0; to < kAtlasTerritoryCount; ++to) {

@@ -73,7 +73,7 @@ int main(){try{
     const auto sites=world.establishments();
     check(sites.size()==1,"the apprenticeship fixture has one identifiable workshop");
     const uint64_t site=sites.front().id;
-    check(realm_schema==std::string_view("realm-v43")&&
+    check(realm_schema==std::string_view("realm-v45")&&
           world.model_contract()=="realm-household-fund-goods30-config-v54"&&
           realm_state==382&&realm_actions==400&&realm_obs==5182,
           "the new action meaning receives a new contract while tensor dimensions stay the same");

@@ -13,7 +13,7 @@ def main() -> None:
     checks = 0
     world = core.Realm(37, 6, 128)
     assert world.model_contract == "realm-household-fund-goods30-config-v54", world.model_contract
-    assert core.REALM_SCHEMA == "realm-v43" and core.REALM_ACTIONS == 400 and core.REALM_OBS == 5182
+    assert core.REALM_SCHEMA == "realm-v45" and core.REALM_ACTIONS == 400 and core.REALM_OBS == 5182
     checks += 2
     civilians_without_tea = [actor for actor in range(1, 129)
                              if world.person(actor)["family"] == 2 and world.person(actor)["alive"]]

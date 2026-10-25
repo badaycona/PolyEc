@@ -45,7 +45,7 @@ int main(){try{
     const uint64_t butcherWorker=adult_worker(world,region,ranchWorker);
     check(authority<=uint64_t(world.count())&&world.person(authority).taxing_authority&&ranchWorker&&butcherWorker,
           "Atlas region18 has a public authority and two adult civilian workers");
-    check(realm_schema==std::string_view("realm-v43")&&world.model_contract()==
+    check(realm_schema==std::string_view("realm-v45")&&world.model_contract()==
           "realm-household-fund-goods30-config-v54"&&realm_actions==400&&realm_obs==5182,
           "Livestock advances the model and config versions without changing tensor dimensions");
 

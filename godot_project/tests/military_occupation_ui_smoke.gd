@@ -30,7 +30,7 @@ func find_button_with_prefix(node: Node, prefix: String) -> Button:
 func run() -> void:
 	var session = ClassDB.instantiate("PolyEcSession")
 	check(session.has_method("realm_military_counterattack"), "GDExtension exposes the counterattack command")
-	check(session.realm_schema() == "realm-v44", "GDExtension reports the save and Realm model contract that includes occupation")
+	check(session.realm_schema() == "realm-v45", "GDExtension reports the Realm model contract with terrain route time")
 	check(session.realm_atlas_manual_start(9208, 512), "manual Atlas fixture starts through the current C++ Realm")
 	if failed:
 		quit(1)

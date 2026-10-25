@@ -1691,7 +1691,7 @@ int main(){try{
     const auto ration_mask=depot_world.mask(depot_governor,ration_candidates);
     const auto ration_action=ration_candidates[size_t(realm_military_ration_purchase_candidate_begin+1)];
     const auto ration_observation=depot_world.observation(depot_governor);
-    check(realm_actions==400&&realm_state==382&&realm_obs==5182&&realm_schema==std::string("realm-v43")&&
+    check(realm_actions==400&&realm_state==382&&realm_obs==5182&&realm_schema==std::string("realm-v45")&&
           ration_action.kind==Intent::BuyMilitaryRations&&ration_action.target==depot_region&&
           ration_action.good==int(GoodId::DryFood)&&ration_action.amount==4&&ration_mask[size_t(realm_military_ration_purchase_candidate_begin+1)]==1.f&&
           std::abs(ration_observation[size_t(realm_ration_depot_observation_begin+depot_region)])<1e-7f&&

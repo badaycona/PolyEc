@@ -40,6 +40,17 @@ int main() {
                      route.fee_account == TransportFeeAccount::ProvinceTreasury &&
                      route.fee_recipient_region == route.from;
           }), "assigns explicit daily capacity, fee and departure-region treasury to every direction");
+    check(std::all_of(routes.begin(),routes.end(),[](const auto& route){
+        const auto corridor=kWorldAtlasLinks[route.atlas_link].corridor;
+        const int expected=corridor==AtlasCorridor::GreatRiver?1:
+            corridor==AtlasCorridor::North?3:corridor==AtlasCorridor::West?4:2;
+        return route.travel_days==expected;
+    }),"assigns the versioned terrain travel time to every direction of all Atlas corridors");
+    check(std::all_of(routes.begin(),routes.end(),[](const auto& route){
+        if(route.atlas_link==15)return route.travel_days==3;
+        if(route.atlas_link==20)return route.travel_days==4;
+        return true;
+    }),"both bi-directional northern and western mountain roads inherit their corridor resistance");
 
     const auto river_fast = NationalTransportManager::plan(
         0, 0, 8, 1, TransportServiceGoal::Fastest, routes);

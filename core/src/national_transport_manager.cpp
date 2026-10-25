@@ -16,6 +16,22 @@ AtlasRouteMode configured_mode(const AtlasLink& link) noexcept {
     return link.mode;
 }
 
+int configured_travel_days(const AtlasLink& link) noexcept {
+    // Fictional corridor resistance, versioned by the Realm model contract.
+    // River/coast/plains/royal roads keep their established timing; border
+    // uplands and the western forest-pass route add travel time.
+    switch (link.corridor) {
+        case AtlasCorridor::GreatRiver: return 1;
+        case AtlasCorridor::North: return 3;
+        case AtlasCorridor::West: return 4;
+        case AtlasCorridor::RoadImprovement:
+        case AtlasCorridor::Coastal:
+        case AtlasCorridor::East:
+        case AtlasCorridor::RoyalDomains: return 2;
+    }
+    return 2;
+}
+
 bool direction_approved(const AtlasLink& link, uint8_t from, uint8_t to) noexcept {
     if (link.direction == AtlasLinkDirection::Unspecified)
         return link.corridor == AtlasCorridor::RoyalDomains &&
@@ -65,7 +81,7 @@ std::vector<NationalTransportRoute> NationalTransportManager::default_routes() {
     for (size_t index = 0; index < kWorldAtlasLinks.size(); ++index) {
         const auto& link = kWorldAtlasLinks[index];
         const auto mode = configured_mode(link);
-        const int travel_days = mode == AtlasRouteMode::River ? 1 : 2;
+        const int travel_days = configured_travel_days(link);
         auto add = [&](uint8_t from, uint8_t to) {
             routes.push_back({uint8_t(index), from, to, mode, true, travel_days, 64, 1,
                               TransportFeeAccount::ProvinceTreasury, int(from)});

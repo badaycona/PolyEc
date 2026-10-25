@@ -49,7 +49,7 @@ int main(){try{
     const uint64_t authority=region+2;
     const uint64_t worker=eligible_civilian(world,region);
     check(worker&&world.person(authority).taxing_authority,"Atlas region23 has a mine authority and an adult civilian household head");
-    check(world.model_contract()=="realm-household-fund-goods30-config-v54"&&realm_schema==std::string_view("realm-v43")&&
+    check(world.model_contract()=="realm-household-fund-goods30-config-v54"&&realm_schema==std::string_view("realm-v45")&&
           realm_actions==400&&realm_obs==5182,"Gold social use advances the contract and keeps tensor sizes unchanged");
     check(world.candidates(worker)[realm_gold_social_candidate].kind==Intent::Hold,
           "Gold social use is absent before the civilian personally owns Gold");

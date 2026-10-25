@@ -1,1 +1,0 @@
-{"scope":"economic-curriculum-only, not full R1","test_start":30000,"test_count":100,"initial_cash":500,"noninferiority_margin_coins":25,"required_ci_lower_vs_hold":0,"required_ci_lower_vs_initial":0,"required_invalid_actions":0,"locked_before_test":true}

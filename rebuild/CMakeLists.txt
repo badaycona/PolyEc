@@ -1,0 +1,22 @@
+cmake_minimum_required(VERSION 3.20)
+project(PolyEc LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+add_library(polyec core/world.cpp core/actions.cpp core/validation.cpp core/contracts.cpp core/resources.cpp core/ledger.cpp core/production.cpp core/life.cpp core/civic.cpp core/persistence.cpp core/view.cpp)
+target_include_directories(polyec PUBLIC core)
+add_executable(polyec_core core/bridge.cpp)
+target_link_libraries(polyec_core PRIVATE polyec)
+add_executable(core_tests tests/core_tests.cpp)
+target_link_libraries(core_tests PRIVATE polyec)
+enable_testing()
+add_test(NAME core_rules COMMAND core_tests)
+
+if(WIN32)
+  add_executable(PolyEc WIN32 core/launcher_win.cpp)
+  target_link_libraries(PolyEc PRIVATE user32)
+endif()
+
+add_executable(action_tests tests/action_tests.cpp)
+target_link_libraries(action_tests PRIVATE polyec)
+add_test(NAME action_domains COMMAND action_tests)
+

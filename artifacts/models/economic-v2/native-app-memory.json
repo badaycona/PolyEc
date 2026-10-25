@@ -1,8 +1,0 @@
-{
-  "scope": "rendered Windows app, one learned merchant, six markets,64 native decisions",
-  "model": "economic-v1, same architecture as v2",
-  "peak_rss_bytes": 443875328,
-  "runtime_pid": 19508,
-  "exit_code": 0,
-  "hardware": "i7-12700K,16GB RAM,RX580,OpenGL Compatibility"
-}

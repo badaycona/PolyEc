@@ -1,0 +1,33 @@
+# Báo cáo bản thử một lãnh thổ — 2026-10-25
+
+Đã tạo một game native chạy được từ workspace mới, không dùng source/Git/assets/CMake/model/runtime của project cũ. Chỉ docs/rebuild được mang sang; một dòng64 tick trong template được sửa theo chỉ đạo mới. Chưa git init/commit/push. Việc xóa source/Git cũ vẫn chưa hoàn thành vì công cụ đã chặn; không thử né chặn và không thay đổi các worktree ngoài.
+
+## Hành vi đã triển khai
+
+Luật thử trial-a1 có5 người,6 địa điểm,144 bước/ngày (10 phút/bước), seed251025,556 đồng và hàng mở đầu hữu hạn. Giá/nhịp/cơ thể/kỹ năng là tham số thử, chưa hiệu chuẩn. Person ghép Account, Inventory, Body, Experience, Tendencies, Activity, knowledge, relations và goal; Territory giữ Location có owner/kho/job/cư trú; Organization và Office tách tài sản công khỏi ví vua. Request có trạng thái mời/nhận/hoàn tất/hủy thật.
+
+Domain sản xuất nhận job có chủ chào và worker tự chọn, giữ6 đồng lương và nguyên liệu thật trong Activity. Ruộng tiêu1 giống tạo3 food; xưởng tiêu2 gỗ tạo1 tool; không người làm thì không có hàng. Hoàn tất mới trả lương; hủy/kiệt sức trả escrow và input, không tạo output. Thực hành tăng hiệu quả cùng nhóm nghề, không cộng tiền/hàng. Vui chỉ nhân tốc độ công trong biên±3%, không nhân giá hoặc consent. Nghề/chức không khóa danh tính.
+
+Mua tại site chuyển tiền cho chủ, hàng cho người mua và thuế1/đơn vị về công quỹ. Bữa ăn tự chọn tiêu food riêng, cần thời gian chuẩn bị; đói khác vui. Uống tiêu nước giếng hữu hạn; nghỉ cần đúng nơi và quyền cư trú. Đi giữa địa điểm mất10 phút. Mục tiêu lưu qua ăn/nghỉ/công việc và có thể đổi. Không tự mua/ăn/nghỉ/nhận lời thay actor. Hết sức khỏe chặn hoạt động và tiến trình có hậu quả; chưa mô phỏng tử vong/tang chế.
+
+Vua dùng Office chi công từ100 tới người thật (tối đa50/lệnh); không tự lấy tài sản tổ chức vào ví. Mời trò chuyện phải có đối phương nhận; trao đổi tối đa3 Fact chưa biết mỗi chiều, có nguồn/thời điểm, tăng quan hệ có hướng và practice thật. Đọc công báo tại cung cung cấp sự việc công khai chưa biết; không mở bí mật. Các bên/người tại hiện trường biết việc trực tiếp; người ở cung tiếp cận công báo, người xa phải đọc hoặc nghe kể. Hai công báo khởi tạo được giao cho cả5. Player view lọc ví/cơ thể/goal khác và người ngoài tầm nhìn; bản đồ site là công khai. Debug toàn tri/điều khiển NPC có nhãn riêng.
+
+World nhận Command cùng actor/verb/target/amount/option/revision/text, registry chuyển tới domain. Chuẩn bị trên staging, Transaction kiểm nguồn/đích, validate tiền/hàng/quyền/commitment rồi đổi state; reject không đổi state. Mọi bước kiểm bảo toàn556 đồng, và đối soát hàng tồn+reservation+tiêu thụ với đầu kỳ+sản lượng. Thiết bị cố định ở site là thuộc tính riêng đã kê khai, chưa có hao mòn. Save lưu đủ tiến độ/escrow/input/tin/quan hệ/request/goal, giới hạn kích thước/số record, version và staging validation. File ghi qua temporary rồi atomic replace trên Windows. Bridge chấp nhận Unicode đường dẫn/nội dung.
+
+Godot là UI native, custom draw một bề mặt bản đồ, không scene/model riêng mỗi NPC. Chọn người/site, xem tiền/kho/cơ thể/tiến độ/tin/nhân quả; pause/play/step, save/load và gửi lệnh thật. C++ executable là bridge local dùng cùng core, UI không mô phỏng lại. Launcher PolyEc.exe mở Godot runtime mới tải chính thức trong cùng gói. Đây là bản portable kèm project/runtime, chưa phải export app tối ưu dung lượng.
+
+## Bằng chứng đã chạy
+
+- `scripts/build.cmd`: MSVC14.51, C++20, Windows x64, CRT static. Core test executable có191 checks pass; không dựa vào assert bị tắt trong Release. Log `evidence/core-build.log`. CMake được cung cấp nhưng chưa dùng để xác nhận build này.
+- Cùng world trong core: làm → hàng → lương → mua/thuế → bữa → nước/nghỉ → xưởng → mua công cụ → consent/tin/quan hệ; grant quyền công. Có đối chiếu số tiền/hàng độc lập, source thiếu tiền và thiếu hàng tách riêng; tranh một job, hủy, exhausted worker, nước cạn, actor/quyền/stale/busy reject, không auto-consume. So save/load giữa work/meal/talk, chia tick cùng kết quả, invalid/truncated/trailing/forged money/goods save reject nguyên tử. Đối chứng kỹ năng/vui và đọc công báo có tin mới.
+- `tests/bridge_smoke.py`:27 lượt gọi executable gói, kiểm Unicode tên file và mục tiêu tiếng Việt, player không điều khiển NPC, viewer sai không ghi state, lưu/tải.20 lần đọc view: trung vị15.69ms, lớn nhất45.01ms trên máy hiện tại; gồm startup process và I/O, không phải benchmark quốc gia. `evidence/bridge.json`.
+- Godot4.5 headless gọi24 bước cùng command pipeline, save/load chính xác; player view lọc dữ liệu riêng. Gửi tín hiệu nút giao diện để kiểm step/save/load; focus-out handler và delta3 giây không chạy bù. `evidence/ui-headless.log` và `ui-smoke.json`. Đây là kiểm handler/luồng UI, không thay thế thao tác chuột.
+- Đã mở cửa sổ native OpenGL thật và bấm chuột: Bắt đầu vòng thử → đi ruộng → bước thời gian → nhận job → thấy escrow6 → gửi move lúc bận bị từ chối → tiến3/6 công → nút lưu. Đã chạy vòng24 bước thêm lần nữa trong renderer thật, đọc log không có lỗi và chụp viewport ở t13; ảnh `evidence/territory.png`, log `ui-native.log`. Đã mở lại bằng launcher trong gói portable. Không tuyên bố đã kiểm mọi tổ hợp chuột, sleep vật lý hoặc khóa máy; focus/sleep đã kiểm nhánh code và quy tắc elapsed.
+
+## Giới hạn và bước tiếp
+
+Đây là vertical slice nhóm A, chưa chứng minh cân bằng hoặc game quốc gia. Chưa có RL, model, reward, Python binding/training, hai vùng, tuyến liên vùng, thuê trọ/hết hạn hợp đồng, chiến tranh, vi phạm/cưỡng chế, thị trường giá động hay benchmark lớn. Tendency lưu/xem được nhưng chưa có policy dùng nó; không coi đó là bằng chứng khác biệt hành vi tự học. Tool sản xuất/mua là tài sản thật, nhưng thiết bị site hiện cố định, chưa có chu kỳ sửa/hao mòn. Nhà có quyền cư trú fixture vô thời hạn; chưa mở giao dịch bất động sản. Cơ thể chưa có hồi phục sức khỏe/điều trị. Kịch bản24 bước luôn được ghi nhãn SCRIPT KIỂM LUẬT, không là AI.
+
+Bridge một writer, khởi động process và lưu toàn state mỗi lệnh/bước; phù hợp5 người, chưa phù hợp quy mô lớn. History hữu hạn (20k events/2k requests); chạm giới hạn reject nguyên tử thay vì tăng vô hạn. Không chạy hai cửa sổ ghi cùng session. Player công quỹ là số công khai trong slice. UI tiếng Việt, một số tên và causal log tiếng Anh. Gói thử dùng Godot editor runtime chính thức để chạy project, không có web/HTML và không yêu cầu cài IDE.
+
+Bước tiếp: người dùng chơi và phản hồi trial-a1; chưa tự mở phạm vi B hoặc huấn luyện. Tài liệu luật tại ENVIRONMENT_A.md, thiết kế gốc có chọn lọc tại rebuild/. Giấy phép runtime trong runtime/; Godot tải mới từ https://godotengine.org/download/archive/4.5-stable/ . SHA256 ZIP tải:303206071CB8BE502CFA5B1E2B37B848C280347C03F78DCC2EB8A630857F7D10 (ghi provenance, không tuyên bố đối chiếu digest bên phát hành).

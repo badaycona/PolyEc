@@ -75,6 +75,7 @@ protected:
         ClassDB::bind_method(D_METHOD("realm_military_combat_consent", "actor", "consent", "expected"), &PolyEcSession::realm_military_combat_consent,DEFVAL(String()));
         ClassDB::bind_method(D_METHOD("realm_military_raid", "partner_id", "force_units", "expected"), &PolyEcSession::realm_military_raid,DEFVAL(String()));
         ClassDB::bind_method(D_METHOD("realm_military_battle", "actor", "raid_id", "retreat", "defenders", "expected"), &PolyEcSession::realm_military_battle,DEFVAL(String()));
+        ClassDB::bind_method(D_METHOD("realm_military_counterattack", "actor", "region", "retreat", "defenders", "expected"), &PolyEcSession::realm_military_counterattack,DEFVAL(String()));
         ClassDB::bind_method(D_METHOD("realm_foreign_trade_suspension", "actor", "partner_id", "suspended", "expected"), &PolyEcSession::realm_foreign_trade_suspension,DEFVAL(String()));
         ClassDB::bind_method(D_METHOD("realm_foreign_trade_offer", "actor", "partner_id", "operation", "good", "quantity", "expected"), &PolyEcSession::realm_foreign_trade_offer,DEFVAL(String()));
         ClassDB::bind_method(D_METHOD("realm_title_transfer", "actor", "holding_id", "recipient", "expected"), &PolyEcSession::realm_title_transfer,DEFVAL(String()));
@@ -225,6 +226,15 @@ public:
         for(int64_t id:defenderIds)if(id>0)defenders.push_back(uint64_t(id));else defenders.push_back(0);
         Dictionary result;const bool success=active&&actor>0&&raidId>0&&
             realm.military_battle(uint64_t(actor),uint64_t(raidId),retreat,defenders,expected.utf8().get_data());
+        result["success"]=success;result["error"]=String::utf8(realm.error().c_str());
+        if(success&&realm.world())result["fingerprint"]=String::num_uint64(realm.world()->fingerprint());
+        return result;
+    }
+    Dictionary realm_military_counterattack(int64_t actor,int region,bool retreat,const PackedInt64Array&defenderIds,const String&expected=String()){
+        std::vector<uint64_t> defenders;defenders.reserve(size_t(defenderIds.size()));
+        for(int64_t id:defenderIds)if(id>0)defenders.push_back(uint64_t(id));else defenders.push_back(0);
+        Dictionary result;const bool success=active&&actor>0&&region>=0&&region<int(polyec::kAtlasTerritoryCount)&&
+            realm.military_counterattack(uint64_t(actor),region,retreat,defenders,expected.utf8().get_data());
         result["success"]=success;result["error"]=String::utf8(realm.error().c_str());
         if(success&&realm.world())result["fingerprint"]=String::num_uint64(realm.world()->fingerprint());
         return result;
@@ -400,7 +410,7 @@ public:
         Array militaryRaids;for(const auto&raid:w->military_raids()){
             if(!p.sovereign&&p.region!=raid.target_region)continue;
             Dictionary row;row["id"]=String::num_uint64(raid.id);row["partner_id"]=raid.partner_id;
-            row["target_region"]=raid.target_region;row["created_day"]=raid.created_day;
+            row["target_region"]=raid.target_region;row["target_region_name"]=String::utf8(polyec::kAtlasUrbanSites[size_t(raid.target_region)].name.data());row["created_day"]=raid.created_day;
             row["resolved_day"]=raid.resolved_day;row["force_units"]=raid.force_units;
             row["defense_score"]=raid.defense_score;row["attacker_losses"]=raid.attacker_losses;
             row["defender_casualties"]=raid.defender_casualties;row["salt_looted"]=raid.salt_looted;
@@ -410,13 +420,37 @@ public:
             for(const auto id:raid.supplied_defenders)suppliedDefenderIds.push_back(int64_t(id));
             row["supplied_defenders"]=suppliedDefenderIds;militaryRaids.push_back(row);
         }d["military_raids"]=militaryRaids;
-        Array battleCandidates;if(p.sovereign)for(const auto id:w->military_battle_candidates(polyec::kMilitaryRaidTargetRegion)){
-            Dictionary row;const auto&volunteer=w->person(id);row["id"]=int64_t(id);row["health"]=volunteer.health;
-            row["military_capability"]=w->capability_value(id,polyec::LegacyCapability::Military);
-            row["has_weapon"]=volunteer.inventory[size_t(polyec::GoodId::Weapon)]>0;
-            row["has_military_supply"]=volunteer.inventory[size_t(polyec::GoodId::MilitarySupply)]>0;
-            battleCandidates.push_back(row);
-        }d["military_battle_candidates"]=battleCandidates;
+        std::set<int> engagementRegions;
+        if(p.sovereign){
+            for(const auto&raid:w->military_raids())if(raid.status==polyec::MilitaryRaidStatus::Pending)engagementRegions.insert(raid.target_region);
+            const auto currentOccupations=w->military_occupations();
+            for(size_t region=0;region<currentOccupations.size();++region)if(currentOccupations[region].occupied())engagementRegions.insert(int(region));
+        }
+        Dictionary battleCandidatesByRegion;
+        for(const int region:engagementRegions){
+            Array battleCandidates;
+            if(p.sovereign)for(const auto id:w->military_battle_candidates(region)){
+                Dictionary row;const auto&volunteer=w->person(id);row["id"]=int64_t(id);row["health"]=volunteer.health;
+                row["military_capability"]=w->capability_value(id,polyec::LegacyCapability::Military);
+                row["has_weapon"]=volunteer.inventory[size_t(polyec::GoodId::Weapon)]>0;
+                row["has_military_supply"]=volunteer.inventory[size_t(polyec::GoodId::MilitarySupply)]>0;
+                battleCandidates.push_back(row);
+            }
+            battleCandidatesByRegion[region]=battleCandidates;
+        }
+        d["military_battle_candidates_by_region"]=battleCandidatesByRegion;
+        Array occupations;const auto currentOccupations=w->military_occupations();
+        const auto occupationPartners=w->foreign_trade_partners();
+        for(size_t region=0;region<currentOccupations.size();++region){
+            const auto&occupation=currentOccupations[region];if(!occupation.occupied())continue;
+            if(!p.sovereign&&p.region!=int(region))continue;
+            Dictionary item;item["region"]=int(region);item["partner_id"]=occupation.partner_id;
+            item["region_name"]=String::utf8(polyec::kAtlasUrbanSites[region].name.data());
+            item["garrison_units"]=occupation.garrison_units;
+            if(p.sovereign)item["partner_dry_food"]=occupationPartners[size_t(occupation.partner_id)].goods[size_t(polyec::GoodId::DryFood)];
+            occupations.push_back(item);
+        }
+        d["military_occupations"]=occupations;
         Array militaryObligations;for(const auto&item:w->military_obligations()){const bool is_member=std::find(item.member_ids.begin(),item.member_ids.end(),actor)!=item.member_ids.end();if(item.obligor!=actor&&item.recipient!=actor&&!is_member&&!(p.family==polyec::Family::Governance&&(p.region==item.source_region||p.region==item.destination_region)))continue;Dictionary row;row["id"]=int64_t(item.id);row["obligor"]=int64_t(item.obligor);row["recipient"]=int64_t(item.recipient);row["source_region"]=item.source_region;row["destination_region"]=item.destination_region;row["created_day"]=item.created_day;row["first_due_day"]=item.first_due_day;row["due_day"]=item.due_day;row["completed_day"]=item.completed_day;row["extensions"]=item.extensions;row["required_members"]=item.required_members;row["delivered_at_first_deadline"]=item.delivered_at_first_deadline;row["shortage_at_first_deadline"]=item.shortage_at_first_deadline;row["delivered_at_last_deadline"]=item.delivered_at_last_deadline;row["shortage_at_last_deadline"]=item.shortage_at_last_deadline;row["first_deadline_checked"]=item.first_deadline_checked;row["due_checked"]=item.due_checked;Array members;for(auto id:item.member_ids)members.push_back(int64_t(id));row["members"]=members;Array delivered;for(auto id:item.delivered_member_ids)delivered.push_back(int64_t(id));row["delivered_members"]=delivered;militaryObligations.push_back(row);}d["military_obligations"]=militaryObligations;
         Array militarySupplyObligations;for(const auto&item:w->military_supply_obligations()){
             if(item.obligor!=actor&&item.recipient!=actor&&

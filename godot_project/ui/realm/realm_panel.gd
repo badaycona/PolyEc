@@ -210,12 +210,12 @@ func _ready() -> void:
     if OS.get_cmdline_user_args().has("--atlas-manual-test"):
         start_atlas_manual_test()
         return
-    if not session.has_method("realm_schema") or session.realm_schema()!="realm-v43":
-        status.text="Lõi mô phỏng không khớp dữ liệu realm-v43; cần build đúng phiên bản"
+    if not session.has_method("realm_schema") or session.realm_schema()!="realm-v44":
+        status.text="Lõi mô phỏng không khớp dữ liệu realm-v44; cần build đúng phiên bản"
         return
     var paths=[]
     var hashes=[]
-    var model_root="res://models/realm-v43"
+    var model_root="res://models/realm-v44"
     for arg in OS.get_cmdline_user_args():
         if arg.begins_with("--model-root="):
             model_root=arg.trim_prefix("--model-root=")
@@ -228,7 +228,7 @@ func _ready() -> void:
             status.text="Chưa có bundle "+family
             return
         var manifest=JSON.parse_string(f.get_as_text())
-        if not manifest is Dictionary or manifest.get("schema","")!="realm-v43":
+        if not manifest is Dictionary or manifest.get("schema","")!="realm-v44":
             status.text="Sai schema policy "+family
             return
         if manifest.get("model_contract","")!=session.realm_model_contract():
@@ -342,14 +342,23 @@ static func military_raid_text(raid: Dictionary) -> String:
     var partner_labels=["A","B","C"]
     var partner_id=clampi(int(raid.get("partner_id",0)),0,partner_labels.size()-1)
     var status=int(raid.get("status",0))
+    var target_name=str(raid.get("target_region_name",region_label(int(raid.get("target_region",8)))))
     var defense_detail="Điểm phòng thủ %d · mỗi người mang Leather cá nhân được thêm 1 điểm và không mất món đó" % int(raid.get("defense_score",0))
     if status==0:
-        return "Đối tác %s đã đưa %d đơn vị tới Nam Cảng · đang chờ Lãnh chủ trả lời" % [partner_labels[partner_id],int(raid.get("force_units",0))]
+        return "Đối tác %s đã đưa %d đơn vị tới %s · đang chờ Lãnh chủ trả lời" % [partner_labels[partner_id],int(raid.get("force_units",0)),target_name]
     if status==1:
-        return "Đối tác %s bị đẩy lui · %s · %d đơn vị bị mất · %d tình nguyện viên bị đánh gục · %d người đã dùng một quân nhu cá nhân; quy trình tử vong chạy ở ngày kế tiếp" % [partner_labels[partner_id],defense_detail,int(raid.get("attacker_losses",0)),int(raid.get("defender_casualties",0)),raid.get("supplied_defenders",[]).size()]
+        return "Đối tác %s bị đẩy lui tại %s · %s · %d đơn vị bị mất · %d tình nguyện viên bị đánh gục · %d người đã dùng một quân nhu cá nhân; quy trình tử vong chạy ở ngày kế tiếp" % [partner_labels[partner_id],target_name,defense_detail,int(raid.get("attacker_losses",0)),int(raid.get("defender_casualties",0)),raid.get("supplied_defenders",[]).size()]
     if status==2:
-        return "Đối tác %s vượt qua phòng thủ · %s · %d tình nguyện viên bị đánh gục · %d người đã dùng một quân nhu cá nhân; quy trình tử vong chạy ở ngày kế tiếp · lấy %d Salt" % [partner_labels[partner_id],defense_detail,int(raid.get("defender_casualties",0)),raid.get("supplied_defenders",[]).size(),int(raid.get("salt_looted",0))]
-    return "Lãnh chủ rút quân trước đợt đột kích của đối tác %s · đối phương lấy %d Salt" % [partner_labels[partner_id],int(raid.get("salt_looted",0))]
+        return "Đối tác %s vượt qua phòng thủ tại %s · %s · %d tình nguyện viên bị đánh gục · %d người đã dùng một quân nhu cá nhân; quy trình tử vong chạy ở ngày kế tiếp · lấy %d Salt" % [partner_labels[partner_id],target_name,defense_detail,int(raid.get("defender_casualties",0)),raid.get("supplied_defenders",[]).size(),int(raid.get("salt_looted",0))]
+    return "Lãnh chủ rút quân trước đợt đột kích của đối tác %s tại %s · đối phương lấy %d Salt" % [partner_labels[partner_id],target_name,int(raid.get("salt_looted",0))]
+
+static func military_occupation_text(occupation: Dictionary) -> String:
+    var partner_labels=["A","B","C"]
+    var partner_id=clampi(int(occupation.get("partner_id",0)),0,partner_labels.size()-1)
+    var text_value="%s · đối tác %s đang giữ %d quân" % [str(occupation.get("region_name",region_label(int(occupation.get("region",-1))))),partner_labels[partner_id],int(occupation.get("garrison_units",0))]
+    if occupation.has("partner_dry_food"):
+        text_value+=" · kho đối tác còn %d lương khô (đủ %d ngày cho riêng đội quân này nếu không có nơi khác cần tiếp tế)" % [int(occupation.partner_dry_food),int(occupation.partner_dry_food)/maxi(1,int(occupation.get("garrison_units",1)))]
+    return text_value
 
 static func military_obligation_text(items: Array) -> String:
     var lines=[]
@@ -452,7 +461,7 @@ func refresh() -> void:
         status.text="DỪNG: "+str(v.get("error",""))
         return
     run_button.text="Ⅱ  Tạm dừng" if running else "▶  Chạy thế giới"
-    status.text="KIỂM THỬ ATLAS THỦ CÔNG · NPC không tự ra quyết định; đây chưa phải bản game hoàn chỉnh" if v.get("atlas_manual_test",false) else "Policy realm-v43 · quyết định tự chủ chỉ bật sau khi có đủ 3 bộ tương thích đã huấn luyện và kiểm tra"
+    status.text="KIỂM THỬ ATLAS THỦ CÔNG · NPC không tự ra quyết định; đây chưa phải bản game hoàn chỉnh" if v.get("atlas_manual_test",false) else "Policy realm-v44 · quyết định tự chủ chỉ bật sau khi có đủ 3 bộ tương thích đã huấn luyện và kiểm tra"
     summary.text="Ngày %d  ·  %d cá thể / %d còn sống / %d trẻ em  ·  %d quyết định  ·  %d nợ / %d dự án" % [v.day,v.persons,v.alive,v.children,v.decisions,v.loans,v.projects]
     var atlas_names={}
     for site in v.get("urban_census",[]):
@@ -525,22 +534,28 @@ func refresh() -> void:
     if int(p.get("role",-1))==2 and int(p.get("age",0))>=6 and (inventory.size()<=7 or int(inventory[7])==0):
         add_silver_social_market_control(v,p)
     var military_raids: Array=v.get("military_raids",[])
+    var occupation_rows: Array=v.get("military_occupations",[])
+    for occupation in occupation_rows:
+        profile.text+="\nKiểm soát quân sự: "+military_occupation_text(occupation)
     if bool(p.get("sovereign",false)):
-        var pending_raid: Dictionary={}
+        var candidates_by_region: Dictionary=v.get("military_battle_candidates_by_region",{})
+        var has_pending_raid=false
         for raid in military_raids:
-            if int(raid.get("status",-1))==0: pending_raid=raid;break
-        if not pending_raid.is_empty():
-            var battle_notice=Label.new()
-            battle_notice.text=military_raid_text(pending_raid)
-            commands.add_child(battle_notice)
-            var battle_candidates: Array=v.get("military_battle_candidates",[])
+            if int(raid.get("status",-1))!=0: continue
+            has_pending_raid=true
+            var battle_notice=Label.new();battle_notice.text=military_raid_text(raid);commands.add_child(battle_notice)
+            var target_region=int(raid.get("target_region",8))
+            var battle_candidates: Array=candidates_by_region.get(target_region,[])
             var defender_ids=PackedInt64Array()
-            for candidate in battle_candidates: defender_ids.append(int(candidate.get("id",0)))
-            var defend_button=button(commands,"Phòng thủ bằng %d tình nguyện viên đủ điều kiện tại cảng" % defender_ids.size(),func(): run_military_battle(actor,int(pending_raid.get("id",0)),false,defender_ids,str(v.fingerprint)))
+            for candidate in battle_candidates:
+                if defender_ids.size()>=16: break
+                defender_ids.append(int(candidate.get("id",0)))
+            var target_name=str(raid.get("target_region_name",region_label(target_region)))
+            var defend_button=button(commands,"Phòng thủ vùng %s bằng %d tình nguyện viên đủ điều kiện" % [target_name,defender_ids.size()],func(): run_military_battle(actor,int(raid.get("id",0)),false,defender_ids,str(v.fingerprint)))
             defend_button.disabled=defender_ids.is_empty()
-            defend_button.tooltip_text="Chỉ chọn người còn sống, khỏe mạnh, đã đồng ý tham chiến, đang trong kỳ tập kết và hiện có mặt tại Nam Cảng. Lõi sẽ kiểm tra lại toàn bộ điều kiện khi nhận lệnh."
-            button(commands,"Rút quân khỏi cảng",func(): run_military_battle(actor,int(pending_raid.get("id",0)),true,PackedInt64Array(),str(v.fingerprint)))
-        else:
+            defend_button.tooltip_text="Chỉ chọn người còn sống, khỏe mạnh, đã đồng ý tham chiến, đang trong kỳ tập kết và hiện có mặt đúng vùng đích. Lõi sẽ kiểm tra lại toàn bộ điều kiện khi nhận lệnh."
+            button(commands,"Rút quân tại vùng %s" % target_name,func(): run_military_battle(actor,int(raid.get("id",0)),true,PackedInt64Array(),str(v.fingerprint)))
+        if occupation_rows.is_empty() and not has_pending_raid:
             var trade_data=v.get("foreign_trade",{})
             if not trade_data.is_empty():
                 var dev_notice=Label.new()
@@ -553,6 +568,18 @@ func refresh() -> void:
                     var raid_button=button(commands,"[DEV/TEST] Mô phỏng đối tác %s đột kích với 1 đơn vị" % label,func(): run_military_raid(partner_id,1,str(v.fingerprint)))
                     raid_button.disabled=not route_open
                     raid_button.tooltip_text="Lệnh dành cho kiểm tra gameplay. Khi có AI đối tác, hành vi khởi phát sẽ do hệ thống đó quyết định; nút này chỉ tạo tình huống thử."
+        for occupation in occupation_rows:
+            var occupied_region=int(occupation.get("region",-1));var occupied_name=str(occupation.get("region_name",region_label(occupied_region)))
+            var occupation_notice=Label.new();occupation_notice.text="Kiểm soát quân sự: "+military_occupation_text(occupation);commands.add_child(occupation_notice)
+            var available: Array=candidates_by_region.get(occupied_region,[])
+            var counterattack_ids=PackedInt64Array()
+            for candidate in available:
+                if counterattack_ids.size()>=16: break
+                counterattack_ids.append(int(candidate.get("id",0)))
+            var counterattack=button(commands,"Phản công tại %s bằng %d tình nguyện viên" % [occupied_name,counterattack_ids.size()],func(): run_military_counterattack(actor,occupied_region,false,counterattack_ids,str(v.fingerprint)))
+            counterattack.disabled=counterattack_ids.is_empty()
+            counterattack.tooltip_text="Chỉ gửi người đã đồng ý tham chiến và đang hiện diện ở vùng này. Mỗi người có quân nhu cá nhân sẽ tiêu một phần; Realm xác thực lại điều kiện."
+            button(commands,"Rút lui khỏi vùng %s" % occupied_name,func(): run_military_counterattack(actor,occupied_region,true,PackedInt64Array(),str(v.fingerprint)))
     for raid in military_raids:
         var raid_history=Label.new()
         raid_history.text=military_raid_text(raid)
@@ -920,6 +947,15 @@ func run_military_battle(actor_id: int, raid_id: int, retreat: bool, defenders: 
         return
     var result=session.realm_military_battle(actor_id,raid_id,retreat,defenders,expected)
     feedback.text=("Đã ra lệnh rút quân." if retreat else "Đã xử lý trận đánh; xem kết quả và thương vong trong lịch sử.") if result.success else str(result.error)
+    refresh()
+
+func run_military_counterattack(actor_id: int, region: int, retreat: bool, defenders: PackedInt64Array, expected: String) -> void:
+    if not pause_core_and_stop_ui():
+        feedback.text="Không tạm dừng được lõi Realm"
+        refresh()
+        return
+    var result=session.realm_military_counterattack(actor_id,region,retreat,defenders,expected)
+    feedback.text=("Đã rút lui; đối tác vẫn giữ vùng." if retreat else "Đã xử lý phản công; xem tình trạng vùng và thương vong trong hồ sơ.") if result.success else str(result.error)
     refresh()
 
 func run_foreign_trade_suspension(actor_id: int, partner_id: int, suspended: bool, expected: String) -> void:

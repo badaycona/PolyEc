@@ -98,12 +98,12 @@ func _initialize() -> void:
 	checks += 4
 
 	var pending_raid := RealmPanel.military_raid_text({
-		"partner_id": 0, "force_units": 2, "status": 0,
+		"target_region": 8, "target_region_name": "Nam Cảng", "partner_id": 0, "force_units": 2, "status": 0,
 	})
 	assert(pending_raid.contains("Đối tác A đã đưa 2 đơn vị tới Nam Cảng"))
 	assert(pending_raid.contains("đang chờ Lãnh chủ trả lời"))
 	var repelled_raid := RealmPanel.military_raid_text({
-		"partner_id": 1, "force_units": 3, "status": 1,
+		"target_region": 8, "target_region_name": "Nam Cảng", "partner_id": 1, "force_units": 3, "status": 1,
 		"attacker_losses": 3, "defender_casualties": 0, "supplied_defenders": [21, 22], "defense_score": 5,
 	})
 	assert(repelled_raid.contains("Đối tác B bị đẩy lui"))
@@ -112,7 +112,7 @@ func _initialize() -> void:
 	assert(repelled_raid.contains("mỗi người mang Leather cá nhân được thêm 1 điểm và không mất món đó"))
 	assert(repelled_raid.contains("2 người đã dùng một quân nhu cá nhân"))
 	var successful_raid := RealmPanel.military_raid_text({
-		"partner_id": 2, "force_units": 4, "status": 2,
+		"target_region": 8, "target_region_name": "Nam Cảng", "partner_id": 2, "force_units": 4, "status": 2,
 		"defender_casualties": 2, "salt_looted": 3, "supplied_defenders": [21], "defense_score": 2,
 	})
 	assert(successful_raid.contains("Đối tác C vượt qua phòng thủ"))

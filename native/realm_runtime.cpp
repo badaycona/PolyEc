@@ -174,6 +174,16 @@ bool RealmRuntime::military_battle(uint64_t actor,uint64_t raid_id,bool retreat,
     error_=result.success?"":result.reason;
     return result.success;
 }
+bool RealmRuntime::military_counterattack(uint64_t actor,int region,bool retreat,
+                                          const std::vector<uint64_t>&defenders,const std::string&expected){
+    if(!loaded_||!world_||!actor||actor>uint64_t(world_->count())){error_="Invalid counterattack actor";return false;}
+    if(!expected.empty()&&expected!=std::to_string(world_->fingerprint())){error_="World changed; refresh before ordering a counterattack";return false;}
+    const auto decisions=world_->person(actor).decisions;
+    const uint64_t sequence=decisions==UINT64_MAX?UINT64_MAX:decisions+1;
+    const auto result=world_->execute(MilitaryCounterattackCommand{actor,sequence,region,retreat,defenders});
+    error_=result.success?"":result.reason;
+    return result.success;
+}
 bool RealmRuntime::foreign_trade_suspension(uint64_t actor,int partner_id,bool suspended,const std::string&expected){
     if(!loaded_||!world_||!actor||actor>uint64_t(world_->count())){error_="Invalid foreign-trade policy actor";return false;}
     if(!expected.empty()&&expected!=std::to_string(world_->fingerprint())){error_="World changed; refresh before changing foreign trade policy";return false;}

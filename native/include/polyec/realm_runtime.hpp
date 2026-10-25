@@ -30,6 +30,8 @@ public:
     bool military_raid(int partner_id,int force_units,const std::string& expected="");
     bool military_battle(uint64_t actor,uint64_t raid_id,bool retreat,const std::vector<uint64_t>& defenders,
                          const std::string& expected="");
+    bool military_counterattack(uint64_t actor,int region,bool retreat,const std::vector<uint64_t>& defenders,
+                                const std::string& expected="");
     bool foreign_trade_suspension(uint64_t actor,int partner_id,bool suspended,const std::string& expected="");
     bool foreign_trade_offer(uint64_t actor,int partner_id,ForeignTradeOperation operation,int good,
                              int64_t quantity,const std::string& expected="");

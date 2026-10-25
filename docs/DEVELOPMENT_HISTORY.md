@@ -1176,3 +1176,11 @@ Mở rộng test Paper Mill hiện có để nối một Paper đi suốt Forest
 Seed49201/Atlas27/population256. Do actor Governance còn10 tiền sau chuyến đi và giá Paper là90, test cộng100 vào ví mở đầu của actor, đồng thời cân opening-money ledger; không cấp Paper bằng fixture. Đây là giới hạn vốn fixture cần thấy rõ: game chưa có command chuyển ngân khố vùng sang ví cá nhân, còn Buy thường dùng tiền cá nhân/quỹ hộ. Một secret Fact được tạo bằng test-only access để xác nhận kết quả điều tra.
 
 Windows Debug build hai target C++ và CTest `paper_mill_tests` + `investigation_paper_tests` đạt2/2; direct runners Paper Mill99 checks và Investigation15; `git diff --check` pass. Chưa chạy Python/GDExtension/Godot, campaign dài, Profile B, stress/performance, package hoặc RL vì nhóm chỉ thêm C++ integration test và không đổi API/binding. [Plan](design/M5-paper-investigation-same-realm-integration-plan.md), [evidence đầy đủ](reports/M5.2-paper-investigation-same-realm-evidence-2026-10-25.md).
+
+## 2026-10-25 — `sawmill-council-housing-same-realm-v1`: vật liệu thật vào nhà ở công
+
+Nối trong cùng C++ Realm: Forestry tạo4 Timber → Sawmill làm4 ConstructionMaterial → mỏ vùng7 tạo2 Copper → người buôn chuyển Copper tới vùng6 → ToolWorkshop dùng Iron+Copper+Fuel làm2 Tools → cư dân đô thị tự nộp hồ sơ → Sovereign bổ nhiệm → authority cấp499 vào quỹ đô thị → đại diện mở dự án nhà ở, tiêu4 vật liệu +2 Tools +80 tiền → save/load khi công trình chạy → hoàn thành sau60 ngày, sức chứa tăng8 giường. Không đổi gameplay code.
+
+Seed20261024/Atlas27/population256, final day79. Test đánh dấu275 Tools mở đầu vùng6 đã tiêu thụ trong ledger để dự án phải dùng đúng Tools mới; `Realm::invariant()` qua sau dựng thiếu hụt. Sức chứa công vùng6 được đặt0 để tạo khủng hoảng nhà ở test được. Hai điều kiện này là fixture được report nêu rõ, không phải sự kiện tự sinh trong campaign. Iron và Fuel vẫn là hàng legacy mở đầu, nên nguồn địa lý của chúng còn thiếu.
+
+Windows Debug: CTest Sawmill housing + council2/2; direct checks56+42; `git diff --check` pass. Python/native/Godot không đổi bề mặt API trong test này nên hoãn mốc tích hợp. [Plan](design/M5-sawmill-council-housing-integration-plan.md), [evidence đầy đủ](reports/M5-sawmill-council-housing-integration-evidence-2026-10-25.md).

@@ -78,7 +78,7 @@ int main(){try{
           "site actions name Horse as the input and WarHorse as the output");
 
     const auto saved=world.serialize("warhorse-stable-trial-1");
-    check(saved.rfind("POLYEC_REALM_74 ",0)==0&&saved.find(" ESTABLISH_14 1 ")!=std::string::npos,
+    check(saved.rfind("POLYEC_REALM_75 ",0)==0&&saved.find(" ESTABLISH_14 1 ")!=std::string::npos,
           "save uses schema42 and the new establishment record tag");
     Realm resumed(1,1,128);std::string error;
     check(resumed.deserialize(saved,"warhorse-stable-trial-1",error),error.c_str());
@@ -106,7 +106,7 @@ int main(){try{
     const auto emptyTag=schema41.find("ESTABLISH_13");schema41.replace(emptyTag,std::string("ESTABLISH_13").size(),"ESTABLISH_11");
     Realm migrated(1,1,128);
     check(migrated.deserialize(schema41,"warhorse-stable-trial-1",error)&&migrated.establishments().empty()&&
-          migrated.serialize("warhorse-stable-trial-1").rfind("POLYEC_REALM_74 ",0)==0,
+          migrated.serialize("warhorse-stable-trial-1").rfind("POLYEC_REALM_75 ",0)==0,
           "schema41 migrates without inventing a Stable or Horse/WarHorse stock");
     std::cout<<"Warhorse Stable checks="<<checks<<'\n';return 0;
 }catch(const std::exception& error){

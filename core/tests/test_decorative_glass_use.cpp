@@ -1,4 +1,5 @@
 #include "polyec/realm.hpp"
+#include "current_save_fixture.hpp"
 
 #include <iostream>
 #include <stdexcept>
@@ -63,8 +64,8 @@ int main(){try{
     const uint64_t buyer=civilian_at(world,region,decorativeWorker);
     check(authority<=uint64_t(world.count())&&world.person(authority).taxing_authority&&glassWorker&&decorativeWorker&&buyer,
           "Atlas region10 has the public authority and three local adult civilians");
-    check(realm_schema==std::string_view("realm-v41")&&world.model_contract()==
-          "realm-household-fund-goods30-config-v52"&&realm_actions==400&&realm_obs==5182,
+    check(realm_schema==std::string_view("realm-v42")&&world.model_contract()==
+          "realm-household-fund-goods30-config-v53"&&realm_actions==400&&realm_obs==5182,
           "DecorativeGlass advances the model/config versions without changing tensor dimensions");
 
     const auto glassCandidate=world.candidates(authority)[size_t(realm_specialty_product_candidate_begin)];
@@ -176,7 +177,7 @@ int main(){try{
           "social use consumes the personal item, pays the region, adds15 social and occupies seven game days");
 
     const auto saved=world.serialize("decorative-glass-production-use-v1");
-    check(saved.rfind("POLYEC_REALM_74 ",0)==0,"new save writes schema72 for DecorativeGlass Works");
+    check(saved.rfind("POLYEC_REALM_75 ",0)==0,"new save writes schema72 for DecorativeGlass Works");
     Realm restored(1,1,128);std::string error;
     check(restored.deserialize(saved,"decorative-glass-production-use-v1",error)&&
           restored.fingerprint()==world.fingerprint()&&restored.invariant()&&
@@ -184,13 +185,15 @@ int main(){try{
           RealmDecorativeGlassTestAccess::consumed(restored)==consumedBefore+1,
           "schema72 roundtrip preserves both producers, stock, social use, money and busy time: "+error);
     std::string legacy=Realm(20261089,int(kAtlasTerritoryCount)-1,256).serialize("decorative-glass-legacy");
+    test_fixtures::strip_empty_apprenticeship_section(legacy);
     legacy.replace(0,std::string("POLYEC_REALM_72").size(),"POLYEC_REALM_71");
     Realm legacyLoaded(1,1,128);
     check(legacyLoaded.deserialize(legacy,"decorative-glass-legacy",error)&&
-          legacyLoaded.serialize("decorative-glass-legacy").rfind("POLYEC_REALM_74 ",0)==0,
+          legacyLoaded.serialize("decorative-glass-legacy").rfind("POLYEC_REALM_75 ",0)==0,
           "schema71 worlds without the new industry still load and write the newest save version");
 
     std::string invalidLegacy=saved;
+    test_fixtures::strip_empty_apprenticeship_section(invalidLegacy);
     invalidLegacy.replace(0,std::string("POLYEC_REALM_72").size(),"POLYEC_REALM_71");
     Realm rejectedLegacy(1,1,128);
     check(!rejectedLegacy.deserialize(invalidLegacy,"decorative-glass-invalid-legacy",error),

@@ -135,6 +135,11 @@ void bind_realm(py::module_&m){m.attr("REALM_OBS")=realm_obs;m.attr("REALM_ACTIO
     .def_property_readonly("config_values",[](const Realm&w){return w.gameplay_config().values();})
     .def_property_readonly("work_ticks_per_unit",[](const Realm&w){return w.gameplay_config().ticks_per_unit();})
     .def_property_readonly("capability_mask",&Realm::capability_mask)
+    .def_property_readonly("apprenticeships",[](const Realm&w){py::list rows;for(const auto&course:w.apprenticeships()){
+        py::dict row;row["id"]=course.id;row["mentor"]=course.mentor;row["apprentice"]=course.apprentice;
+        row["establishment_id"]=course.establishment_id;row["started_day"]=course.started_day;row["due_day"]=course.due_day;
+        row["practice_days"]=course.practice_days;row["started_tick"]=course.started_tick;row["due_tick"]=course.due_tick;
+        row["tuition"]=course.tuition;row["status"]=int(course.status);rows.append(std::move(row));}return rows;})
     .def("work_pay_remainder",&Realm::work_pay_remainder)
     .def("view",&realm_view,py::arg("observer")=1)
     .def("debt",&Realm::debt)

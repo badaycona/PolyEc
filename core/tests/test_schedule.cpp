@@ -12,7 +12,8 @@
 #include <vector>
 using namespace polyec;
 int checks=0;
-void check(bool ok,const char* label){++checks;if(!ok)throw std::runtime_error(label);}
+const char* last_check_label="start";
+void check(bool ok,const char* label){++checks;last_check_label=label;if(!ok)throw std::runtime_error(label);}
 uint64_t work_site(Realm& world,int region,uint64_t worker=129){
     for(const auto&e:world.establishments())if(e.region==region){test_fixtures::authorize_work(world,e.id,worker);return e.id;}
     const uint64_t governor=region==world.regions()?1:uint64_t(region+2);
@@ -34,8 +35,8 @@ std::string downgrade_goods_to_v12(const std::string& data){
     const size_t production_count=static_cast<size_t>(std::stoull(tokens.at(production+1)));
     size_t production_record=production+2;
     for(size_t row=0;row<production_count;++row){
-        const size_t watermark_count=static_cast<size_t>(std::stoull(tokens.at(production_record+38)));
-        const size_t record_end=production_record+39+2*watermark_count;
+        const size_t watermark_count=static_cast<size_t>(std::stoull(tokens.at(production_record+35)));
+        const size_t record_end=production_record+36+2*watermark_count;
         tokens.erase(tokens.begin()+static_cast<std::ptrdiff_t>(production_record+34),
                      tokens.begin()+static_cast<std::ptrdiff_t>(record_end));
         production_record+=34;
@@ -489,7 +490,7 @@ int main(){try{
     check(mid.execute(ScheduleCommand{A,1,ScheduleCommand::Operation::Submit,0,0,128,0,1000,ActivityKind::Work,midRegion,work_site(mid,midRegion)}).success,"mid typed submit");
     mid.advance_ticks(20);
     std::string midData=mid.serialize("test");
-    check(midData.rfind("POLYEC_REALM_51",0)==0,"current save magic");
+    check(midData.rfind("POLYEC_REALM_75",0)==0,"current save magic");
     check(midData.find(" SCHEDULE_7 ")!=std::string::npos,"current schedule tag");
     check(mid.serialize("test")==midData,"v14 deterministic save");
     Realm midRestored(2,1,128); std::string midError;
@@ -687,7 +688,7 @@ int main(){try{
     Realm migrated9(2,1,128); std::string migrate9Error;
     const bool migrated9Ok=migrated9.deserialize(typed9Data,"test",migrate9Error);
     check(migrated9Ok,migrated9Ok?"v9 migration load":migrate9Error.c_str());
-    check(migrated9.serialize("test").rfind("POLYEC_REALM_51",0)==0,"v9 re-serializes current schema");
+    check(migrated9.serialize("test").rfind("POLYEC_REALM_75",0)==0,"v9 re-serializes current schema");
     check(migrated9.schedule_book().work_present_ticks.at(A)==64,"v9 attendance preserved");
     check(migrated9.schedule_book().settled_day==1&&migrated9.schedule_book().settled_work_units.at(A)==4,"v9 settlement preserved");
     check(migrated9.schedule_book().work_present_ticks_by_region.empty()&&migrated9.schedule_book().paid_work_units_by_region.empty(),"v9 regional maps start empty");
@@ -712,7 +713,7 @@ int main(){try{
     check(typed8Data.rfind("POLYEC_REALM_8",0)==0&&typed8Data.find(" SCHEDULE_2 ")!=std::string::npos,"v8 fixture tag");
     Realm migrated8(2,1,128); std::string migrate8Error;
     check(migrated8.deserialize(typed8Data,"test",migrate8Error),"v8 migration load");
-    check(migrated8.serialize("test").rfind("POLYEC_REALM_51",0)==0,"v8 re-serializes current schema");
+    check(migrated8.serialize("test").rfind("POLYEC_REALM_75",0)==0,"v8 re-serializes current schema");
     check(migrated8.schedule_book().sessions.at(A).size()==2,"v8 sessions restored");
     check(migrated8.schedule_book().work_present_ticks.at(A)==32,"v8 attendance restored");
     check(migrated8.schedule_book().work_present_ticks_by_region.empty()&&migrated8.schedule_book().paid_work_units_by_region.empty(),"v8 regional maps start empty");
@@ -735,7 +736,7 @@ int main(){try{
     check(legacyData.find(" SCHEDULE_1 ")!=std::string::npos&&legacyData.find(" SCHEDULE_5 ")==std::string::npos,"v7 fixture tag");
     Realm migrated(2,1,128); std::string migrateError;
     check(migrated.deserialize(legacyData,"test",migrateError),"v7 migration load");
-    check(migrated.serialize("test").rfind("POLYEC_REALM_51",0)==0,"v7 re-serializes current schema");
+    check(migrated.serialize("test").rfind("POLYEC_REALM_75",0)==0,"v7 re-serializes current schema");
     auto const&migratedSession=migrated.schedule_book().sessions.at(A).front();
     check(migratedSession.kind==ActivityKind::Generic&&migratedSession.region==-1,"v7 session defaults");
     check(migrated.schedule_book().work_present_ticks.empty()&&migrated.schedule_book().work_present_ticks_by_region.empty(),"v7 attendance empty");
@@ -926,4 +927,4 @@ int main(){try{
 
     std::cout<<"schedule checks="<<checks<<"\n";
     return 0;
-}catch(const std::exception&e){std::cerr<<"FAILED after "<<checks<<" checks: "<<e.what()<<"\n";return 1;}}
+}catch(const std::exception&e){std::cerr<<"FAILED after "<<checks<<" checks (last passed/entered: "<<last_check_label<<"): "<<e.what()<<"\n";return 1;}}

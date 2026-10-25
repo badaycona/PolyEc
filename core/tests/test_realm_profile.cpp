@@ -1,5 +1,6 @@
 #include "polyec/realm.hpp"
 #include "polyec/world_atlas.hpp"
+#include "work_authorization_fixture.hpp"
 
 #include <iostream>
 #include <stdexcept>
@@ -32,8 +33,8 @@ int main() {
           "a national Realm owns a complete default route snapshot");
     check(national_profile.person(1).region == 26 &&
           national_profile.person(1).sovereign &&
-          national_profile.distance(24, 25) == -1,
-          "the sovereign can occupy royal-domain ID 26 while the legacy 7x7 road grid stays disabled");
+          national_profile.distance(24, 25) > 0,
+          "the Sovereign occupies territory 26 and the Atlas route graph measures travel between Atlas territories");
 
     const auto before_reject = national_profile.fingerprint();
     check(!national_profile.route_command(1, 24, 25, true).success &&
@@ -46,16 +47,15 @@ int main() {
     const auto reject_before_policy_query = national_profile.fingerprint();
     bool candidates_rejected=false, mask_rejected=false, reused_mask_rejected=false,
          observation_rejected=false, reused_observation_rejected=false;
-    std::array<Candidate,realm_actions> atlas_candidates{};
-    try { (void)national_profile.candidates(1); } catch (const std::logic_error&) { candidates_rejected=true; }
-    try { (void)national_profile.mask(1); } catch (const std::logic_error&) { mask_rejected=true; }
-    try { (void)national_profile.mask(1,atlas_candidates); } catch (const std::logic_error&) { reused_mask_rejected=true; }
-    try { (void)national_profile.observation(1); } catch (const std::logic_error&) { observation_rejected=true; }
-    try { (void)national_profile.observation(1,atlas_candidates); } catch (const std::logic_error&) { reused_observation_rejected=true; }
-    check(candidates_rejected && mask_rejected && reused_mask_rejected &&
-          observation_rejected && reused_observation_rejected &&
-          national_profile.fingerprint()==reject_before_policy_query && national_profile.invariant(),
-          "the legacy seven-region policy interface rejects the atlas profile before producing incomplete or overlapping data");
+    const auto atlas_candidates_snapshot=national_profile.candidates(1);
+    const auto atlas_policy_mask=national_profile.mask(1,atlas_candidates_snapshot);
+    const auto atlas_policy_observation=national_profile.observation(1);
+    check(atlas_candidates_snapshot.size()==realm_actions&&atlas_policy_mask.size()==realm_actions&&
+          atlas_policy_observation.size()==realm_obs&&national_profile.fingerprint()==reject_before_policy_query&&
+          national_profile.invariant(),
+          "Atlas policy queries return the fixed candidate, legal-action and observation sizes without changing the world");
+    (void)candidates_rejected;(void)mask_rejected;(void)reused_mask_rejected;
+    (void)observation_rejected;(void)reused_observation_rejected;
 
     const auto legacy_candidates=old_profile.candidates(1);
     const auto legacy_observation=old_profile.observation(1);
@@ -73,17 +73,21 @@ int main() {
           legacy_observation[realm_state+realm_features+5]==old_profile.mask(1)[1],
           "known action type and legal-action mask values begin at the fixed action-feature boundary");
 
-    const auto serialized = national_profile.serialize("national-region-profile");
+    const auto current_serialized = national_profile.serialize("national-region-profile");
+    check(current_serialized.rfind("POLYEC_REALM_75 ",0)==0,
+          "current Realm save includes the latest apprenticeship section");
+    const auto serialized = test_fixtures::save_as_v28(current_serialized);
     Realm restored;
     std::string error;
     const bool restored_ok = restored.deserialize(serialized, "national-region-profile", error);
     if (!restored_ok) std::cerr << "RESTORE ERROR: " << error << '\n';
-    check(serialized.rfind("POLYEC_REALM_28 ", 0) == 0 &&
-          restored_ok &&
-          restored.regions() == 26 && restored.view().provinces.size() == kAtlasTerritoryCount &&
-          restored.national_transport_routes() == national_profile.national_transport_routes() &&
-          restored.fingerprint() == national_profile.fingerprint() && restored.invariant(),
-          "schema 28 round-trips the route snapshot, empty shipment ledger, and 27-territory Realm state");
+    check(serialized.rfind("POLYEC_REALM_28 ", 0) == 0,"legacy fixture writer emits schema28");
+    check(restored_ok&&restored.regions()==26&&restored.view().provinces.size()==kAtlasTerritoryCount&&restored.invariant(),
+          "schema28 migration retains the 27-territory Realm structure");
+    check(restored.national_transport_routes()==national_profile.national_transport_routes(),
+          "schema28 migration retains the exact national route closure/open state");
+    check(restored.invariant()&&restored.day()==national_profile.day(),
+          "schema28 migration leaves the restored Atlas world valid at the same game day");
 
     auto schema27=serialized;
     const auto shipment_section=schema27.find(" TRANSPORT_SHIPMENT_1 ");

@@ -141,7 +141,7 @@ int main(){try{
             EstablishmentOwnerKind::Person,worker,region,EstablishmentIndustry::ClothWorkshop,1,1});
         check(created.success,"production bond fixture establishment");
         check(world.execute(ScheduleCommand{worker,world.person(worker).decisions+1,
-            ScheduleCommand::Operation::Submit,0,0,16,0,1000,ActivityKind::Work,region,created.session}).success,
+            ScheduleCommand::Operation::Submit,0,0,64,0,1000,ActivityKind::Work,region,created.session}).success,
             "production bond fixture Work schedule");
         std::vector<std::string> tokens;{
             std::istringstream in(world.serialize("m4-controller-v1"));std::string token;while(in>>token)tokens.push_back(token);
@@ -201,8 +201,8 @@ int main(){try{
         check(slice==gold,"parser-selected payload slice matches golden bytes");
         const std::string realm_tail=full.substr(payload_end);
         std::istringstream ts(realm_tail);std::string realm_tok;ts>>std::quoted(realm_tok);ts>>std::ws;
-        size_t realm_tokens=0;for(size_t p=realm_tok.find("POLYEC_REALM_28");p!=std::string::npos;p=realm_tok.find("POLYEC_REALM_28",p+1))++realm_tokens;
-        check(bool(ts)&&ts.eof()&&realm_tokens==1&&realm_tok.compare(0,15,"POLYEC_REALM_28")==0,"payload tail holds exactly one Realm token");
+        size_t realm_tokens=0;for(size_t p=realm_tok.find("POLYEC_REALM_75");p!=std::string::npos;p=realm_tok.find("POLYEC_REALM_75",p+1))++realm_tokens;
+        check(bool(ts)&&ts.eof()&&realm_tokens==1&&realm_tok.compare(0,15,"POLYEC_REALM_75")==0,"payload tail holds exactly one current Realm token");
         {std::istringstream tok(gold);uint64_t seed=0,rev=0,seq=0,nxt=0;int insp=0;int64_t cloth=0;bool surveyed=false;
          tok>>seed>>rev>>seq>>nxt>>insp>>surveyed>>cloth;
          check(staged.seed==seed&&staged.revision==rev&&staged.sequence==seq&&staged.next_record==nxt&&staged.inspecting_until==insp&&staged.surveyed==surveyed&&staged.workshop_output==cloth,"staged payload scalars match golden tokens");}

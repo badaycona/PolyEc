@@ -1,4 +1,5 @@
 #include "polyec/realm.hpp"
+#include "current_save_fixture.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -66,8 +67,8 @@ int main(){try{
     const uint64_t buyer=adult_civilian(world,region,worker);
     check(world.person(authority).taxing_authority&&worker&&buyer,
           "Atlas region12 provides its public authority and two adult civilians");
-    check(realm_schema==std::string_view("realm-v41")&&
-          world.model_contract()=="realm-household-fund-goods30-config-v52"&&realm_actions==400&&realm_obs==5182,
+    check(realm_schema==std::string_view("realm-v42")&&
+          world.model_contract()=="realm-household-fund-goods30-config-v53"&&realm_actions==400&&realm_obs==5182,
           "adding the luxury product versions the save/model contracts without changing model tensor sizes");
     check(world.candidates(worker)[realm_general_luxury_social_candidate].kind==Intent::Hold,
           "the private luxury event is absent until the Civilian owns the product and can pay");
@@ -184,22 +185,24 @@ int main(){try{
           "the event consumes the personal item, pays the regional fund, raises personal social and occupies14 game days");
 
     const std::string saved=world.serialize(saveName);
-    check(saved.rfind("POLYEC_REALM_74 ",0)==0,"the new atelier is written using save schema74");
+    check(saved.rfind("POLYEC_REALM_75 ",0)==0,"the new atelier is written using save schema74");
     Realm restored(1,1,128);std::string error;
     check(restored.deserialize(saved,saveName,error)&&restored.fingerprint()==world.fingerprint()&&
           restored.establishments().size()==2&&restored.invariant(),
           "save/load preserves the Farm, atelier, transactions and private event: "+error);
     std::string oldVersion=saved;
-    oldVersion.replace(0,std::string("POLYEC_REALM_74 ").size(),"POLYEC_REALM_73 ");
+    test_fixtures::strip_empty_apprenticeship_section(oldVersion);
+    oldVersion.replace(0,std::string("POLYEC_REALM_75 ").size(),"POLYEC_REALM_73 ");
     Realm rejected(1,1,128);
     check(!rejected.deserialize(oldVersion,saveName,error),
           "schema73 cannot load a schema74 save that contains the new industry");
     Realm priorWorld(20261090,int(kAtlasTerritoryCount)-1,256);
     std::string priorSave=priorWorld.serialize("general-luxury-legacy");
-    priorSave.replace(0,std::string("POLYEC_REALM_74 ").size(),"POLYEC_REALM_73 ");
+    test_fixtures::strip_empty_apprenticeship_section(priorSave);
+    priorSave.replace(0,std::string("POLYEC_REALM_75 ").size(),"POLYEC_REALM_73 ");
     Realm migrated(1,1,128);
     check(migrated.deserialize(priorSave,"general-luxury-legacy",error)&&
-          migrated.serialize("general-luxury-legacy").rfind("POLYEC_REALM_74 ",0)==0&&migrated.invariant(),
+          migrated.serialize("general-luxury-legacy").rfind("POLYEC_REALM_75 ",0)==0&&migrated.invariant(),
           "schema73 worlds without the new workshop still load and write the current save format");
     std::cout<<"General Luxury production and personal event checks: "<<checks<<"\n";
     return 0;

@@ -210,12 +210,12 @@ func _ready() -> void:
     if OS.get_cmdline_user_args().has("--atlas-manual-test"):
         start_atlas_manual_test()
         return
-    if not session.has_method("realm_schema") or session.realm_schema()!="realm-v41":
-        status.text="Lõi mô phỏng không khớp dữ liệu realm-v41; cần build đúng phiên bản"
+    if not session.has_method("realm_schema") or session.realm_schema()!="realm-v42":
+        status.text="Lõi mô phỏng không khớp dữ liệu realm-v42; cần build đúng phiên bản"
         return
     var paths=[]
     var hashes=[]
-    var model_root="res://models/realm-v41"
+    var model_root="res://models/realm-v42"
     for arg in OS.get_cmdline_user_args():
         if arg.begins_with("--model-root="):
             model_root=arg.trim_prefix("--model-root=")
@@ -228,7 +228,7 @@ func _ready() -> void:
             status.text="Chưa có bundle "+family
             return
         var manifest=JSON.parse_string(f.get_as_text())
-        if not manifest is Dictionary or manifest.get("schema","")!="realm-v41":
+        if not manifest is Dictionary or manifest.get("schema","")!="realm-v42":
             status.text="Sai schema policy "+family
             return
         if manifest.get("model_contract","")!=session.realm_model_contract():
@@ -236,7 +236,7 @@ func _ready() -> void:
             return
         paths.append(root+family+".onnx")
         hashes.append(manifest.sha256)
-    if not session.realm_load(paths,hashes,41,10000):
+    if not session.realm_load(paths,hashes,42,10000):
         status.text="Không nạp được model: "+str(session.realm_snapshot().get("error",""))
         return
     refresh()
@@ -452,7 +452,7 @@ func refresh() -> void:
         status.text="DỪNG: "+str(v.get("error",""))
         return
     run_button.text="Ⅱ  Tạm dừng" if running else "▶  Chạy thế giới"
-    status.text="KIỂM THỬ ATLAS THỦ CÔNG · NPC không tự ra quyết định; đây chưa phải bản game hoàn chỉnh" if v.get("atlas_manual_test",false) else "Policy realm-v41 · quyết định tự chủ chỉ bật sau khi có đủ 3 bộ tương thích đã huấn luyện và kiểm tra"
+    status.text="KIỂM THỬ ATLAS THỦ CÔNG · NPC không tự ra quyết định; đây chưa phải bản game hoàn chỉnh" if v.get("atlas_manual_test",false) else "Policy realm-v42 · quyết định tự chủ chỉ bật sau khi có đủ 3 bộ tương thích đã huấn luyện và kiểm tra"
     summary.text="Ngày %d  ·  %d cá thể / %d còn sống / %d trẻ em  ·  %d quyết định  ·  %d nợ / %d dự án" % [v.day,v.persons,v.alive,v.children,v.decisions,v.loans,v.projects]
     var atlas_names={}
     for site in v.get("urban_census",[]):
@@ -482,6 +482,9 @@ func refresh() -> void:
         profile.text+="\n"+pottery_meal_vessel_description()
     if p.role==0: profile.text+="\n"+military_unit_roster_text(v.get("military_unit_rosters",[]),p.region)
     profile.text+="\n"+establishment_text(v.get("establishments",[]),p.region)
+    for course in v.get("apprenticeships",[]):
+        var course_status=["Đang học","Hoàn thành","Hết hạn","Đã dừng","Bị gián đoạn"][clampi(int(course.get("status",0)),0,4)]
+        profile.text+="\nHọc nghề #%d · người hướng dẫn #%d · học viên #%d · xưởng #%d · %d/10 ngày thực hành · hạn ngày %d · %s" % [int(course.id),int(course.mentor),int(course.apprentice),int(course.establishment_id),int(course.practice_days),int(course.due_day),course_status]
     var residence_text=urban_census_text(v.get("urban_census",[]),bool(p.get("sovereign",false)))
     if not residence_text.is_empty(): profile.text+="\n"+residence_text
     if not v.get("military_obligations",[]).is_empty():
@@ -621,6 +624,10 @@ func refresh() -> void:
         elif a.name=="Xin gia hạn nghĩa vụ quân sự": text="Xin thêm 7 ngày cho cam kết đang thiếu người · người đứng đầu #%d quyết định · chỉ được xin một lần" % a.target
         elif a.name=="Đề nghị cung cấp lương thực quân vụ": text="Đề nghị cấp %d phần lương khô từ kho vùng #%d tới nơi tập kết · hạn14 ngày · người đứng đầu quyết định" % [a.amount,a.target]
         elif a.name=="Xin gia hạn cung cấp lương thực quân vụ": text="Xin thêm 7 ngày cho cam kết cấp lương khô đang thiếu · người đứng đầu #%d quyết định · chỉ được xin một lần" % a.target
+        elif a.name.begins_with("Mời học nghề cho người #"):
+            text="Mời người #%d học tại xưởng #%d · học viên tự quyết trong 7 ngày · học phí cố định20 đ trả cho xưởng khi chấp thuận · khóa kéo dài30 ngày game · cần10 ngày mà cả hai cùng làm đủ64 tick trong một ngày tại đúng xưởng để tăng10 kỹ năng" % [a.target,a.good]
+        elif a.name.begins_with("Dừng khóa học nghề #"):
+            text="Dừng khóa học đang hoạt động · các ngày đã luyện được giữ làm lịch sử, học phí không hoàn lại và quyền làm nghề tạm thời bị thu hồi"
         elif a.name=="Dự án": text="%s · %d đ · %d ngày cơ sở" % [["Xây đường","Xây trường","Đào tạo nghề","Đào tạo giáo viên"][a.good],a.amount,a.term]
         elif a.name=="Làm việc": text="Làm việc tại %s · %d ngày" % [region_label(a.target),a.term]
         elif a.name=="Bổ nhiệm": text="Bổ nhiệm ứng viên tiếp theo · 20 đ/tháng"
@@ -637,6 +644,7 @@ func refresh() -> void:
                     elif offer.kind==6: text+=" · xin thêm7 ngày cho cam kết thiếu người; người nhận chấp thuận hoặc từ chối"
                     elif offer.kind==7: text+=" · cam kết cấp %d phần lương khô cho người tình nguyện · hạn14 ngày; phải mua bằng ngân khố và giao qua tuyến công" % offer.amount
                     elif offer.kind==8: text+=" · xin thêm7 ngày để giao nốt lương khô còn thiếu; người nhận chấp thuận hoặc từ chối"
+                    elif offer.kind==9: text+=" · mời học nghề30 ngày, học phí %d đ trả cho xưởng sau khi chấp thuận; người nhận có7 ngày để quyết định" % offer.amount
                     else: text+=" · nhận %d đ" % offer.amount
                     break
         var action_index=int(a.index)

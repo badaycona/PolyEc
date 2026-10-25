@@ -26,7 +26,7 @@
 namespace polyec {
 inline constexpr size_t kOrganizationGroupsPerTerritory=4;
 inline constexpr size_t kOrganizationCount=kAtlasTerritoryCount*kOrganizationGroupsPerTerritory;
-inline constexpr const char* realm_schema="realm-v41";
+inline constexpr const char* realm_schema="realm-v42";
 inline constexpr const char* realm_reward_version="realm-v14-person-enterprise-equity-atlas-products-v1";
 inline constexpr int realm_base_state=128, realm_features=12;
 inline constexpr int realm_pre_ration_state=realm_base_state+int((kAtlasTerritoryCount-7)*kLegacyGoodCount);
@@ -88,6 +88,13 @@ inline constexpr int realm_municipal_specialty_product_candidate_begin=273, real
 inline constexpr int realm_municipal_fund_observation_index=116;
 inline constexpr int realm_foreign_trade_candidate_begin=32, realm_foreign_trade_candidate_count=6;
 inline constexpr int realm_foreign_trade_partner_candidate_begin=220, realm_foreign_trade_partner_candidate_count=12;
+inline constexpr int realm_apprenticeship_civilian_candidate_begin=32, realm_apprenticeship_civilian_candidate_count=39;
+inline constexpr int realm_apprenticeship_economic_candidate_begin=44, realm_apprenticeship_economic_candidate_count=27;
+inline constexpr int64_t kApprenticeshipTrialTuition=20;
+inline constexpr int kApprenticeshipTrialTermDays=30;
+inline constexpr int kApprenticeshipTrialPracticeDays=10;
+inline constexpr int kApprenticeshipTrialSkillGain=10;
+inline constexpr int kApprenticeshipTrialMentorSkill=40;
 inline constexpr int realm_foreign_trade_partner_observation_begin=realm_foreign_trade_extra_observation_begin;
 inline constexpr int realm_foreign_trade_stock_observation_index=117;
 inline constexpr int realm_foreign_trade_capacity_observation_index=118;
@@ -138,7 +145,7 @@ inline constexpr uint64_t urban_residence_hash_v1(uint64_t seed,uint64_t person_
     value=(value^(value>>27))*0x94D049BB133111EBull;
     return value^(value>>31);
 }
-enum class Intent:int { Hold,Buy,Sell,Travel,Borrow,Repay,Project,Hire,Tax,Aid,Investigate,Offer,Accept,Reject,Work,Study,Rest,Social,Join,Migrate,Support,Appoint,Mobilize,Resign,Marry,CreateEstablishment,TransferEstablishmentGoods,AuthorizeWorkAtSite,WorkAtSite,BuyMilitaryRations,ShipMilitaryRations,FundMunicipal,ForeignTrade,NominateCouncil,ResolveCouncilNomination,PrivateResidenceBuild,PrivateHousing };
+enum class Intent:int { Hold,Buy,Sell,Travel,Borrow,Repay,Project,Hire,Tax,Aid,Investigate,Offer,Accept,Reject,Work,Study,Rest,Social,Join,Migrate,Support,Appoint,Mobilize,Resign,Marry,CreateEstablishment,TransferEstablishmentGoods,AuthorizeWorkAtSite,WorkAtSite,BuyMilitaryRations,ShipMilitaryRations,FundMunicipal,ForeignTrade,NominateCouncil,ResolveCouncilNomination,PrivateResidenceBuild,PrivateHousing,OfferApprenticeship,EndApprenticeship };
 struct WorkAssignment { int job=-1; int job_kind=0; };
 struct HouseholdMembership { uint64_t household_id=0; };
 // Named bridge for the six positional stats retained by legacy saves. This is
@@ -384,6 +391,15 @@ struct PlayerKnowledge {
     int confidence_basis_points=kUnknownKnowledgeConfidence;
 };
 struct Proposal {uint64_t id=0,from=0,to=0;int64_t amount=0;int due=0;bool resolved=false;int kind=0,ready=0;int64_t escrow=0;bool public_source=false,mediation=false;int source_region=0;uint64_t cause=0;std::array<uint64_t,3> parties{};std::array<int,3> regions{};std::array<bool,3> pledged{};int service_term=0;std::vector<uint64_t> roster_members;};
+enum class ApprenticeshipStatus : uint8_t { Active=0, Completed=1, Expired=2, Cancelled=3, Interrupted=4 };
+struct Apprenticeship {
+    uint64_t id=0,mentor=0,apprentice=0,establishment_id=0;
+    int started_day=0,due_day=0,practice_days=0;
+    int64_t started_tick=0,due_tick=0,mentor_ticks_observed=0,apprentice_ticks_observed=0;
+    int64_t tuition=0;
+    ApprenticeshipStatus status=ApprenticeshipStatus::Active;
+    bool operator==(const Apprenticeship&) const = default;
+};
 struct Investigation {uint64_t id=0,owner=0,cause=0;int region=0,due=0;bool completed=false;};
 struct EstateCase {
     uint64_t decedent = 0;
@@ -524,6 +540,7 @@ class Realm {
     friend struct RealmDecorativeGlassTestAccess;
     friend struct RealmFinePorcelainTestAccess;
     friend struct RealmGeneralLuxuryTestAccess;
+    friend struct RealmApprenticeshipTestAccess;
     friend struct RealmMunicipalCouncilTestAccess;
     friend struct RealmPrivateHousingTestAccess;
 public:
@@ -544,6 +561,7 @@ public:
     const Person& person(uint64_t id) const;
     std::vector<uint64_t> due(Family family) const;
     std::array<Candidate,realm_actions> candidates(uint64_t actor) const;
+    const std::vector<Apprenticeship>& apprenticeships() const { return apprenticeships_; }
     std::array<float,realm_actions> mask(uint64_t actor) const;
     std::array<float,realm_actions> mask(uint64_t actor,const std::array<Candidate,realm_actions>& candidates) const;
     std::array<float,realm_obs> observation(uint64_t actor) const;
@@ -648,8 +666,8 @@ std::vector<Establishment> establishments() const { return establishments_; }
     std::string model_contract() const {
         std::string result;
         if (schedule_book_.timeline_contract)
-            result=config_.historical_defaults() ? "realm-worksite-payroll-goods30-v52" : "realm-worksite-payroll-goods30-config-v52";
-        else result=config_.historical_defaults() ? "realm-household-fund-goods30-v52" : "realm-household-fund-goods30-config-v52";
+            result=config_.historical_defaults() ? "realm-worksite-payroll-goods30-v53" : "realm-worksite-payroll-goods30-config-v53";
+        else result=config_.historical_defaults() ? "realm-household-fund-goods30-v53" : "realm-household-fund-goods30-config-v53";
         if(capability_mask_!=kDefaultCapabilityMask)result+="-caps-"+std::to_string(capability_mask_);
         return result;
     }
@@ -713,7 +731,7 @@ private:
     std::mt19937_64 rng_;Draft draft_;
     std::vector<Person> people_;std::vector<Province> provinces_;std::vector<int64_t> military_ration_depots_,military_supplementary_ration_depots_;
     std::vector<Edge> edges_;std::vector<Loan> loans_;std::vector<Project> projects_;std::vector<Establishment> establishments_;std::vector<LandHolding> land_holdings_;std::vector<LandUseRight> land_use_rights_;std::vector<PrivateResidence> private_residences_;
-    std::vector<Fact> facts_;std::vector<Knowledge> knowledge_;std::vector<Proposal> proposals_;
+    std::vector<Fact> facts_;std::vector<Knowledge> knowledge_;std::vector<Proposal> proposals_;std::vector<Apprenticeship> apprenticeships_;
     std::vector<int64_t> urban_housing_capacity_;
     std::vector<MunicipalCouncil> municipal_councils_;
     std::vector<int64_t> urban_residents_cache_,urban_arrivals_reserved_;
@@ -815,6 +833,7 @@ private:
     void day_body();
     void day_payroll();
     void day_people();
+    void day_apprenticeships();
     void process_private_housing();
     void settle_market_day();
     void cancel_market_orders(uint64_t owner);

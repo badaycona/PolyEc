@@ -559,6 +559,54 @@ std::array<Candidate,realm_actions> Realm::candidates(uint64_t id)const{
     }
     if(p.family==Family::Civilian&&p.military_service.active)c[31]={Intent::Resign,p.region};
     const auto candidateMix=[](uint64_t x){x+=0x9e3779b97f4a7c15ULL;x=(x^(x>>30))*0xbf58476d1ce4e5b9ULL;x=(x^(x>>27))*0x94d049bb133111ebULL;return x^(x>>31);};
+    if(p.family!=Family::Governance){
+        const auto activeCourse=std::find_if(apprenticeships_.begin(),apprenticeships_.end(),[&](const auto& course){
+            return course.status==ApprenticeshipStatus::Active&&(course.mentor==id||course.apprentice==id);
+        });
+        const int offerBegin=p.family==Family::Economic?realm_apprenticeship_economic_candidate_begin:realm_apprenticeship_civilian_candidate_begin;
+        const int offerCount=p.family==Family::Economic?realm_apprenticeship_economic_candidate_count:realm_apprenticeship_civilian_candidate_count;
+        const int cancelSlot=offerBegin;
+        if(activeCourse!=apprenticeships_.end())
+            c[size_t(cancelSlot)]={Intent::EndApprenticeship,int(activeCourse->id)};
+        if(activeCourse==apprenticeships_.end()&&p.alive&&p.age_days>=18*365&&
+           p.skill>=kApprenticeshipTrialMentorSkill&&!p.military_service.active&&p.destination==-1){
+            std::vector<Candidate> options;
+            const size_t ownerIndex=size_t(id-1);
+            if(ownerIndex<personal_establishment_indices_.size())for(const size_t siteIndex:personal_establishment_indices_[ownerIndex]){
+                if(siteIndex>=establishments_.size())continue;
+                const auto&site=establishments_[siteIndex];
+                if(site.id>uint64_t(INT32_MAX)||site.region!=p.region||site.owner_kind!=EstablishmentOwnerKind::Person||
+                   site.owner_id!=id)continue;
+                const bool siteOccupied=std::any_of(apprenticeships_.begin(),apprenticeships_.end(),[&](const auto& course){
+                    return course.establishment_id==site.id&&course.status==ApprenticeshipStatus::Active;
+                })||std::any_of(proposals_.begin(),proposals_.end(),[&](const auto& offer){
+                    return !offer.resolved&&offer.kind==9&&offer.cause==site.id;
+                });
+                if(siteOccupied)continue;
+                for(const auto&learner:people_){
+                    if(learner.id==id||learner.family!=Family::Civilian||!learner.alive||
+                       learner.age_days<18*365||learner.age_days>=31*365||learner.skill>=80||
+                       learner.region!=site.region||learner.destination!=-1||learner.busy_until>day_||learner.military_service.active)continue;
+                    const bool learnerOccupied=std::any_of(apprenticeships_.begin(),apprenticeships_.end(),[&](const auto& course){
+                        return course.apprentice==learner.id&&course.status==ApprenticeshipStatus::Active;
+                    })||std::any_of(proposals_.begin(),proposals_.end(),[&](const auto& offer){
+                        return !offer.resolved&&offer.kind==9&&(offer.to==learner.id||offer.from==learner.id);
+                    });
+                    if(!learnerOccupied)options.push_back({Intent::OfferApprenticeship,int(learner.id),int(site.id),
+                        kApprenticeshipTrialTuition,kApprenticeshipTrialTermDays});
+                }
+            }
+            std::sort(options.begin(),options.end(),[](const Candidate&a,const Candidate&b){
+                return std::tie(a.good,a.target)<std::tie(b.good,b.target);
+            });
+            const int capacity=std::max(0,offerCount-1);
+            if(!options.empty()){
+                const size_t count=std::min<size_t>(size_t(capacity),options.size());
+                const size_t offset=size_t(p.decisions%options.size());
+                for(size_t i=0;i<count;++i)c[size_t(offerBegin+1)+i]=options[(offset+i)%options.size()];
+            }
+        }
+    }
     if(people_.size()>1){
         std::array<uint64_t,realm_marriage_candidate_count> selected{};
         const uint64_t base=candidateMix(id^candidateMix(p.sampling)^candidateMix(uint64_t(day_)));
@@ -879,7 +927,7 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
     if(c.kind==Intent::Hold)return true;
     if(!p.alive){reason="Actor deceased";return false;}
     bool busyBlocks=p.busy_until>day_;
-    if(schedule_book_.timeline_contract)switch(c.kind){case Intent::Buy:case Intent::BuyMilitaryRations:case Intent::ShipMilitaryRations:case Intent::ForeignTrade:case Intent::Sell:case Intent::Borrow:case Intent::Repay:case Intent::Tax:case Intent::Aid:case Intent::Investigate:case Intent::Offer:case Intent::Accept:case Intent::Reject:case Intent::Support:case Intent::Hire:case Intent::Project:case Intent::Appoint:case Intent::Resign:case Intent::Marry:case Intent::CreateEstablishment:case Intent::TransferEstablishmentGoods:case Intent::AuthorizeWorkAtSite:case Intent::WorkAtSite:case Intent::FundMunicipal:case Intent::NominateCouncil:case Intent::ResolveCouncilNomination:case Intent::PrivateResidenceBuild:case Intent::PrivateHousing:busyBlocks=false;break;default:break;}
+    if(schedule_book_.timeline_contract)switch(c.kind){case Intent::Buy:case Intent::BuyMilitaryRations:case Intent::ShipMilitaryRations:case Intent::ForeignTrade:case Intent::Sell:case Intent::Borrow:case Intent::Repay:case Intent::Tax:case Intent::Aid:case Intent::Investigate:case Intent::Offer:case Intent::Accept:case Intent::Reject:case Intent::Support:case Intent::Hire:case Intent::Project:case Intent::Appoint:case Intent::Resign:case Intent::Marry:case Intent::CreateEstablishment:case Intent::TransferEstablishmentGoods:case Intent::AuthorizeWorkAtSite:case Intent::WorkAtSite:case Intent::FundMunicipal:case Intent::NominateCouncil:case Intent::ResolveCouncilNomination:case Intent::PrivateResidenceBuild:case Intent::PrivateHousing:case Intent::OfferApprenticeship:case Intent::EndApprenticeship:busyBlocks=false;break;default:break;}
     if(busyBlocks){reason="Action duration not finished";return false;}
     if(c.amount<0||c.amount>1000000||c.target<0){reason="Invalid terms";return false;}
     if(c.kind==Intent::PrivateResidenceBuild){
@@ -937,6 +985,40 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
         const bool tenant=home->tenant_household&&home->tenant_household==household&&
             household_authority(home->tenant_household)==id;
         return home->tenant_household&&home->tenant_household==household&&(landlord||tenant);
+    }
+    if(c.kind==Intent::OfferApprenticeship){
+        if((p.family!=Family::Civilian&&p.family!=Family::Economic)||p.age_days<18*365||
+           p.skill<kApprenticeshipTrialMentorSkill||p.military_service.active||p.destination!=-1||p.busy_until>day_||
+           c.target<=0||uint64_t(c.target)>people_.size()||uint64_t(c.target)==id||c.good<=0||
+           uint64_t(c.good)>uint64_t(INT32_MAX)||c.amount!=kApprenticeshipTrialTuition||
+           c.term!=kApprenticeshipTrialTermDays||day_>365000-kApprenticeshipTrialTermDays-7||
+           next_id_>uint64_t(INT32_MAX)||next_fact_==UINT64_MAX||proposals_.size()>=1000000||
+           apprenticeships_.size()>=1000000)return false;
+        const auto site=std::lower_bound(establishments_.begin(),establishments_.end(),uint64_t(c.good),
+            [](const Establishment& value,uint64_t target){return value.id<target;});
+        const auto&learner=person(uint64_t(c.target));
+        if(site==establishments_.end()||site->id!=uint64_t(c.good)||
+           site->owner_kind!=EstablishmentOwnerKind::Person||site->owner_id!=id||site->region!=p.region||
+           learner.family!=Family::Civilian||!learner.alive||learner.age_days<18*365||
+           learner.age_days>=31*365||learner.skill>=80||learner.region!=site->region||
+           learner.destination!=-1||learner.busy_until>day_||learner.military_service.active||
+           available_funds(learner.id)<kApprenticeshipTrialTuition||
+           site->cash>std::numeric_limits<int64_t>::max()-kApprenticeshipTrialTuition)return false;
+        if(std::any_of(apprenticeships_.begin(),apprenticeships_.end(),[&](const auto&course){
+               return course.status==ApprenticeshipStatus::Active&&
+                   (course.mentor==id||course.apprentice==id||course.apprentice==learner.id||course.establishment_id==site->id);
+           })||std::any_of(proposals_.begin(),proposals_.end(),[&](const auto&offer){
+               return !offer.resolved&&offer.kind==9&&
+                   (offer.from==id||offer.to==id||offer.from==learner.id||offer.to==learner.id||offer.cause==site->id);
+           }))return false;
+        return true;
+    }
+    if(c.kind==Intent::EndApprenticeship){
+        if(c.target<=0||c.good!=0||c.amount!=0||c.term!=0)return false;
+        return std::any_of(apprenticeships_.begin(),apprenticeships_.end(),[&](const auto&course){
+            return course.id==uint64_t(c.target)&&course.status==ApprenticeshipStatus::Active&&
+                (course.mentor==id||course.apprentice==id);
+        });
     }
     if(c.kind==Intent::Accept||c.kind==Intent::Reject){if(legal_proposal_response(id,c))return true;reason="Proposal unavailable";return false;}
     if(c.kind==Intent::Support){if(p.family!=Family::Civilian||p.age_days<6*365||c.target<=0||c.target!=int(household_authority(p.household_membership.household_id))||uint64_t(c.target)==id||c.target>int(people_.size())||!person(c.target).alive||p.cash<c.amount){reason="Household transfer unavailable";return false;}return true;}
@@ -1581,8 +1663,27 @@ RealmResult Realm::execute(const RealmCommand&cmd){
         break;
     }
     case Intent::Offer:create_proposal(p.id,c);break;
+    case Intent::OfferApprenticeship:create_proposal(p.id,c);break;
     case Intent::Marry:create_proposal(p.id,c);break;
     case Intent::Accept:case Intent::Reject:resolve_proposal(p.id,c);break;
+    case Intent::EndApprenticeship:{
+        auto course=std::find_if(apprenticeships_.begin(),apprenticeships_.end(),[&](const auto& item){
+            return item.id==uint64_t(c.target)&&item.status==ApprenticeshipStatus::Active;
+        });
+        if(course==apprenticeships_.end())throw std::logic_error("validated apprenticeship disappeared");
+        auto site=std::lower_bound(establishments_.begin(),establishments_.end(),course->establishment_id,
+            [](const Establishment& value,uint64_t target){return value.id<target;});
+        if(site==establishments_.end()||site->id!=course->establishment_id)
+            throw std::logic_error("validated apprenticeship site disappeared");
+        auto authorization=site->work_authorizations.find(course->apprentice);
+        if(authorization!=site->work_authorizations.end()){
+            site->authorization_window_count-=authorization->second.size();
+            site->work_authorizations.erase(authorization);
+        }
+        course->status=ApprenticeshipStatus::Cancelled;
+        event(course->apprentice,site->region,242,course->practice_days,course->mentor,false,course->id);
+        break;
+    }
     case Intent::Work:EmploymentManager::start_work(p,provinces_,day_,p.region,c.term);break;
     case Intent::Study:spend(p,v.firm,c.amount);p.school_days=c.term;++v.school_used;p.busy_until=day_+c.term;break;
     case Intent::Rest:{
@@ -1913,6 +2014,7 @@ void RealmDayPipeline::run(Realm& realm){
     timed(2, [&] { realm.day_payroll(); });
     timed(3, [&] { realm.day_people(); });
     timed(4, [&] { realm.day_production(); });
+    realm.day_apprenticeships();
     timed(5, [&] { realm.day_harvest(); });
     timed(6, [&] { realm.finish_projects(); });
     timed(7, [&] { realm.day_investigations(); });
@@ -1933,6 +2035,7 @@ void RealmDayPipeline::run(Realm& realm){
     realm.day_payroll();
     realm.day_people();
     realm.day_production();
+    realm.day_apprenticeships();
     realm.day_harvest();
     realm.finish_projects();
     realm.day_investigations();
@@ -2854,8 +2957,27 @@ bool Realm::invariant(const std::array<int64_t,kGoodIdCount>& bonded_goods)const
     for(const auto& item:estate_cases_)for(size_t g=0;g<kGoodIdCount;++g){const auto amount=item.inventory[g];if(amount<0||amount>std::numeric_limits<int64_t>::max()-stock[g])return false;stock[g]+=amount;}
     std::unordered_set<uint64_t> pending_service_recipients;
     for(auto&o:proposals_){
-        if(o.escrow<0||o.kind<0||o.kind>8)return false;
-        if(o.kind==4){
+        if(o.escrow<0||o.kind<0||o.kind>9)return false;
+        if(o.kind==9){
+            const auto site=std::lower_bound(establishments_.begin(),establishments_.end(),o.cause,
+                [](const Establishment& value,uint64_t target){return value.id<target;});
+            const bool invalidCore=o.from==0||o.from>people_.size()||o.to==0||o.to>people_.size()||
+               o.from==o.to||o.amount!=kApprenticeshipTrialTuition||o.service_term!=kApprenticeshipTrialTermDays||
+               o.escrow!=0||o.public_source||o.mediation||o.cause==0||o.cause>=next_id_||
+               o.source_region<0||o.source_region>regions_||o.ready<0||o.ready>day_||
+               o.due!=o.ready+7||o.due>365000||!o.roster_members.empty()||
+               std::any_of(o.parties.begin(),o.parties.end(),[](uint64_t value){return value!=0;})||
+               std::any_of(o.regions.begin(),o.regions.end(),[](int value){return value!=0;})||
+               std::any_of(o.pledged.begin(),o.pledged.end(),[](bool value){return value;});
+            if(invalidCore)return false;
+            if(site==establishments_.end()||site->id!=o.cause||site->region!=o.source_region)return false;
+            if(!o.resolved){
+                if(o.due<day_||!pending_service_recipients.insert(o.from).second||
+                   !pending_service_recipients.insert(o.to).second)return false;
+                for(const auto& other:proposals_)if(other.id!=o.id&&!other.resolved&&other.kind==9&&
+                   (other.from==o.from||other.to==o.from||other.from==o.to||other.to==o.to||other.cause==o.cause))return false;
+            }
+        }else if(o.kind==4){
             if(o.from==0||o.from>people_.size()||o.to==0||o.to>people_.size()||o.source_region<0||o.source_region>regions_||
                o.amount!=kMilitaryServiceTrialWagePerDay||o.service_term<1||o.service_term>30||
                o.amount>std::numeric_limits<int64_t>::max()/o.service_term||
@@ -2925,6 +3047,47 @@ bool Realm::invariant(const std::array<int64_t,kGoodIdCount>& bonded_goods)const
                stock[tools]>std::numeric_limits<int64_t>::max()-2)return false;
             stock[iron]+=4;stock[tools]+=2;
         }
+    }
+    if(apprenticeships_.size()>1000000)return false;
+    std::unordered_set<uint64_t> apprenticeship_ids,active_mentors,active_apprentices,active_sites;
+    for(const auto&course:apprenticeships_){
+        const auto status=static_cast<unsigned>(course.status);
+        if(course.id==0||course.id>=next_id_||course.id>uint64_t(INT32_MAX)||!apprenticeship_ids.insert(course.id).second||
+           course.mentor==0||course.mentor>people_.size()||course.apprentice==0||course.apprentice>people_.size()||
+           course.mentor==course.apprentice||course.establishment_id==0||course.establishment_id>=next_id_||
+           course.started_day<0||course.started_day>day_||course.due_day!=course.started_day+kApprenticeshipTrialTermDays||
+           course.due_day>365000||course.practice_days<0||course.practice_days>kApprenticeshipTrialPracticeDays||
+           course.started_tick<0||course.started_tick>schedule_book_.cursor||
+           course.due_tick!=course.started_tick+int64_t(kApprenticeshipTrialTermDays)*kSubdayUnitsPerDay||
+           course.due_tick>365000LL*kSubdayUnitsPerDay||
+           course.mentor_ticks_observed<0||course.apprentice_ticks_observed<0||
+           course.tuition!=kApprenticeshipTrialTuition||status>unsigned(ApprenticeshipStatus::Interrupted))return false;
+        const auto offer=std::find_if(proposals_.begin(),proposals_.end(),[&](const auto& proposal){
+            return proposal.id==course.id&&proposal.kind==9&&proposal.from==course.mentor&&
+                proposal.to==course.apprentice&&proposal.cause==course.establishment_id&&
+                proposal.amount==course.tuition&&proposal.resolved;
+        });
+        const auto site=std::lower_bound(establishments_.begin(),establishments_.end(),course.establishment_id,
+            [](const Establishment& value,uint64_t target){return value.id<target;});
+        if(offer==proposals_.end()||site==establishments_.end()||site->id!=course.establishment_id||
+           site->region!=offer->source_region||course.mentor_ticks_observed>
+               (schedule_book_.work_present_ticks_by_establishment.contains({course.mentor,course.establishment_id})?
+                 schedule_book_.work_present_ticks_by_establishment.at({course.mentor,course.establishment_id}):0)||
+           course.apprentice_ticks_observed>
+               (schedule_book_.work_present_ticks_by_establishment.contains({course.apprentice,course.establishment_id})?
+                 schedule_book_.work_present_ticks_by_establishment.at({course.apprentice,course.establishment_id}):0))return false;
+        if(course.status==ApprenticeshipStatus::Active){
+            if(course.practice_days>=kApprenticeshipTrialPracticeDays||course.due_day<=day_||
+               !active_mentors.insert(course.mentor).second||!active_apprentices.insert(course.apprentice).second||
+               !active_sites.insert(course.establishment_id).second||
+               site->owner_kind!=EstablishmentOwnerKind::Person||site->owner_id!=course.mentor)return false;
+            const auto authorization=site->work_authorizations.find(course.apprentice);
+            if(authorization==site->work_authorizations.end()||authorization->second.size()!=1||
+               authorization->second.front().begin!=course.started_tick||
+               authorization->second.front().end!=course.due_tick)return false;
+        }else if(course.status==ApprenticeshipStatus::Completed&&course.practice_days!=kApprenticeshipTrialPracticeDays)return false;
+        else if(course.status==ApprenticeshipStatus::Expired&&
+                (course.practice_days>=kApprenticeshipTrialPracticeDays||day_<course.due_day))return false;
     }
     if(credit_pool_<0||restricted_fund_<0)return false;
     for(size_t g=0;g<kGoodIdCount;++g){if(consumed_[g]<0||opening_[g]<0||produced_[g]<0||stock[g]>std::numeric_limits<int64_t>::max()-consumed_[g]||opening_[g]>std::numeric_limits<int64_t>::max()-produced_[g]||stock[g]+consumed_[g]!=opening_[g]+produced_[g])return false;}
@@ -3543,6 +3706,10 @@ bool Realm::choose(int card){if(day_||draft_.chosen>=0||std::find(draft_.cards.b
     event(1,regions_,106,card);return true;
 }
 std::string Realm::action_name(const Candidate&c){
+    if(c.kind==Intent::OfferApprenticeship)
+        return "Mời học nghề cho người #"+std::to_string(c.target)+" tại xưởng #"+std::to_string(c.good);
+    if(c.kind==Intent::EndApprenticeship)
+        return "Dừng khóa học nghề #"+std::to_string(c.target);
     if(c.kind==Intent::PrivateResidenceBuild)return "Xây nhà tư trên thửa #"+std::to_string(c.target);
     if(c.kind==Intent::PrivateHousing){
         const char*operation="Thao tác nhà tư";

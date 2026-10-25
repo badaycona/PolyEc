@@ -1176,9 +1176,21 @@ Incense Works tại region11 đã hoàn tất: site dùng nguồn100 unit trừu
 
 Mùa vụ và tài nguyên phải có dữ liệu vùng, kỳ đã xử lý và lượng còn lại/tái tạo khi luật cần. “Đặc sản vùng” là lợi thế có cơ chế nguồn/chi phí/chất lượng cụ thể; tên đặc sản trong atlas không phải sản lượng đã mô phỏng. Tàu là tài sản vận tải, không tự gán vào một nhóm hàng để vượt kiểm đếm. Công thức mới cần ví dụ tính tay và phép kiểm không thay thế variant.
 
-Học nghề cần người học, bên nhận, người dạy, nơi học, năng lực dạy hữu hạn, chi phí và tiến độ thực. Hoàn tất chỉ một lần khi đủ điều kiện; dở dang qua save/load giữ tiến độ và nghĩa vụ. Chưa chọn công thức tốc độ học hoặc trả phí thì phải ghi điểm còn thiếu, không suy từ lương công nhân hoặc XP kế thừa.
+Học nghề cần người học, bên nhận, người dạy, nơi học, năng lực dạy hữu hạn, chi phí và tiến độ thực. Setting thử hiện hành `formal-apprenticeship-v1` cùng điều kiện hết hạn, hủy, thanh toán và các phép kiểm đã được ghi ở §25.3; không suy hiệu quả hoặc giá trị học phí từ lương công nhân hay XP cũ.
 
-### 25.3 Đơn mua, giá và sổ cầu
+### 25.3 Học nghề theo hợp đồng tại xưởng
+
+Setting thử `formal-apprenticeship-v1` đóng khoảng trống học nghề M5.2 bằng hợp đồng hai bên nối người học, người dạy và xưởng. Chủ xưởng tư từ18 tuổi với kỹ năng lao động ít nhất40/100 có thể mời một Civilian từ18 đến dưới31 tuổi, cùng vùng, kỹ năng dưới80/100. Người học tự nhận hoặc từ chối trong7 ngày game. Khi nhận,20 đồng bạc chuyển từ khoản tiền được phép dùng của người học vào tài khoản xưởng và người học được cấp quyền Work trong30 ngày. Mỗi xưởng, người dạy và người học chỉ có thể có một đề nghị/khóa học đang mở. Đây là setting gameplay thử; chưa được xem là học phí hay giới hạn tối ưu.
+
+Một ngày thực hành chỉ được tính nếu cả hai người hiện diện đủ64 tick Work ở đúng ID xưởng trong cùng ngày game. Đạt10 ngày chung trong thời hạn sẽ tăng10 điểm kỹ năng lao động, tối đa100. Nếu hết30 ngày chưa đạt thì khóa kết thúc không cấp kỹ năng. Một bên có thể kết thúc sớm; người chết, chuyển vùng hoặc mất quyền sở hữu xưởng sẽ làm khóa bị gián đoạn. Học phí không hoàn sau khi bắt đầu; lương Work tiếp tục theo sổ lương đã có. Quyền làm việc được mở đúng theo hợp đồng và không thể dùng vùng khác/xưởng khác làm bằng chứng thực hành.
+
+Kích thước tensor giữ382 state/400 action/5.182 observation/reward14, nhưng candidate slot32–70 của Civilian và44–70 của Economic được dùng cho đề nghị/kết thúc học nghề; slot71 vẫn là lệnh hội đồng. Model contract tăng `realm-v41`→`realm-v42` và config `v52`→`v53`. Save nâng74→75 và lưu ID hai người, ID xưởng, thời hạn, trạng thái, số ngày cùng tick hiện diện đã quan sát để load giữa khóa không cấp lại tiền hay tính lại ngày. Học trường công `Study` tiếp tục chạy độc lập. Kế hoạch chi tiết, success/reject, files và phép kiểm nằm tại [formal apprenticeship plan](design/M5.2-formal-apprenticeship-plan.md).
+
+#### Kết quả hiện tại và phần tích hợp còn chờ
+
+Bản triển khai đã thêm command/validation/proposal/attendance/lifecycle/save codec và Python/native/Godot snapshot/UI ở schema save75, realm-v42/config-v53; kích thước tensor không đổi. C++ test riêng đạt79/79; Python contract/parity và Godot headless smoke qua. Full Release CTest đạt65/66; bài còn lỗi là assertion byte của save lịch sử v14 ở check434, đã có từ baseline và không sửa hash. Godot snapshot và lệnh UI dùng cùng candidate/`realm_command`, nhưng smoke hiện chưa tự gửi lời mời rồi nhận lời trong fixture có mentor, người học và xưởng; vì vậy nhóm chưa được ghi là tích hợp Godot end-to-end hoàn tất. Setting thử và toàn bộ cách kiểm nằm trong [evidence report](reports/M5.2-formal-apprenticeship-evidence-2026-10-25.md). Chưa huấn luyện RL.
+
+### 25.4 Đơn mua, giá và sổ cầu
 
 Đơn mua phải chỉ rõ người mua/nguồn tiền, vùng, GoodId, số lượng, giá tối đa, hạn, loại nhu cầu hợp lệ và tiền giữ. Chỉ nhu cầu có khả năng thanh toán được đưa vào lượng cầu thanh toán; tự ghi “thiết yếu” không tạo ưu tiên. Hủy trước quyết toán hoàn phần tiền còn giữ đúng nguồn; khi hết hạn, phần chưa mua ghi thiếu cầu đúng một lần theo quy tắc đã duyệt.
 

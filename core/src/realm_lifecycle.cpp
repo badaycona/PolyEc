@@ -12,6 +12,57 @@
 
 namespace polyec {
 
+void Realm::day_apprenticeships(){
+    constexpr int64_t kFullWorkDayTicks=kSubdayUnitsPerDay;
+    for(auto& course:apprenticeships_){
+        if(course.status!=ApprenticeshipStatus::Active)continue;
+        auto site=std::lower_bound(establishments_.begin(),establishments_.end(),course.establishment_id,
+            [](const Establishment& value,uint64_t target){return value.id<target;});
+        if(site==establishments_.end()||site->id!=course.establishment_id){
+            course.status=ApprenticeshipStatus::Interrupted;
+        }else{
+            const auto& mentor=person(course.mentor);
+            const auto& apprentice=person(course.apprentice);
+            if(!mentor.alive||!apprentice.alive||mentor.destination!=-1||apprentice.destination!=-1||
+               mentor.region!=site->region||apprentice.region!=site->region||
+               site->owner_kind!=EstablishmentOwnerKind::Person||site->owner_id!=mentor.id){
+                course.status=ApprenticeshipStatus::Interrupted;
+            }else{
+                const auto mentorIt=schedule_book_.work_present_ticks_by_establishment.find({course.mentor,site->id});
+                const auto apprenticeIt=schedule_book_.work_present_ticks_by_establishment.find({course.apprentice,site->id});
+                const int64_t mentorTicks=mentorIt==schedule_book_.work_present_ticks_by_establishment.end()?0:mentorIt->second;
+                const int64_t apprenticeTicks=apprenticeIt==schedule_book_.work_present_ticks_by_establishment.end()?0:apprenticeIt->second;
+                if(mentorTicks<course.mentor_ticks_observed||apprenticeTicks<course.apprentice_ticks_observed)
+                    throw std::logic_error("apprenticeship attendance counter moved backwards");
+                const int64_t mentorToday=mentorTicks-course.mentor_ticks_observed;
+                const int64_t apprenticeToday=apprenticeTicks-course.apprentice_ticks_observed;
+                course.mentor_ticks_observed=mentorTicks;
+                course.apprentice_ticks_observed=apprenticeTicks;
+                if(mentorToday>=kFullWorkDayTicks&&apprenticeToday>=kFullWorkDayTicks&&
+                   course.practice_days<kApprenticeshipTrialPracticeDays)++course.practice_days;
+                if(course.practice_days>=kApprenticeshipTrialPracticeDays){
+                    auto& learner=mutable_person(course.apprentice);
+                    learner.skill=std::min(100,learner.skill+kApprenticeshipTrialSkillGain);
+                    course.status=ApprenticeshipStatus::Completed;
+                    event(learner.id,site->region,241,learner.skill,course.mentor,false,course.id);
+                }else if(day_>=course.due_day){
+                    course.status=ApprenticeshipStatus::Expired;
+                    event(course.apprentice,site->region,243,course.practice_days,course.mentor,false,course.id);
+                }
+            }
+        }
+        if(course.status!=ApprenticeshipStatus::Active&&site!=establishments_.end()&&site->id==course.establishment_id){
+            auto authorization=site->work_authorizations.find(course.apprentice);
+            if(authorization!=site->work_authorizations.end()){
+                site->authorization_window_count-=authorization->second.size();
+                site->work_authorizations.erase(authorization);
+            }
+            if(course.status==ApprenticeshipStatus::Interrupted)
+                event(course.apprentice,site->region,244,course.practice_days,course.mentor,false,course.id);
+        }
+    }
+}
+
 void Realm::record_unmet_essential_need(Person& person){
     const int before=person.nutrition;
     person.nutrition=std::max(0,person.nutrition-20);

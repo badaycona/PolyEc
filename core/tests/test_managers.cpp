@@ -1299,7 +1299,7 @@ void test_estate_death_settlement() {
         std::stringstream encoded;
         polyec::detail::write_estate_section(encoded, legacy_unassigned, cases);
         int64_t decodedLegacy = 0;
-        const auto decoded = polyec::detail::read_estate_section(encoded, 10, 3, 100, decodedLegacy);
+        const auto decoded = polyec::detail::read_estate_section(encoded, 10, 3, 100, decodedLegacy, 75);
         check(decodedLegacy == legacy_unassigned && decoded == cases,
               "estate case and legacy balance roundtrip through schema section");
     }

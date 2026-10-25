@@ -32,8 +32,13 @@ func run() -> void:
 		"the player-facing Gold action explains the personal item, fund payment, social gain and adult eligibility")
 	var session = ClassDB.instantiate("PolyEcSession")
 	var schema = session.realm_schema()
-	check(schema == "realm-v41", "native core schema")
-	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v52", "native core model contract")
+	check(schema == "realm-v42", "native core schema")
+	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v53", "native core model contract")
+	check(session.realm_atlas_manual_start(20261098, 512), "manual test can start the current Realm contract without an old policy")
+	var realm_snapshot: Dictionary = session.realm_snapshot(129)
+	check(realm_snapshot.has("apprenticeships") and realm_snapshot.apprenticeships is Array,
+		"native snapshot exposes the course list for the player and Python-facing contract")
+	check(realm_snapshot.apprenticeships.is_empty(), "a new world reports no invented apprenticeship records")
 	for case in [[10, 12, 27, "thủy tinh thường", 90], [15, 13, 28, "đồ gốm thường", 55], [17, 14, 29, "da thuộc", 80]]:
 		var stock := []
 		stock.resize(30)

@@ -24,9 +24,9 @@ for region, industry, product, candidate, burns_fuel in CASES:
     worker = next(p["id"] for p in (world.person(i) for i in range(1, 257))
                   if p["alive"] and p["region"] == region and p["family"] == 2
                   and p["age_days"] >= 14 * 365)
-    assert core.REALM_SCHEMA == "realm-v41"
+    assert core.REALM_SCHEMA == "realm-v42"
     assert core.REALM_ACTIONS == 400 and core.REALM_OBS == 5182
-    assert world.model_contract == "realm-household-fund-goods30-config-v52"
+    assert world.model_contract == "realm-household-fund-goods30-config-v53"
     assert world.mask(governor)[candidate] == 1.0
     assert world.step(governor, candidate)[0]
     site = world.establishments()[0]["id"]
@@ -55,7 +55,7 @@ for region, industry, product, candidate, burns_fuel in CASES:
     checks += 4
 
     save = world.serialize("atlas-specialty-products-v1")
-    assert save.startswith('POLYEC_REALM_74 "') and " ESTABLISH_14 1 " in save
+    assert save.startswith('POLYEC_REALM_75 "') and " ESTABLISH_14 1 " in save
     resumed = core.Realm(1, 1, 128)
     assert resumed.deserialize(save, "atlas-specialty-products-v1")[0]
     assert resumed.establishments()[0]["stock"][product] == 1
@@ -77,7 +77,7 @@ sites = luxury_world.establishments()
 assert [(site["industry"], site["region"]) for site in sites] == [(19, 12), (25, 12)]
 assert luxury_world.invariant()
 luxury_save = luxury_world.serialize("general-luxury-python-smoke-v1")
-assert luxury_save.startswith('POLYEC_REALM_74 "')
+assert luxury_save.startswith('POLYEC_REALM_75 "')
 luxury_resumed = core.Realm(1, 1, 128)
 assert luxury_resumed.deserialize(luxury_save, "general-luxury-python-smoke-v1")[0]
 assert [site["industry"] for site in luxury_resumed.establishments()] == [19, 25]
@@ -91,7 +91,7 @@ print(json.dumps({
     "action_choices": core.REALM_ACTIONS,
     "products": [{"region": region, "industry": industry, "good_id": good,
                   "uses_real_fuel": fuel} for region, industry, good, _, fuel in CASES],
-    "save_schema": 74,
+    "save_schema": 75,
     "shared_cpp_core": True,
     "training_or_policy_evaluation": False,
 }, sort_keys=True))

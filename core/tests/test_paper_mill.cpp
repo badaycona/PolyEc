@@ -145,14 +145,20 @@ int main() {
         check(travelDistance > 0,
               "travel distance is the shortest number of currently open directed route segments");
         const int64_t cashBeforeTravel = world.person(merchant).cash;
-        const int travelArrivalDay = world.day() + std::max(1, travelDistance + 1 -
+        const int plannedTravelDays = merchantChoices[size_t(merchantTravel)].term;
+        const int travelArrivalDay = world.day() + std::max(1, plannedTravelDays + 1 -
             world.view(merchant).provinces[size_t(forest_region)].road / 2);
         const auto travel = world.execute(RealmCommand{merchant,
             world.person(merchant).decisions + 1, merchantChoices[size_t(merchantTravel)]});
         check(travel.success, travel.reason.c_str());
-        check(world.person(merchant).cash == cashBeforeTravel - (4 + 2 * travelDistance) &&
-              world.person(merchant).busy_until == travelArrivalDay,
-              "travel charges the existing fee and arrival-time formulas using open route hops");
+        if(world.person(merchant).cash != cashBeforeTravel - (4 + 2 * plannedTravelDays) ||
+           world.person(merchant).busy_until != travelArrivalDay){
+            std::ostringstream detail;detail<<"travel fee/time mismatch: hops="<<travelDistance<<" planned_days="<<plannedTravelDays
+                <<" cash_before="<<cashBeforeTravel<<" cash_after="<<world.person(merchant).cash
+                <<" expected_cash="<<(cashBeforeTravel-(4+2*plannedTravelDays))
+                <<" busy_until="<<world.person(merchant).busy_until<<" expected_day="<<travelArrivalDay;
+            throw std::runtime_error(detail.str());
+        }
         world.advance(40);
         check(world.person(merchant).region == mill_region && world.person(merchant).destination == -1 &&
               world.person(merchant).inventory[size_t(timber)] == 1 &&

@@ -22,7 +22,7 @@ void reject_unchanged(Realm& world, HouseholdFundCommand command, const char* la
 int main() {
     try {
         Realm world(9041, 1, 256);
-        check(!world.pilot_policy_compatible() && std::string(world.model_contract()) == "realm-household-fund-goods27-config-v32",
+        check(!world.pilot_policy_compatible() && std::string(world.model_contract()) == "realm-household-fund-goods30-config-v53",
               "household spending semantics version the learned model contract");
         const Realm legacy = world;
         uint64_t household = 0, authority = 0, contributor = 0, outsider = 0;
@@ -76,7 +76,7 @@ int main() {
         Realm restored(1, 1, 128);
         std::string error;
         const auto saved = world.serialize("household-test");
-        check(saved.rfind("POLYEC_REALM_54 ", 0) == 0 && saved.find(" HOUSEHOLD_1 1 ") != std::string::npos, "current schema writes sparse household section");
+        check(saved.rfind("POLYEC_REALM_75 ", 0) == 0 && saved.find(" HOUSEHOLD_1 1 ") != std::string::npos, "current schema writes sparse household section");
         const bool roundTrip = restored.deserialize(saved, "household-test", error);
         check(roundTrip && restored.household_fund(household) == 35, roundTrip ? "schema 23 round trip preserves fund" : error.c_str());
 

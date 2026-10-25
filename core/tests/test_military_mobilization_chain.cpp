@@ -179,10 +179,16 @@ int main(){try{
     check(intervention.military_supply_obligations().size()==1&&intervention.military_supply_obligations()[0].required==1,
           "Sovereign consent fixes one DryFood for the named volunteer before travel");
 
+    Candidate migration_choice{};
+    for(const auto& candidate:intervention.candidates(t.volunteer))
+        if(candidate.kind==Intent::Migrate&&candidate.target==t.destination)migration_choice=candidate;
+    check(migration_choice.kind==Intent::Migrate&&migration_choice.term>0,
+          "the volunteer has a legal route-planned migration to the named muster region");
+    const int migration_days=migration_choice.term;
     const auto migration=intervention.execute({t.volunteer,intervention.person(t.volunteer).decisions+1,
-        {Intent::Migrate,t.destination,0,10,5+intervention.distance(t.source,t.destination)}});
+        migration_choice});
     if(!migration.success)throw std::runtime_error("the consenting volunteer could not start the public migration command: "+migration.reason);
-    intervention.advance(intervention.distance(t.source,t.destination)+2);
+    intervention.advance(migration_days+2);
     check(intervention.person(t.volunteer).region==t.destination&&
           intervention.military_obligations()[0].delivered_member_ids==std::vector<uint64_t>{t.volunteer}&&
           intervention.military_obligations()[0].completed_day>=0&&intervention.invariant(),

@@ -164,12 +164,13 @@ int main(){try{
         check(world.execute(WorkAuthorizationCommand{1,2,created.session,65,WorkAuthorizationOperation::Set,0,32}).success,"authorize actual worker before death");
         work(world,created.session,0,32);advance_to(world,16);
         auto words=tokens(world);std::size_t start=0;
-        for(std::size_t index=100;index+1+56*128<words.size();++index){
+        constexpr std::size_t person_width=59; // 23 scalar fields + 6 stats + 30 goods
+        for(std::size_t index=100;index+1+person_width*128<words.size();++index){
             if(words[index]!="128")continue;bool dense=true;
-            for(std::size_t row=0;row<128;++row)if(words[index+1+56*row]!=std::to_string(row+1)){dense=false;break;}
+            for(std::size_t row=0;row<128;++row)if(words[index+1+person_width*row]!=std::to_string(row+1)){dense=false;break;}
             if(dense){start=index+1;break;}
         }
-        check(start!=0,"death snapshot locates Person records");words[start+56*64+14]="0";std::string error;
+        check(start!=0,"death snapshot locates Person records");words[start+person_width*64+14]="0";std::string error;
         check(world.deserialize(joined(words),"worksite-payroll",error),error.c_str());advance_to(world,64);
         check(world.establishments()[0].cash==10&&site_paid(world)==0,"pending site wage freezes on worker death under existing contract");
     }

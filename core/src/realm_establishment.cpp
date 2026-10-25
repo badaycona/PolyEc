@@ -366,6 +366,10 @@ RealmResult Realm::execute(const WorkAuthorizationCommand& cmd){
     auto& site=*found;
     if(!manages_establishment(actor,site))return {false,"Actor cannot manage establishment"};
     if(cmd.worker==0||cmd.worker>people_.size())return {false,"Unknown worker"};
+    if(std::any_of(apprenticeships_.begin(),apprenticeships_.end(),[&](const auto& course){
+        return course.status==ApprenticeshipStatus::Active&&course.establishment_id==site.id&&
+            course.apprentice==cmd.worker;
+    }))return {false,"Apprentice work permission is controlled by the active training contract"};
     const bool revoke=cmd.operation==WorkAuthorizationOperation::Revoke;
     if(!revoke&&cmd.operation!=WorkAuthorizationOperation::Set)return {false,"Invalid authorization operation"};
     if(revoke){if(cmd.begin!=0||cmd.end!=0)return {false,"Invalid revoke range"};}

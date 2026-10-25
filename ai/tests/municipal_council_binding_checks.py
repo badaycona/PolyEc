@@ -3,7 +3,7 @@
 import polyec_env as core
 
 
-assert core.REALM_SCHEMA == "realm-v41"
+assert core.REALM_SCHEMA == "realm-v42"
 assert core.REALM_ACTIONS == 400 and core.REALM_OBS == 5182
 
 world = core.Realm(20261024, 26, 512)

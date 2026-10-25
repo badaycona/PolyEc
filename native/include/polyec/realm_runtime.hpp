@@ -5,6 +5,18 @@
 #include <array>
 #include <optional>
 namespace polyec {
+struct RealmRoutePreview {
+    bool supported = false;
+    bool reachable = false;
+    int route_days = 0;
+    int person_days = 0;
+    int64_t route_fee = 0;
+    int64_t migration_fee = 0;
+    bool travel_available = false;
+    bool migration_available = false;
+    std::vector<uint8_t> regions;
+    std::vector<NationalTransportRoute> legs;
+};
 // Only commit the exact candidate/terms that the policy observed.
 std::array<float,realm_actions> revalidate_snapshot(const Realm&,uint64_t,const std::array<Candidate,realm_actions>&,const std::array<float,realm_actions>&);
 class RealmRuntime {
@@ -35,6 +47,7 @@ public:
     bool foreign_trade_suspension(uint64_t actor,int partner_id,bool suspended,const std::string& expected="");
     bool foreign_trade_offer(uint64_t actor,int partner_id,ForeignTradeOperation operation,int good,
                              int64_t quantity,const std::string& expected="");
+    RealmRoutePreview route_preview(uint64_t actor,int destination) const;
     bool land_title_transfer(uint64_t actor,uint64_t holding_id,uint64_t recipient,const std::string& expected="");
     bool land_use_grant(uint64_t actor,uint64_t holding_id,uint64_t grantee,const std::string& expected="");
     bool land_use_revoke(uint64_t actor,uint64_t holding_id,const std::string& expected="");

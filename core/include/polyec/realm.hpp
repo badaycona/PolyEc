@@ -648,6 +648,7 @@ std::vector<Establishment> establishments() const { return establishments_; }
     RealmResult route_command(uint64_t actor,int from,int to,bool open);
     int distance(int from,int to)const;
     int travel_days(int from,int to)const;
+    int actor_travel_days(uint64_t actor,int destination) const;
     Draft draft()const{return draft_;}
     bool choose(int card);
     bool save(const std::string& path,const std::string& bundle,std::string& error) const;

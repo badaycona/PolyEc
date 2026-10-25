@@ -1960,6 +1960,10 @@ int Realm::travel_days(int from,int to)const{
     // migrating Person is already dispatched, so retain only travel time.
     return std::max(0,plan.total_days-1);
 }
+int Realm::actor_travel_days(uint64_t actor,int destination)const{
+    if(!actor||actor>people_.size())return -1;
+    return person_travel_days(person(actor),destination);
+}
 int Realm::person_travel_days(const Person& actor,int destination)const{
     const int days=travel_days(actor.region,destination);
     if(days<=0||regions_!=int(kAtlasTerritoryCount)-1||

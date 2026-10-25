@@ -203,6 +203,51 @@ bool RealmRuntime::foreign_trade_offer(uint64_t actor,int partner_id,ForeignTrad
     error_=result.success?"":result.reason;
     return result.success;
 }
+RealmRoutePreview RealmRuntime::route_preview(uint64_t actor,int destination) const {
+    RealmRoutePreview result;
+    if (!loaded_ || !world_ || !actor || actor > uint64_t(world_->count()) ||
+        world_->regions() != int(kAtlasTerritoryCount) - 1 ||
+        destination < 0 || destination >= int(kAtlasTerritoryCount)) return result;
+    result.supported = true;
+    const auto& person = world_->person(actor);
+    const int origin = person.region;
+    if (origin < 0 || origin >= int(kAtlasTerritoryCount)) {
+        result.supported = false;
+        return result;
+    }
+    if (origin == destination) {
+        result.reachable = true;
+        result.regions.push_back(static_cast<uint8_t>(origin));
+        return result;
+    }
+    const auto plan = NationalTransportManager::plan(
+        world_->day(), static_cast<uint8_t>(origin), static_cast<uint8_t>(destination), 1,
+        TransportServiceGoal::Fastest, world_->national_transport_routes());
+    if (!plan.reachable) return result;
+    result.reachable = true;
+    result.route_days = std::max(0, plan.total_days - 1);
+    result.person_days = world_->actor_travel_days(actor, destination);
+    result.route_fee = plan.total_fee;
+    const auto candidates = world_->candidates(actor);
+    const auto legal = world_->mask(actor, candidates);
+    for (int i = 0; i < realm_actions; ++i) {
+        if (!legal[size_t(i)] || candidates[size_t(i)].target != destination) continue;
+        if (candidates[size_t(i)].kind == Intent::Travel) result.travel_available = true;
+        if (candidates[size_t(i)].kind == Intent::Migrate) result.migration_available = true;
+    }
+    if (result.migration_available && result.person_days > 0)
+        result.migration_fee = 4 + int64_t(2) * result.person_days;
+    result.regions = plan.regions;
+    const auto& routes = world_->national_transport_routes();
+    for (const size_t index : plan.route_indices) {
+        if (index >= routes.size()) {
+            result = RealmRoutePreview{};
+            return result;
+        }
+        result.legs.push_back(routes[index]);
+    }
+    return result;
+}
 bool RealmRuntime::land_title_transfer(uint64_t actor,uint64_t holding_id,uint64_t recipient,const std::string&expected){
     if(!loaded_||!world_||!actor||actor>uint64_t(world_->count())){error_="Invalid title transfer actor";return false;}
     if(!expected.empty()&&expected!=std::to_string(world_->fingerprint())){error_="World changed; refresh before committing this title transfer";return false;}

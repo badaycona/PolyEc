@@ -16,6 +16,8 @@ var status: Label
 var summary: Label
 var funds_label: Label
 var region_rows: Array=[]
+var route_destination: OptionButton
+var route_preview_label: Label
 var id_input: SpinBox
 var profile: RichTextLabel
 var facts: RichTextLabel
@@ -135,7 +137,7 @@ func _ready() -> void:
     var regions=panel(Vector2(24,184),Vector2(880,265))
     var region_scroll=ScrollContainer.new()
     region_scroll.position=Vector2(20,18)
-    region_scroll.size=Vector2(840,230)
+    region_scroll.size=Vector2(840,142)
     regions.add_child(region_scroll)
     var table=GridContainer.new()
     table.columns=6
@@ -153,6 +155,17 @@ func _ready() -> void:
             cell.custom_minimum_size.x=widths[col]
             row.append(cell)
         region_rows.append(row)
+    route_destination=OptionButton.new()
+    route_destination.position=Vector2(20,172)
+    route_destination.custom_minimum_size=Vector2(205,38)
+    route_destination.size=Vector2(205,38)
+    regions.add_child(route_destination)
+    route_preview_label=label_at(regions,"Chọn một đích để xem đường đi.",12,Vector2(238,168),Color("91a7a4"))
+    route_preview_label.size=Vector2(610,78)
+    var map_data=session.atlas_map_data() if session and session.has_method("atlas_map_data") else {}
+    for atlas_region in map_data.get("regions",[]):
+        route_destination.add_item(str(atlas_region.get("name","Vùng %d" % int(atlas_region.get("id",0)))),int(atlas_region.get("id",0)))
+    route_destination.item_selected.connect(func(_index): refresh_route_preview())
     var inspector=panel(Vector2(924,184),Vector2(492,600))
     label_at(inspector,"HỒ SƠ CÁ THỂ / QUYỀN & KHẢ NĂNG",11,Vector2(20,16),Color("d1b575"))
     id_input=SpinBox.new()
@@ -475,6 +488,7 @@ func refresh() -> void:
     if v.chosen>=0:
         funds_label.text="%s · Quỹ tín dụng %d đ · Quỹ hạ tầng %d đ" % [CARDS[v.chosen],v.credit_pool,v.restricted_fund]
     var p=v.person
+    refresh_route_preview()
     id_input.set_value_no_signal(actor)
     var role_text=["Cai trị","Kinh tế","Cư dân"][p.role]
     if p.role==0: role_text="Lãnh chủ · quyền thuế" if p.authority else "Cố vấn"
@@ -528,6 +542,7 @@ func refresh() -> void:
         for offer in foreign_trade.get("offers",[]):
             profile.text+="\n"+foreign_trade_offer_text(offer,v.day)
     for child in commands.get_children(): commands.remove_child(child);child.queue_free()
+
     if v.get("atlas_manual_test",false):
         add_private_housing_controls(v,p)
     var inventory: Array=p.get("inventory",[])
@@ -899,6 +914,37 @@ func add_private_housing_controls(v: Dictionary, p: Dictionary) -> void:
             button(commands,"Từ chối đề nghị nhà #%d" % home_id,func(): run_private_housing_command(home_id,2,offered,str(v.fingerprint)))
         if tenant>0 and (owner==actor or int(p.get("household",0))==tenant):
             button(commands,"Kết thúc hợp đồng nhà #%d" % home_id,func(): run_private_housing_command(home_id,3,tenant,str(v.fingerprint)))
+
+func refresh_route_preview() -> void:
+    if route_preview_label==null or route_destination==null:
+        return
+    if not session or not session.has_method("realm_route_preview"):
+        route_preview_label.text="Bản lõi chưa có truy vấn xem trước tuyến Atlas."
+        return
+    var destination=route_destination.get_selected_id()
+    var preview: Dictionary=session.realm_route_preview(actor,destination)
+    if not bool(preview.get("supported",false)):
+        route_preview_label.text=str(preview.get("message","Không thể xem tuyến trong thế giới hiện tại."))
+        return
+    if not bool(preview.get("reachable",false)):
+        route_preview_label.text=str(preview.get("message","Hiện không có tuyến mở."))
+        return
+    var path_names := PackedStringArray()
+    for point in preview.get("regions",[]):
+        path_names.append(str(point.get("name","Vùng %d" % int(point.get("id",-1)))))
+    var leg_names := PackedStringArray()
+    for leg in preview.get("legs",[]):
+        leg_names.append("%s (%s) · %d ngày" % [str(leg.get("corridor","hành lang")),str(leg.get("mode","")),int(leg.get("days",0))])
+    var text="Đường: %s" % " → ".join(path_names)
+    if not leg_names.is_empty():
+        text+="\nChặng: %s" % " · ".join(leg_names)
+    text+="\nThời gian tuyến %d ngày · thời gian cá thể %d ngày · phí vận tải hàng hóa (1 món) %d đ" % [int(preview.get("route_days",0)),int(preview.get("person_days",0)),int(preview.get("route_fee",0))]
+    text+=" · Travel đang hợp lệ" if bool(preview.get("travel_available",false)) else " · Travel hiện không hợp lệ"
+    if bool(preview.get("migration_available",false)):
+        text+="\nPhí Migrate hiện tại: %d đ" % int(preview.get("migration_fee",0))
+    else:
+        text+="\nMigrate hiện không hợp lệ; lệnh thật sẽ kiểm tra lại khi gửi."
+    route_preview_label.text=text
 
 func toggle_run() -> void:
     if running:

@@ -89,6 +89,7 @@ protected:
         ClassDB::bind_method(D_METHOD("realm_draft", "card", "reroll"), &PolyEcSession::realm_draft);
         ClassDB::bind_method(D_METHOD("realm_save", "path", "restore"), &PolyEcSession::realm_save);
         ClassDB::bind_method(D_METHOD("realm_route", "actor", "from", "to", "open"), &PolyEcSession::realm_route);
+        ClassDB::bind_method(D_METHOD("realm_route_preview", "actor", "destination"), &PolyEcSession::realm_route_preview);
 #endif
     }
 public:
@@ -314,6 +315,66 @@ public:
         return result;
     }
     bool realm_route(int64_t actor,int64_t from,int64_t to,bool open){return active&&realm.route(uint64_t(actor),int(from),int(to),open);}
+    Dictionary realm_route_preview(int64_t actor,int64_t destination) const {
+        Dictionary result;
+        const auto preview = realm.route_preview(actor > 0 ? uint64_t(actor) : 0, int(destination));
+        result["supported"] = preview.supported;
+        result["reachable"] = preview.reachable;
+        if (!preview.supported) {
+            result["message"] = "Xem trước tuyến Atlas cần một thế giới Atlas27 đang mở";
+            return result;
+        }
+        if (!preview.reachable) {
+            result["message"] = "Hiện không có tuyến mở tới vùng đã chọn";
+            return result;
+        }
+        result["route_days"] = preview.route_days;
+        result["person_days"] = preview.person_days;
+        result["route_fee"] = preview.route_fee;
+        result["migration_fee"] = preview.migration_fee;
+        result["travel_available"] = preview.travel_available;
+        result["migration_available"] = preview.migration_available;
+        Array regions;
+        for (const auto region : preview.regions) {
+            Dictionary point;
+            point["id"] = int(region);
+            point["name"] = String::utf8(polyec::kWorldAtlas[region].name.data());
+            regions.push_back(point);
+        }
+        result["regions"] = regions;
+        Array legs;
+        for (const auto& route : preview.legs) {
+            Dictionary leg;
+            leg["from"] = int(route.from);
+            leg["to"] = int(route.to);
+            leg["from_name"] = String::utf8(polyec::kWorldAtlas[route.from].name.data());
+            leg["to_name"] = String::utf8(polyec::kWorldAtlas[route.to].name.data());
+            leg["days"] = route.travel_days;
+            leg["fee"] = route.fee_per_unit;
+            leg["open"] = route.open;
+            if (route.atlas_link < polyec::kWorldAtlasLinks.size()) {
+                const auto& link = polyec::kWorldAtlasLinks[route.atlas_link];
+                switch (link.corridor) {
+                    case polyec::AtlasCorridor::GreatRiver: leg["corridor"] = "Đại Giang"; break;
+                    case polyec::AtlasCorridor::RoadImprovement: leg["corridor"] = "Đường cải thiện"; break;
+                    case polyec::AtlasCorridor::Coastal: leg["corridor"] = "Duyên hải"; break;
+                    case polyec::AtlasCorridor::East: leg["corridor"] = "Hành lang phía Đông"; break;
+                    case polyec::AtlasCorridor::North: leg["corridor"] = "Hành lang phía Bắc"; break;
+                    case polyec::AtlasCorridor::West: leg["corridor"] = "Hành lang phía Tây"; break;
+                    case polyec::AtlasCorridor::RoyalDomains: leg["corridor"] = "Đường miền triều đình"; break;
+                }
+                switch (link.mode) {
+                    case polyec::AtlasRouteMode::River: leg["mode"] = "đường sông"; break;
+                    case polyec::AtlasRouteMode::Road: leg["mode"] = "đường bộ"; break;
+                    case polyec::AtlasRouteMode::CoastalShipping: leg["mode"] = "đường biển"; break;
+                    case polyec::AtlasRouteMode::Unspecified: leg["mode"] = "chưa phân loại"; break;
+                }
+            }
+            legs.push_back(leg);
+        }
+        result["legs"] = legs;
+        return result;
+    }
     bool realm_draft(int64_t card,bool reroll){return reroll?realm.reroll(int(card)):realm.choose(int(card));}
     bool realm_save(const String&path,bool restore){return restore?realm.restore_interactive(path.utf8().get_data()):realm.save(path.utf8().get_data());}
     Dictionary realm_snapshot(int64_t actor=1)const{

@@ -66,6 +66,10 @@ int main() {
     check(target >= 0, "Sovereign has an open travel destination");
     if (target >= 0) {
         const int days = world.travel_days(origin, target);
+        check(world.actor_travel_days(1, target) >= 0,
+              "public read-only actor ETA query accepts a valid Atlas traveler");
+        check(world.actor_travel_days(1, target) <= days,
+              "actor-specific ETA never exceeds the unmounted route time");
         const int64_t cash_before = world.person(1).cash;
         const auto moved = world.execute({1, world.person(1).decisions + 1,
                                           {Intent::Migrate, target, 0, 0, 0}});
@@ -106,6 +110,8 @@ int main() {
 
     Realm small(17, 6, 256);
     check(small.travel_days(0, 1) == small.distance(0, 1), "small profile retains existing hop-based travel behavior");
+    check(small.actor_travel_days(0, 1) == -1 && small.actor_travel_days(1, 7) == -1,
+          "actor ETA query rejects invalid actors and destinations");
     const uint64_t smallEconomic=uint64_t(small.regions()+2);
     RealmObservationTestAccess::add_warhorse(small,smallEconomic);
     const auto smallMounted=small.candidates(smallEconomic);
@@ -140,6 +146,8 @@ int main() {
             const auto before=mounted.candidates(traveler)[slot];
             check(before.kind==Intent::Migrate&&before.good==0&&before.term==routeDays,
                   "unmounted migration candidate shows the full route time");
+            check(mounted.actor_travel_days(traveler,destination)==before.term,
+                  "public actor ETA matches the exact unmounted migration candidate");
             const uint64_t other=traveler==1?2:1;
             RealmObservationTestAccess::add_warhorse(mounted,other);
             check(mounted.candidates(traveler)[slot].term==routeDays,
@@ -148,6 +156,8 @@ int main() {
             check(mounted.invariant(),"personal WarHorse preserves the world goods balance");
             const auto action=mounted.candidates(traveler)[slot];
             const int mountedDays=std::max(1,routeDays-1);
+            check(mounted.actor_travel_days(traveler,destination)==mountedDays,
+                  "public actor ETA applies the same personal WarHorse adjustment as the candidate");
             check(action.kind==Intent::Migrate&&action.good==int(GoodId::WarHorse)&&action.term==mountedDays&&
                   mounted.mask(traveler)[slot]==1.f,
                   "own WarHorse shortens the displayed route by one day and keeps it legal");

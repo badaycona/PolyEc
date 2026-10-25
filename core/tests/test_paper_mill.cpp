@@ -10,6 +10,20 @@
 #include <vector>
 
 using namespace polyec;
+namespace polyec {
+struct RealmObservationTestAccess {
+    static void add_personal_cash(Realm& world, uint64_t owner, int64_t quantity) {
+        world.mutable_person(owner).cash += quantity;
+        world.opening_money_ += quantity;
+    }
+    static void add_secret_fact(Realm& world, int region, uint64_t actor) {
+        world.event(actor, region, 777, 1, 0, true);
+    }
+    static int64_t consumed_paper(const Realm& world) {
+        return world.consumed_[size_t(GoodId::Paper)];
+    }
+};
+}
 namespace {
 int checks = 0;
 void check(bool ok, const char* message) {
@@ -226,8 +240,76 @@ int main() {
             {Intent::Sell, mill_region, paper, 1}}).success &&
               world.person(merchant).inventory[size_t(paper)] == 0,
               "merchant sells the produced Paper through the existing market command");
-        check(world.invariant() && resumed.invariant(),
-              "Forestry, shipment, Paper Mill, market and save/load leave both worlds valid");
+        RealmObservationTestAccess::add_personal_cash(world, mill_governor, 100);
+        check(world.invariant(),
+              "test opening purse is funded explicitly and reconciled in the world money ledger");
+        const auto governorCashBeforePaperPurchase = world.person(mill_governor).cash;
+        const auto buyPaper = world.execute(RealmCommand{mill_governor,
+            world.person(mill_governor).decisions + 1, {Intent::Buy, mill_region, paper, 1}});
+        if (!buyPaper.success) {
+            std::ostringstream detail;
+            detail << "Governance Paper Buy rejected: " << buyPaper.reason
+                   << "; price=" << world.view(mill_governor).provinces[size_t(mill_region)].price[size_t(paper)]
+                   << "; cash=" << governorCashBeforePaperPurchase
+                   << "; stock=" << world.view(mill_governor).provinces[size_t(mill_region)].stock[size_t(paper)];
+            throw std::runtime_error(detail.str());
+        }
+        check(buyPaper.success && world.person(mill_governor).inventory[size_t(paper)] == 1 &&
+              world.person(mill_governor).cash < governorCashBeforePaperPurchase &&
+              world.invariant(),
+              "Governance buys one Paper from the market using the region treasury through the regular Buy action");
+        const std::string afterPaperPurchase = world.serialize("paper-investigation-trial-1");
+        Realm resumedIntegration(1, 1, 128);
+        check(resumedIntegration.deserialize(afterPaperPurchase,
+              "paper-investigation-trial-1", error) &&
+              resumedIntegration.person(mill_governor).inventory[size_t(paper)] == 1 &&
+              resumedIntegration.invariant(),
+              "save/load preserves Governance's Paper bought from the regional market");
+        world.advance(1);
+        resumedIntegration.advance(1);
+        check(world.fingerprint() == resumedIntegration.fingerprint() &&
+              world.market_orders().empty() && world.person(mill_governor).inventory[size_t(paper)] == 1 &&
+              world.view(mill_governor).provinces[size_t(mill_region)].stock[size_t(paper)] == 0 &&
+              world.invariant(),
+              "the completed market purchase removes the single Paper from local stock and survives one day of play");
+        RealmObservationTestAccess::add_secret_fact(world, mill_region, merchant);
+        RealmObservationTestAccess::add_secret_fact(resumedIntegration, mill_region, merchant);
+        const auto paperBeforeInvestigation = world.person(mill_governor).inventory[size_t(paper)];
+        const auto investigationCommand = world.candidates(mill_governor)[13];
+        const auto investigation = world.execute({mill_governor,
+            world.person(mill_governor).decisions + 1, investigationCommand});
+        const auto resumedInvestigation = resumedIntegration.execute({mill_governor,
+            resumedIntegration.person(mill_governor).decisions + 1,
+            resumedIntegration.candidates(mill_governor)[13]});
+        check(investigation.success && resumedInvestigation.success &&
+              world.person(mill_governor).inventory[size_t(paper)] == paperBeforeInvestigation - 1 &&
+              RealmObservationTestAccess::consumed_paper(world) == 1 &&
+              world.investigations().back().owner == mill_governor && world.invariant(),
+              "Governance spends its purchased Paper to open an Investigation through the normal action");
+        const uint64_t investigationId = world.investigations().back().id;
+        const int daysUntilInvestigation = world.investigations().back().due - world.day();
+        const std::string beforeInvestigationCompletes = world.serialize("paper-investigation-trial-1");
+        Realm resumedCompletion(1, 1, 128);
+        check(resumedCompletion.deserialize(beforeInvestigationCompletes,
+              "paper-investigation-trial-1", error) &&
+              resumedCompletion.person(mill_governor).inventory[size_t(paper)] == 0 &&
+              RealmObservationTestAccess::consumed_paper(resumedCompletion) == 1 &&
+              resumedCompletion.invariant(),
+              "save/load keeps the consumed Paper and pending Investigation before it is due");
+        world.advance(daysUntilInvestigation);
+        resumedIntegration.advance(daysUntilInvestigation);
+        resumedCompletion.advance(daysUntilInvestigation);
+        const auto knowledge = world.view(mill_governor).knowledge;
+        const auto completed = world.investigations().back();
+        check(completed.completed && completed.id == investigationId &&
+              std::any_of(knowledge.begin(), knowledge.end(), [&](const PlayerKnowledge& row) {
+                  return row.kind == KnowledgeKind::SecretEvidence &&
+                         row.source_investigation_id == investigationId;
+              }), "completed Investigation gives Governance evidence linked to its own case record");
+        check(world.fingerprint() == resumedIntegration.fingerprint() &&
+              world.fingerprint() == resumedCompletion.fingerprint() &&
+              world.invariant() && resumedIntegration.invariant() && resumedCompletion.invariant(),
+              "uninterrupted, purchase-resumed and investigation-resumed worlds reach the same valid state");
 
         Realm closedRoutes(49201, 26, 256);
         const uint64_t sovereign = 1;

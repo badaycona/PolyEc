@@ -52,6 +52,51 @@ int main() {
         return true;
     }),"both bi-directional northern and western mountain roads inherit their corridor resistance");
 
+    check(NationalTransportManager::seasonally_passable(272,15)&&
+          !NationalTransportManager::seasonally_passable(273,15)&&
+          !NationalTransportManager::seasonally_passable(364,15)&&
+          NationalTransportManager::seasonally_passable(365,15),
+          "north-pass closure begins on game day273 and ends on the next year boundary365");
+    check(NationalTransportManager::seasonally_passable(273,14)&&
+          NationalTransportManager::next_seasonally_passable_day(273,15)==365&&
+          NationalTransportManager::next_seasonally_passable_day(272,15)==272,
+          "only Atlas link15 closes and its next opening day is calculated from the absolute calendar");
+    {
+        const auto spring=NationalTransportManager::plan(0,16,17,1,TransportServiceGoal::Fastest,routes);
+        const auto before_winter=NationalTransportManager::plan(271,16,17,1,TransportServiceGoal::Fastest,routes);
+        const auto winter=NationalTransportManager::plan(272,16,17,1,TransportServiceGoal::Fastest,routes);
+        const auto year_rollover=NationalTransportManager::plan(364,16,17,1,TransportServiceGoal::Fastest,routes);
+        check(spring.reachable&&spring.regions==std::vector<uint8_t>{16,17}&&spring.total_days==4,
+              "an open-season north-pass trip keeps its existing next-day load and three-day travel ETA");
+        check(before_winter.reachable&&before_winter.regions==std::vector<uint8_t>{16,17}&&before_winter.total_days==4,
+              "a cargo loaded on the last autumn day continues through a winter boundary already in transit");
+        check(winter.reachable&&winter.regions==std::vector<uint8_t>{16,4,5,19,18,17}&&winter.total_days==15,
+              "Fastest chooses the available fourteen-day-base detour instead of waiting through winter");
+        check(year_rollover.reachable&&year_rollover.regions==std::vector<uint8_t>{16,17}&&year_rollover.total_days==4,
+              "a departure ready on day365 uses the reopened north pass without a full-year delay");
+    }
+    {
+        auto north_only=routes;
+        for(auto& route:north_only)route.open=route.atlas_link==15&&route.from==16&&route.to==17;
+        std::array<int64_t,kAtlasLinkCount> waiting{};
+        const auto boundary=NationalTransportManager::plan(272,16,17,65,TransportServiceGoal::Fastest,north_only);
+        waiting[15]=64;
+        const auto queued=NationalTransportManager::plan(272,16,17,65,TransportServiceGoal::Fastest,north_only,waiting);
+        check(boundary.reachable&&boundary.total_days==97,
+              "a 65-unit lot resumes on the first two spring service days after the winter closure");
+        check(queued.reachable&&queued.total_days==98,
+              "winter days contribute no capacity when the planner accounts for queued cargo");
+        auto two_leg_north=routes;
+        for(auto& route:two_leg_north)route.open=(route.from==4&&route.to==16)||(route.from==16&&route.to==17);
+        waiting.fill(0);
+        waiting[15]=192;
+        const auto queued_before_ready=NationalTransportManager::plan(270,4,17,1,
+            TransportServiceGoal::Fastest,two_leg_north,waiting);
+        check(queued_before_ready.reachable&&queued_before_ready.regions==std::vector<uint8_t>{4,16,17}&&
+              queued_before_ready.total_days==99,
+              "open autumn capacity clears part of a pass queue before the second leg reaches it");
+    }
+
     const auto river_fast = NationalTransportManager::plan(
         0, 0, 8, 1, TransportServiceGoal::Fastest, routes);
     check(river_fast.reachable && river_fast.regions == std::vector<uint8_t>{0, 2, 1, 8} &&

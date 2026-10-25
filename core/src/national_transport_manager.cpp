@@ -51,9 +51,55 @@ bool checked_multiply(int64_t a, int64_t b, int64_t& out) noexcept {
     return true;
 }
 
-int load_days(int64_t quantity, int capacity) noexcept {
-    const int64_t days = quantity / capacity + (quantity % capacity != 0);
-    return days > std::numeric_limits<int>::max() ? 0 : int(days);
+int64_t winter_closed_days_before(int64_t exclusive_day) noexcept {
+    if (exclusive_day <= 0) return 0;
+    const int64_t full_years = exclusive_day / NationalTransportManager::atlas_year_days;
+    const int day_in_year = int(exclusive_day % NationalTransportManager::atlas_year_days);
+    const int partial_winter = std::clamp(
+        day_in_year - NationalTransportManager::north_pass_winter_start, 0,
+        NationalTransportManager::north_pass_winter_end - NationalTransportManager::north_pass_winter_start);
+    return full_years * (NationalTransportManager::north_pass_winter_end -
+                         NationalTransportManager::north_pass_winter_start) + partial_winter;
+}
+
+int64_t open_service_days(int64_t first_day, int64_t last_day, uint8_t atlas_link) noexcept {
+    if (first_day > last_day) return 0;
+    const int64_t inclusive_days = last_day - first_day + 1;
+    if (atlas_link != NationalTransportManager::north_pass_atlas_link) return inclusive_days;
+    const int64_t closed_days = winter_closed_days_before(last_day + 1) -
+                                winter_closed_days_before(first_day);
+    return inclusive_days - closed_days;
+}
+
+int64_t earliest_loading_day(int64_t current_day, int64_t ready_day_offset,
+                             int64_t quantity, int64_t waiting_quantity,
+                             const NationalTransportRoute& route) noexcept {
+    const int64_t first_ready_day = current_day + ready_day_offset;
+    const int64_t prior_open_days = open_service_days(current_day + 1, first_ready_day - 1,
+                                                       route.atlas_link);
+    int64_t capacity_before_ready = 0;
+    if (!checked_multiply(prior_open_days, route.capacity_per_day, capacity_before_ready))
+        capacity_before_ready = std::numeric_limits<int64_t>::max();
+    const int64_t remaining_wait = waiting_quantity > capacity_before_ready
+        ? waiting_quantity - capacity_before_ready : 0;
+    if (quantity > std::numeric_limits<int64_t>::max() - remaining_wait) return -1;
+    const int64_t units_to_load = remaining_wait + quantity;
+    const int64_t capacity = route.capacity_per_day;
+    const int64_t service_days_needed = units_to_load / capacity + (units_to_load % capacity != 0);
+    constexpr int64_t max_absolute_day = std::numeric_limits<int>::max();
+    if (first_ready_day > max_absolute_day || service_days_needed <= 0 ||
+        open_service_days(first_ready_day, max_absolute_day, route.atlas_link) < service_days_needed)
+        return -1;
+    int64_t low = first_ready_day;
+    int64_t high = max_absolute_day;
+    while (low < high) {
+        const int64_t middle = low + (high - low) / 2;
+        if (open_service_days(first_ready_day, middle, route.atlas_link) >= service_days_needed)
+            high = middle;
+        else
+            low = middle + 1;
+    }
+    return low;
 }
 
 struct Label {
@@ -74,6 +120,22 @@ bool better(int64_t primary, int64_t secondary, const std::vector<uint8_t>& regi
 }
 
 } // namespace
+
+bool NationalTransportManager::seasonally_passable(int absolute_day, uint8_t atlas_link) noexcept {
+    if (absolute_day < 0) return false;
+    if (atlas_link != north_pass_atlas_link) return true;
+    const int day_in_year = absolute_day % atlas_year_days;
+    return day_in_year < north_pass_winter_start || day_in_year >= north_pass_winter_end;
+}
+
+int NationalTransportManager::next_seasonally_passable_day(int absolute_day,
+                                                            uint8_t atlas_link) noexcept {
+    if (absolute_day < 0) return -1;
+    if (seasonally_passable(absolute_day, atlas_link)) return absolute_day;
+    const int days_until_open = north_pass_winter_end - absolute_day % atlas_year_days;
+    if (absolute_day > std::numeric_limits<int>::max() - days_until_open) return -1;
+    return absolute_day + days_until_open;
+}
 
 std::vector<NationalTransportRoute> NationalTransportManager::default_routes() {
     std::vector<NationalTransportRoute> routes;
@@ -163,14 +225,10 @@ NationalTransportPathPlan NationalTransportManager::plan(
             const auto& route = routes[route_index];
             if (!route.open || route.from != current) continue;
             const int64_t ready_day=label.projected_days==0?1:label.projected_days;
-            const int64_t prior_capacity=ready_day-1>std::numeric_limits<int64_t>::max()/route.capacity_per_day
-                ?std::numeric_limits<int64_t>::max():(ready_day-1)*route.capacity_per_day;
             const int64_t waiting=waiting_units_by_link[route.atlas_link];
-            const int64_t remaining_wait=waiting>prior_capacity?waiting-prior_capacity:0;
-            if(quantity>std::numeric_limits<int64_t>::max()-remaining_wait)continue;
-            const int days_to_load=load_days(remaining_wait+quantity,route.capacity_per_day);
-            if(!days_to_load)continue;
-            const int64_t arrival=ready_day+days_to_load-1+route.travel_days;
+            const int64_t load_day=earliest_loading_day(current_day,ready_day,quantity,waiting,route);
+            if(load_day<0||load_day>std::numeric_limits<int64_t>::max()-route.travel_days)continue;
+            const int64_t arrival=load_day-current_day+route.travel_days;
             if(arrival>std::numeric_limits<int>::max())continue;
             int64_t leg_fee = 0;
             if (!checked_multiply(route.fee_per_unit, quantity, leg_fee)) continue;

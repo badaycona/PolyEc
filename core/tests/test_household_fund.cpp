@@ -22,7 +22,7 @@ void reject_unchanged(Realm& world, HouseholdFundCommand command, const char* la
 int main() {
     try {
         Realm world(9041, 1, 256);
-        check(!world.pilot_policy_compatible() && std::string(world.model_contract()) == "realm-household-fund-goods30-config-v54",
+        check(!world.pilot_policy_compatible() && std::string(world.model_contract()) == "realm-household-fund-goods30-config-v54-atlas-north-pass-v1",
               "household spending semantics version the learned model contract");
         const Realm legacy = world;
         uint64_t household = 0, authority = 0, contributor = 0, outsider = 0;

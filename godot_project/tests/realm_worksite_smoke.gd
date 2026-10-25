@@ -33,7 +33,7 @@ func run() -> void:
 	var session = ClassDB.instantiate("PolyEcSession")
 	var schema = session.realm_schema()
 	check(schema == "realm-v45", "native core schema")
-	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v54", "native core model contract")
+	check(session.realm_model_contract() == "realm-household-fund-goods30-config-v54-atlas-north-pass-v1", "native core model contract")
 	check(session.realm_atlas_manual_start(20261098, 512), "manual test can start the current Realm contract without an old policy")
 	var realm_snapshot: Dictionary = session.realm_snapshot(129)
 	check(realm_snapshot.has("apprenticeships") and realm_snapshot.apprenticeships is Array,

@@ -60,6 +60,12 @@ int main(int argc,char**argv){if(argc!=6)return 2;try{
   check(!compatible_model_manifest(oldTimeline,"civilian","realm-worksite-payroll-goods27-v22",false,legacy,manifestError),"reject historical-default timeline v6 model after body observation change");
   check(!compatible_model_manifest(parsed,"economic","realm-household-fund-goods27-v20",true,legacy,manifestError),"reject wrong family under dev override");
   check(!compatible_model_manifest(parsed,"civilian","wrong-contract",true,legacy,manifestError),"reject contract mismatch under dev override");
+  ModelManifest preNorthPass=parsed;preNorthPass.schema=realm_schema;preNorthPass.model_contract="realm-household-fund-goods30-config-v54";
+  preNorthPass.observation=realm_obs;preNorthPass.actions=realm_actions;preNorthPass.hidden=64;
+  check(!compatible_model_manifest(preNorthPass,"civilian","realm-household-fund-goods30-config-v54-atlas-north-pass-v1",false,legacy,manifestError),
+        "reject a same-shape model trained before Atlas north-pass seasonality changed route candidates and travel timing");
+  check(!compatible_model_manifest(preNorthPass,"civilian","realm-household-fund-goods30-config-v54-atlas-north-pass-v1",true,legacy,manifestError),
+        "development override cannot relabel a pre-seasonality model as trained for the current route calendar");
   parsed.actions=80;check(!compatible_model_manifest(parsed,"civilian","realm-household-fund-goods27-v20",true,legacy,manifestError),"reject old action dimension under dev override");
  parsed.actions=89;parsed.observation=1196;check(!compatible_model_manifest(parsed,"civilian","realm-household-fund-goods27-v20",true,legacy,manifestError),"dev override cannot bypass current tensor shape");
   {std::ofstream manifest(familyDir/"manifest.json",std::ios::trunc);manifest<<R"({"family":"civilian","schema":"realm-v9","model_contract":"realm-household-fund-goods27-v3","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","observation":1088,"actions":80,"hidden":64,"trained_with_rl":true,"imitation":false})";}

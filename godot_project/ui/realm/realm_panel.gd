@@ -932,7 +932,8 @@ func add_national_route_controls(v: Dictionary) -> void:
         var route_index=int(route.get("index",-1))
         route_by_index[route_index]=route
         var route_state="đang mở" if bool(route.get("open",false)) else "đang đóng"
-        selector.add_item("%s → %s · %s · %d ngày · %s" % [str(route.get("from_name","")),str(route.get("to_name","")),str(route.get("corridor","tuyến")),int(route.get("travel_days",0)),route_state],route_index)
+        var season_text=" · đóng mùa tới ngày %d" % int(route.get("next_service_day",0)) if bool(route.get("seasonally_blocked",false)) else ""
+        selector.add_item("%s → %s · %s · %d ngày · %s%s" % [str(route.get("from_name","")),str(route.get("to_name","")),str(route.get("corridor","tuyến")),int(route.get("travel_days",0)),route_state,season_text],route_index)
     commands.add_child(selector)
     var route_button=Button.new()
     route_button.name="NationalRouteAction"
@@ -943,7 +944,7 @@ func add_national_route_controls(v: Dictionary) -> void:
         var route: Dictionary=route_by_index.get(route_index,{})
         route_button.text="Đóng tuyến đã chọn" if bool(route.get("open",false)) else "Mở lại tuyến đã chọn"
         route_button.disabled=bool(route.get("occupied_endpoint",false))
-        route_button.tooltip_text="Core sẽ từ chối nếu một đầu tuyến đang bị chiếm đóng." if route_button.disabled else "Lệnh thay đổi việc hàng mới lên đường. Hàng đã chạy tiếp tục; hàng chưa tải sẽ chờ tới khi mở lại."
+        route_button.tooltip_text="Core sẽ từ chối nếu một đầu tuyến đang bị chiếm đóng." if route_button.disabled else "Lệnh thay đổi việc hàng mới lên đường. Mùa đông có thể tạm chặn đèo Bắc; hàng đã chạy tiếp tục, hàng chưa tải sẽ chờ đến ngày thông hoặc khi tuyến được mở lại."
     selector.item_selected.connect(func(item_index): update_button.call(item_index))
     selector.select(0)
     update_button.call(0)
@@ -976,11 +977,11 @@ func refresh_route_preview() -> void:
         path_names.append(str(point.get("name","Vùng %d" % int(point.get("id",-1)))))
     var leg_names := PackedStringArray()
     for leg in preview.get("legs",[]):
-        leg_names.append("%s (%s) · %d ngày" % [str(leg.get("corridor","hành lang")),str(leg.get("mode","")),int(leg.get("days",0))])
+        leg_names.append("%s (%s) · ETA nền %d ngày" % [str(leg.get("corridor","hành lang")),str(leg.get("mode","")),int(leg.get("days",0))])
     var text="Đường: %s" % " → ".join(path_names)
     if not leg_names.is_empty():
         text+="\nChặng: %s" % " · ".join(leg_names)
-    text+="\nThời gian tuyến %d ngày · thời gian cá thể %d ngày · phí vận tải hàng hóa (1 món) %d đ" % [int(preview.get("route_days",0)),int(preview.get("person_days",0)),int(preview.get("route_fee",0))]
+    text+="\nTổng lịch hàng %d ngày (đã tính sức tải và ngày đèo Bắc đóng) · thời gian cá thể %d ngày · phí vận tải hàng hóa (1 món) %d đ" % [int(preview.get("route_days",0)),int(preview.get("person_days",0)),int(preview.get("route_fee",0))]
     text+=" · Travel đang hợp lệ" if bool(preview.get("travel_available",false)) else " · Travel hiện không hợp lệ"
     if bool(preview.get("migration_available",false)):
         text+="\nPhí Migrate hiện tại: %d đ" % int(preview.get("migration_fee",0))

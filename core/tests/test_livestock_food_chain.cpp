@@ -46,7 +46,7 @@ int main(){try{
     check(authority<=uint64_t(world.count())&&world.person(authority).taxing_authority&&ranchWorker&&butcherWorker,
           "Atlas region18 has a public authority and two adult civilian workers");
     check(realm_schema==std::string_view("realm-v45")&&world.model_contract()==
-          "realm-household-fund-goods30-config-v54"&&realm_actions==400&&realm_obs==5182,
+          "realm-household-fund-goods30-config-v54-atlas-north-pass-v1"&&realm_actions==400&&realm_obs==5182,
           "Livestock advances the model and config versions without changing tensor dimensions");
 
     const auto ranchCandidate=world.candidates(authority)[size_t(realm_specialty_product_candidate_begin)];

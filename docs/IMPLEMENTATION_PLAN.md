@@ -437,6 +437,8 @@ Phạm vi bản đầu là atlas 2D có địa hình và chiều sâu thị giá
 - Tuyến thủy có chiều đi/ngược dòng và biến thiên mùa; cảng phụ thuộc chiều sâu/khả năng cập bến ở mức mô phỏng đơn giản. Không cần mô phỏng thủy động lực đầy đủ.
 - Asset terrain, coastline và shader hillshade được đóng gói local, có nguồn/giấy phép rõ; game không tải map từ API lúc chơi.
 
+**Setting thử mùa tuyến, `atlas-north-pass-seasonal-closure-v1` (người dùng ủy quyền tự quyết 2026-10-25):** năm game365 ngày theo `Realm::day()`; ngày trong năm là `day % 365`, mùa xuân0–90, hạ91–181, thu182–272, đông273–364. Chỉ corridor North giữa Bắc Mã16 và Phong Ải17 (Atlas link15), hai chiều, không nhận chuyến mới trong92 ngày mùa đông. Ngoài mùa đông giữ ETA3 ngày, capacity64 đơn vị/ngày và phí hiện hành; ngày đóng không có capacity. Planner so chờ đến ngày thông với đường vòng hiện có; route do Sovereign đóng vẫn bị loại hoàn toàn. Hàng đã trên cạnh đi theo ETA lưu; hàng chờ trước cạnh đèo đợi. Đây là setting hư cấu giới hạn để kiểm cơ chế, không phải khí hậu/đo đạc đã xác nhận và không tự mở rộng sang link North khác. Plan và phép kiểm: [đóng đèo Bắc theo mùa v1](design/M5.4-atlas-north-pass-seasonal-closure-v1-plan.md).
+
 ### 12.6 Render, zoom và tương tác
 
 Godot Node2D/Camera2D với terrain chunks, texture nền, polygon picking và layer đường/sông. Bắt đầu heightfield khoảng 2.048×2.048 samples; độ phân giải này phục vụ render/geography, **không được cộng vào số thực thể xã hội**. Độ phân giải cuối được chọn theo chất lượng và GPU tích hợp.

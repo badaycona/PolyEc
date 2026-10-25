@@ -37,8 +37,14 @@ struct NationalTransportPathPlan {
 // and selects a route for a policy-supplied service goal. It owns no Realm data.
 class NationalTransportManager {
 public:
-    static constexpr uint32_t config_version = 1;
+    static constexpr uint32_t config_version = 2;
+    static constexpr int atlas_year_days = 365;
+    static constexpr int north_pass_winter_start = 273;
+    static constexpr int north_pass_winter_end = 365;
+    static constexpr uint8_t north_pass_atlas_link = 15;
     static std::vector<NationalTransportRoute> default_routes();
+    static bool seasonally_passable(int absolute_day, uint8_t atlas_link) noexcept;
+    static int next_seasonally_passable_day(int absolute_day, uint8_t atlas_link) noexcept;
     static bool routes_are_well_formed(
         const std::vector<NationalTransportRoute>& routes,
         int region_count = int(kAtlasTerritoryCount)) noexcept;

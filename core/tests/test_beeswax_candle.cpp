@@ -220,7 +220,7 @@ int main(){try{
           oldLoaded.serialize("beeswax-legacy").rfind("POLYEC_REALM_75 ",0)==0&&oldLoaded.invariant(),
           "schema67 saves without Apiary migrate and are written as schema70");
 
-    check(world.model_contract()=="realm-worksite-payroll-goods30-config-v54"&&
+    check(world.model_contract()=="realm-worksite-payroll-goods30-config-v54-atlas-north-pass-v1"&&
           std::string_view(realm_schema)=="realm-v45",
           "the new rule advances the model contract without changing tensor sizes");
     std::cout<<"Beeswax source and candle checks="<<checks<<'\n';return 0;

@@ -85,6 +85,16 @@ struct RealmTransportTestAccess {
         for (size_t i = 0; i < world.national_transport_routes_.size(); ++i)
             world.national_transport_routes_[i].open = i == forward || i == reverse;
     }
+    static void open_one_direction_only(Realm& world,size_t route_index){
+        for(size_t i=0;i<world.national_transport_routes_.size();++i)
+            world.national_transport_routes_[i].open=i==route_index;
+    }
+    static void set_day_for_fixture(Realm& world,int day){
+        world.day_=day;
+        world.schedule_book_.cursor=int64_t(day)*kSubdayUnitsPerDay;
+        world.market_settled_day_=day;
+        world.market_processed_month_=day/30;
+    }
     static void open_path_only(Realm& world, const std::vector<size_t>& path) {
         for(size_t i=0;i<world.national_transport_routes_.size();++i)
             world.national_transport_routes_[i].open=std::find(path.begin(),path.end(),i)!=path.end();
@@ -689,6 +699,87 @@ int main(int argc,char** argv){
             check(next_order.success&&queued.transport_shipments().back().route_indices.front()==first_detour&&
                   queued.transport_shipments().back().route_indices.back()==second_detour&&queued.invariant(),
                   "later shipment chooses the faster detour when earlier waiting cargo fills the direct edge");
+        }
+
+        {
+            Realm seasonal(901,26,128);
+            check(seasonal.model_contract()==
+                  "realm-household-fund-goods30-config-v54-atlas-north-pass-v1"&&
+                  std::string_view(realm_schema)=="realm-v45",
+                  "seasonal route semantics version the model compatibility string without changing save/model layout tag");
+            RealmTransportTestAccess::set_day_for_fixture(seasonal,272);
+            size_t north_route=seasonal.national_transport_routes().size();
+            for(size_t i=0;i<seasonal.national_transport_routes().size();++i){
+                const auto& route=seasonal.national_transport_routes()[i];
+                if(route.atlas_link==NationalTransportManager::north_pass_atlas_link&&route.from==16&&route.to==17){
+                    north_route=i;break;
+                }
+            }
+            check(north_route<seasonal.national_transport_routes().size(),
+                  "season fixture locates the directed Bắc Mã to Phong Ải pass route");
+            RealmTransportTestAccess::open_one_direction_only(seasonal,north_route);
+            const uint64_t traveler=RealmTransportTestAccess::any_actor_at(seasonal,16);
+            const int seasonal_good=canonical_from_legacy_good(3);
+            RealmTransportTestAccess::fund(seasonal,traveler,seasonal_good,65,1000);
+            const auto seasonal_order=create(seasonal,traveler,17,seasonal_good,65);
+            check(seasonal_order.success&&seasonal.transport_shipments().back().route_indices==
+                  std::vector<size_t>{north_route},
+                  "a shipment placed at the autumn boundary keeps the only available pass route and waits for opening");
+            seasonal.advance();
+            check(seasonal.day()==273&&seasonal.transport_cargo_lots().size()==1&&
+                  seasonal.transport_cargo_lots().front().arrival_day==0&&
+                  seasonal.transport_cargo_lots().front().current_region==16&&
+                  seasonal.transport_shipments().front().fee_escrow==65,
+                  "goods that cannot load in winter remain at the origin and keep their unpaid route fee in escrow");
+            const std::string waiting_save=seasonal.serialize("north-pass-wait-save");
+            check(waiting_save.rfind("POLYEC_REALM_76 ",0)==0,
+                  "seasonal waiting uses the existing schema76 save format");
+            Realm restored(1,26,128);std::string restore_error;
+            check(restored.deserialize(waiting_save,"north-pass-wait-save",restore_error)&&
+                  restored.invariant()&&restored.fingerprint()==seasonal.fingerprint(),
+                  "save/load preserves cargo waiting at a seasonally closed pass without adding save data");
+            seasonal.advance(91);restored.advance(91);
+            size_t fee_region=size_t(seasonal.national_transport_routes()[north_route].fee_recipient_region);
+            const int64_t treasury_before_spring=seasonal.view().provinces[fee_region].treasury;
+            seasonal.advance();restored.advance();
+            check(seasonal.day()==365&&restored.fingerprint()==seasonal.fingerprint()&&
+                  seasonal.transport_cargo_lots().size()==2&&
+                  std::count_if(seasonal.transport_cargo_lots().begin(),seasonal.transport_cargo_lots().end(),
+                      [&](const TransportCargoLot& lot){return lot.arrival_day==368&&lot.quantity==64;})==1&&
+                  std::count_if(seasonal.transport_cargo_lots().begin(),seasonal.transport_cargo_lots().end(),
+                      [](const TransportCargoLot& lot){return lot.arrival_day==0&&lot.quantity==1;})==1&&
+                  seasonal.view().provinces[fee_region].treasury==treasury_before_spring+64,
+                  "the first spring service day loads only the 64-unit daily capacity after restored winter waiting");
+            seasonal.advance(5);restored.advance(5);
+            check(seasonal.fingerprint()==restored.fingerprint()&&seasonal.transport_cargo_lots().empty()&&
+                  seasonal.person(traveler).inventory[size_t(seasonal_good)]==65&&seasonal.invariant(),
+                  "the split shipment arrives once and save/load resumes identically after the seasonal delay");
+        }
+
+        {
+            Realm in_flight(902,26,128);
+            RealmTransportTestAccess::set_day_for_fixture(in_flight,270);
+            size_t north_route=in_flight.national_transport_routes().size();
+            for(size_t i=0;i<in_flight.national_transport_routes().size();++i){
+                const auto& route=in_flight.national_transport_routes()[i];
+                if(route.atlas_link==NationalTransportManager::north_pass_atlas_link&&route.from==16&&route.to==17){
+                    north_route=i;break;
+                }
+            }
+            check(north_route<in_flight.national_transport_routes().size(),
+                  "in-flight fixture locates the same directed northern pass");
+            RealmTransportTestAccess::open_one_direction_only(in_flight,north_route);
+            const uint64_t traveler=RealmTransportTestAccess::any_actor_at(in_flight,16);
+            const int good_id=canonical_from_legacy_good(3);
+            RealmTransportTestAccess::fund(in_flight,traveler,good_id,1,1000);
+            check(create(in_flight,traveler,17,good_id,1).success,
+                  "cargo can be dispatched before the winter boundary");
+            in_flight.advance();
+            const int saved_arrival=in_flight.transport_cargo_lots().front().arrival_day;
+            in_flight.advance(2);
+            check(saved_arrival==274&&in_flight.day()==273&&
+                  in_flight.transport_cargo_lots().front().arrival_day==saved_arrival,
+                  "winter closing does not delay cargo already moving on the pass");
         }
 
         Realm market_world(804,26,128), market_control(804,26,128);

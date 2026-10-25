@@ -347,7 +347,8 @@ void Realm::process_transport_day() {
                 lot.route_position >= shipment.route_indices.size()) continue;
             const size_t route_index = shipment.route_indices[lot.route_position];
             const auto& route = national_transport_routes_.at(route_index);
-            if (!route.open || route.from != lot.current_region) continue;
+            if (!route.open || route.from != lot.current_region ||
+                !NationalTransportManager::seasonally_passable(day_,route.atlas_link)) continue;
             if (day_ > 365000 - route.travel_days) continue;
             int& used = used_by_link[route.atlas_link];
             const int free_capacity = std::max(0, route.capacity_per_day - used);

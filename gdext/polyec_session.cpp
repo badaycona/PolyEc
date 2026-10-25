@@ -416,10 +416,15 @@ public:
             const auto&routes=w->national_transport_routes();
             for(size_t routeIndex=0;routeIndex<routes.size();++routeIndex){
                 const auto&route=routes[routeIndex];
-                Dictionary item;item["index"]=int(routeIndex);item["from"]=int(route.from);item["to"]=int(route.to);
+                Dictionary item;item["index"]=int(routeIndex);item["atlas_link"]=int(route.atlas_link);
+                item["from"]=int(route.from);item["to"]=int(route.to);
                 item["from_name"]=String::utf8(polyec::kWorldAtlas[route.from].name.data());
                 item["to_name"]=String::utf8(polyec::kWorldAtlas[route.to].name.data());
                 item["open"]=route.open;item["travel_days"]=route.travel_days;item["fee_per_unit"]=route.fee_per_unit;
+                const int next_service_day=polyec::NationalTransportManager::next_seasonally_passable_day(
+                    w->day()+1,route.atlas_link);
+                item["seasonally_blocked"]=next_service_day!=w->day()+1;
+                item["next_service_day"]=next_service_day;
                 item["occupied_endpoint"]=w->region_military_occupied(route.from)||w->region_military_occupied(route.to);
                 if(route.atlas_link<polyec::kWorldAtlasLinks.size()){
                     const auto&link=polyec::kWorldAtlasLinks[route.atlas_link];

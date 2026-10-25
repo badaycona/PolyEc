@@ -65,7 +65,7 @@ int main(){try{
     check(authority<=uint64_t(world.count())&&world.person(authority).taxing_authority&&glassWorker&&decorativeWorker&&buyer,
           "Atlas region10 has the public authority and three local adult civilians");
     check(realm_schema==std::string_view("realm-v45")&&world.model_contract()==
-          "realm-household-fund-goods30-config-v54"&&realm_actions==400&&realm_obs==5182,
+          "realm-household-fund-goods30-config-v54-atlas-north-pass-v1"&&realm_actions==400&&realm_obs==5182,
           "DecorativeGlass advances the model/config versions without changing tensor dimensions");
 
     const auto glassCandidate=world.candidates(authority)[size_t(realm_specialty_product_candidate_begin)];

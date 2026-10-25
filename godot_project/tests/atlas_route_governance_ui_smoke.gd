@@ -85,5 +85,27 @@ func run() -> void:
 	panel.refresh()
 	check(bool(route_from_snapshot(session.realm_snapshot(1), outgoing[0]).get("open", false)), "save/load restores the reopened route")
 	check(bool(session.realm_route_preview(1, destination).get("reachable", false)), "preview follows restored route configuration")
+	var advanced := true
+	for _day in range(272):
+		if not session.realm_step_one_day():
+			advanced = false
+			break
+	check(advanced, "the same Atlas Realm advances to the day before winter for the route-season display check")
+	var north_pass: Dictionary = {}
+	for route in session.realm_snapshot(1).get("national_routes", []):
+		if int(route.get("atlas_link", -1)) == 15 and int(route.get("from", -1)) == 16 and int(route.get("to", -1)) == 17:
+			north_pass = route
+			break
+	check(bool(north_pass.get("seasonally_blocked", false)) and int(north_pass.get("next_service_day", -1)) == 365,
+		"Sovereign route snapshot identifies the winter pass closure and reports its next service day")
+	panel.refresh()
+	var selector: OptionButton = panel.commands.get_node_or_null("NationalRouteSelector")
+	var winter_label_found := false
+	if selector != null:
+		for item in range(selector.item_count):
+			if selector.get_item_id(item) == int(north_pass.get("index", -1)):
+				winter_label_found = selector.get_item_text(item).contains("đóng mùa tới ngày 365")
+				break
+	check(winter_label_found, "Realm panel explains that the North pass is closed until day365")
 	print("ATLAS ROUTE GOVERNANCE %s: %d checks; region %d -> %d; managed outgoing routes %d" % ["FAIL" if failed else "PASS", checks, origin, destination, outgoing.size()])
 	quit(1 if failed else 0)

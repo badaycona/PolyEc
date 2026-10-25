@@ -32,14 +32,15 @@ inline void read_military_raid_section(std::istream& in,std::vector<MilitaryRaid
     size_t count=0;in>>count;
     if(!in||count>1000000)throw std::runtime_error("Save military raid count");
     std::vector<MilitaryRaid> staged;staged.reserve(count);
-    uint64_t previous_id=0;unsigned pending=0;
+    uint64_t previous_id=0;unsigned pending=0;std::array<bool,kForeignTradePartnerCount> pending_partners{};
+    std::array<bool,kAtlasTerritoryCount> pending_targets{};
     for(size_t i=0;i<count;++i){
         MilitaryRaid raid;unsigned status=0;size_t defenders=0,supplied=0;
         in>>raid.id>>raid.partner_id>>raid.target_region>>raid.created_day>>raid.resolved_day
           >>raid.force_units>>raid.defense_score>>raid.attacker_losses>>raid.defender_casualties
           >>raid.salt_looted>>status>>defenders;
         if(!in||raid.id<=previous_id||raid.id>=next_id||raid.partner_id<0||
-           raid.partner_id>=kForeignTradePartnerCount||raid.target_region!=kMilitaryRaidTargetRegion||
+           raid.partner_id>=kForeignTradePartnerCount||raid.target_region<0||raid.target_region>=int(kAtlasTerritoryCount)||
            raid.created_day<0||raid.created_day>current_day||raid.force_units<1||
            raid.force_units>kMilitaryRaidUnitMaximum||status>static_cast<unsigned>(MilitaryRaidStatus::Withdrawn)||
            defenders>16||raid.defense_score<0||raid.defense_score>80||raid.attacker_losses<0||
@@ -65,9 +66,11 @@ inline void read_military_raid_section(std::istream& in,std::vector<MilitaryRaid
            !std::includes(raid.defenders.begin(),raid.defenders.end(),raid.supplied_defenders.begin(),raid.supplied_defenders.end()))
             throw std::runtime_error("Save military raid supply users");
         if(raid.status==MilitaryRaidStatus::Pending){
-            if(++pending>1||raid.resolved_day!=-1||raid.defense_score||raid.attacker_losses||
+            if(++pending>kMilitaryRaidPendingMaximum||pending_partners[size_t(raid.partner_id)]||
+               pending_targets[size_t(raid.target_region)]||raid.resolved_day!=-1||raid.defense_score||raid.attacker_losses||
                raid.defender_casualties||raid.salt_looted||!raid.defenders.empty()||!raid.supplied_defenders.empty())
                 throw std::runtime_error("Save pending military raid");
+            pending_partners[size_t(raid.partner_id)]=true;pending_targets[size_t(raid.target_region)]=true;
         }else{
             if(raid.resolved_day<raid.created_day||raid.resolved_day>current_day)
                 throw std::runtime_error("Save resolved military raid day");

@@ -20,7 +20,10 @@ struct RealmObservationTestAccess {
     }
     static void prepare_routes(Realm& world){for(auto& route:world.national_transport_routes_)route.open=true;}
     static void ensure_port_salt(Realm& world,int64_t amount){
-        auto& stock=world.provinces_.at(size_t(kMilitaryRaidTargetRegion)).stock[size_t(GoodId::Salt)];
+        ensure_salt(world,kMilitaryRaidTargetRegion,amount);
+    }
+    static void ensure_salt(Realm& world,int region,int64_t amount){
+        auto& stock=world.provinces_.at(size_t(region)).stock[size_t(GoodId::Salt)];
         if(stock>=amount)return;
         const auto added=amount-stock;
         stock=amount;world.opening_[size_t(GoodId::Salt)]+=added;
@@ -127,7 +130,7 @@ int main(){try{
     check(schema65Resume.deserialize(schema65Save,"coastal-raid-battle-v1",error)&&
           schema65Resume.military_raids()==world.military_raids()&&
           schema65Resume.serialize("coastal-raid-battle-v1").rfind("POLYEC_REALM_75 ",0)==0,
-          "schema65 raid data migrates without a supply-use list and the next save writes schema70");
+          "schema65 raid data migrates without a supply-use list and the next save writes current schema75");
     auto legacySave=pendingSave;test_fixtures::downgrade_save_60_to_59(legacySave);
     Realm legacy(1,1,128);
     check(legacy.deserialize(legacySave,"coastal-raid-battle-v1",error)&&legacy.military_raids().empty()&&legacy.invariant(),
@@ -144,6 +147,89 @@ int main(){try{
     check(!closedPort.execute(MilitaryRaidCommand{0,closedPort.foreign_trade_partners()[0].decision_sequence+1,1}).success&&
           closedPort.fingerprint()==closedPortFingerprint,
           "a raid is rejected without spending resources while the coastal corridor is closed");
+
+    Realm multiFrontWorld(9206,26,128);RealmObservationTestAccess::prepare_routes(multiFrontWorld);
+    const auto initialRoutes=multiFrontWorld.national_transport_routes();
+    const auto target12Plan=NationalTransportManager::plan(0,8,12,2,TransportServiceGoal::Fastest,initialRoutes);
+    check(target12Plan.reachable&&!target12Plan.route_indices.empty(),
+          "the selected Atlas target is reachable from the landing port through open routes");
+    std::array<int64_t,kAtlasTerritoryCount> feesByRegion{};
+    for(const auto routeIndex:target12Plan.route_indices){
+        const auto& route=initialRoutes[routeIndex];feesByRegion[size_t(route.fee_recipient_region)]+=route.fee_per_unit*2;
+    }
+    std::array<int64_t,kAtlasTerritoryCount> routeTreasuriesBefore{};
+    for(size_t region=0;region<routeTreasuriesBefore.size();++region)
+        routeTreasuriesBefore[region]=multiFrontWorld.view().provinces[region].treasury;
+    const auto partner0=multiFrontWorld.foreign_trade_partners()[0];
+    const auto attack12=multiFrontWorld.execute(MilitaryRaidCommand{0,partner0.decision_sequence+1,2,12});
+    check(attack12.success&&multiFrontWorld.military_raids().back().target_region==12&&
+          multiFrontWorld.foreign_trade_partners()[0].money==partner0.money-2*kMilitaryRaidCashPerUnit-target12Plan.total_fee&&
+          multiFrontWorld.foreign_trade_partners()[0].goods[size_t(GoodId::DryFood)]==partner0.goods[size_t(GoodId::DryFood)]-2&&
+          multiFrontWorld.invariant(),
+          "an inland raid funds its force, rations and route fee and records the selected region");
+    for(size_t region=0;region<feesByRegion.size();++region)
+        if(feesByRegion[region]>0)check(multiFrontWorld.view().provinces[region].treasury==
+            routeTreasuriesBefore[region]+feesByRegion[region],
+            "each inland route fee is credited to its listed regional treasury exactly once");
+    const auto partner1=multiFrontWorld.foreign_trade_partners()[1];
+    const auto partner2=multiFrontWorld.foreign_trade_partners()[2];
+    check(multiFrontWorld.execute(MilitaryRaidCommand{1,partner1.decision_sequence+1,1,13}).success&&
+          multiFrontWorld.execute(MilitaryRaidCommand{2,partner2.decision_sequence+1,1,14}).success&&
+          multiFrontWorld.military_raids().size()==3&&multiFrontWorld.invariant(),
+          "three different external powers can keep three distinct Atlas fronts pending together");
+    const auto threeFrontFingerprint=multiFrontWorld.fingerprint();
+    check(!multiFrontWorld.execute(MilitaryRaidCommand{0,multiFrontWorld.foreign_trade_partners()[0].decision_sequence+1,1,15}).success&&
+          multiFrontWorld.fingerprint()==threeFrontFingerprint&&
+          !multiFrontWorld.execute(MilitaryRaidCommand{2,multiFrontWorld.foreign_trade_partners()[2].decision_sequence+1,1,12}).success&&
+          multiFrontWorld.fingerprint()==threeFrontFingerprint,
+          "a partner cannot open a second front and two attacks cannot target one region");
+    const auto threeFrontSave=multiFrontWorld.serialize("atlas-multi-region-raid-fronts-v1");
+    Realm threeFrontResume(1,1,128);
+    check(threeFrontResume.deserialize(threeFrontSave,"atlas-multi-region-raid-fronts-v1",error)&&
+          threeFrontResume.military_raids()==multiFrontWorld.military_raids()&&
+          threeFrontResume.serialize("atlas-multi-region-raid-fronts-v1")==threeFrontSave&&threeFrontResume.invariant(),
+          "save/load preserves all three attackers and each distinct target");
+    const auto inlandSaltBefore=threeFrontResume.view().provinces[12].stock[size_t(GoodId::Salt)];
+    RealmObservationTestAccess::ensure_salt(threeFrontResume,12,std::max<int64_t>(1,inlandSaltBefore));
+    const int64_t inlandSaltFunded=threeFrontResume.view().provinces[12].stock[size_t(GoodId::Salt)];
+    const auto inlandRaid=threeFrontResume.military_raids().front();
+    const auto inlandPartnerSalt=threeFrontResume.foreign_trade_partners()[size_t(inlandRaid.partner_id)].goods[size_t(GoodId::Salt)];
+    const auto inlandRetreat=threeFrontResume.execute(MilitaryBattleCommand{sovereign,
+        threeFrontResume.person(sovereign).decisions+1,inlandRaid.id,true,{}});
+    check(inlandRetreat.success&&threeFrontResume.military_raids().front().salt_looted==1&&
+          threeFrontResume.view().provinces[12].stock[size_t(GoodId::Salt)]==inlandSaltFunded-1&&
+          threeFrontResume.foreign_trade_partners()[size_t(inlandRaid.partner_id)].goods[size_t(GoodId::Salt)]==inlandPartnerSalt+1&&
+          threeFrontResume.invariant(),
+          "retreat transfers Salt from the attacked inland region to the attacking partner without creating stock");
+    threeFrontResume.advance(1);
+    const auto inlandResolvedSave=threeFrontResume.serialize("atlas-multi-region-raid-fronts-v1");
+    Realm inlandResolvedResume(1,1,128);
+    check(inlandResolvedResume.deserialize(inlandResolvedSave,"atlas-multi-region-raid-fronts-v1",error)&&
+          inlandResolvedResume.military_raids().front()==threeFrontResume.military_raids().front()&&
+          inlandResolvedResume.view().provinces[12].stock[size_t(GoodId::Salt)]==
+              threeFrontResume.view().provinces[12].stock[size_t(GoodId::Salt)]&&inlandResolvedResume.invariant(),
+          "an inland battle, normal day update and final save/load preserve its target, outcome and looted stock");
+
+    Realm blockedInland(9207,26,128);RealmObservationTestAccess::prepare_routes(blockedInland);
+    bool closedAnIncomingRoute=false;
+    for(size_t index=0;index<blockedInland.national_transport_routes().size();++index){
+        const auto route=blockedInland.national_transport_routes()[index];
+        if(route.to==12){
+            const auto result=blockedInland.execute(TransportRouteCommand{sovereign,
+                blockedInland.person(sovereign).decisions+1,uint8_t(index),false});
+            if(!result.success)throw std::runtime_error("could not close an incoming route for blocked-front test");
+            closedAnIncomingRoute=true;
+        }
+    }
+    const auto blockedFrontFingerprint=blockedInland.fingerprint();
+    check(closedAnIncomingRoute&&
+          !blockedInland.execute(MilitaryRaidCommand{0,blockedInland.foreign_trade_partners()[0].decision_sequence+1,1,12}).success&&
+          blockedInland.fingerprint()==blockedFrontFingerprint,
+          "a target with all incoming routes closed rejects the attack without charging the external partner");
+    const auto invalidTargetFingerprint=blockedInland.fingerprint();
+    check(!blockedInland.execute(MilitaryRaidCommand{0,blockedInland.foreign_trade_partners()[0].decision_sequence+1,1,27}).success&&
+          blockedInland.fingerprint()==invalidTargetFingerprint,
+          "a region ID beyond the Atlas is rejected atomically");
 
     const int military=world.capability_value(volunteer,LegacyCapability::Military);
     const int weapon=world.person(volunteer).inventory[size_t(GoodId::Weapon)]>0?1:0;

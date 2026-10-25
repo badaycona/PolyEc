@@ -119,6 +119,7 @@ inline constexpr int64_t kForeignTradePartnerOpeningCash=5000;
 inline constexpr int64_t kForeignTradePartnerOpeningDryFood=32;
 inline constexpr int64_t kForeignTradePartnerSaltCapacity=32;
 inline constexpr int kMilitaryRaidUnitMaximum=8;
+inline constexpr int kMilitaryRaidPendingMaximum=kForeignTradePartnerCount;
 inline constexpr int64_t kMilitaryRaidCashPerUnit=25;
 inline constexpr int kMilitaryRaidTargetRegion=8;
 inline constexpr int64_t kMilitarySupplementaryRationOpeningStock=32;
@@ -260,7 +261,7 @@ struct MilitaryRaid {
 };
 // An external partner explicitly funds an abstract coastal raid; no enemy
 // Person records are invented. The actor uses its existing response sequence.
-struct MilitaryRaidCommand {int partner_id=-1;uint64_t sequence=0;int force_units=0;};
+struct MilitaryRaidCommand {int partner_id=-1;uint64_t sequence=0;int force_units=0;int target_region=kMilitaryRaidTargetRegion;};
 // Only the Sovereign may resolve the pending raid. Defenders are revalidated
 // against consent, readiness, health, and their current location.
 struct MilitaryBattleCommand {

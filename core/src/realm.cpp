@@ -2601,10 +2601,12 @@ bool Realm::invariant(const std::array<int64_t,kGoodIdCount>& bonded_goods)const
     };
     if(military_raids_.size()>1000000)return false;
     unsigned pendingRaids=0;
+    std::array<bool,kForeignTradePartnerCount> pendingRaidPartners{};
+    std::array<bool,kAtlasTerritoryCount> pendingRaidTargets{};
     for(const auto& raid:military_raids_){
         const unsigned status=static_cast<unsigned>(raid.status);
         if(!validRecordId(raid.id)||raid.partner_id<0||raid.partner_id>=kForeignTradePartnerCount||
-           raid.target_region!=kMilitaryRaidTargetRegion||regions_!=int(kAtlasTerritoryCount)-1||
+           raid.target_region<0||raid.target_region>=int(kAtlasTerritoryCount)||regions_!=int(kAtlasTerritoryCount)-1||
            raid.created_day<0||raid.created_day>day_||raid.force_units<1||raid.force_units>kMilitaryRaidUnitMaximum||
            status>static_cast<unsigned>(MilitaryRaidStatus::Withdrawn)||raid.defenders.size()>16||
            raid.defense_score<0||raid.defense_score>80||raid.attacker_losses<0||raid.attacker_losses>raid.force_units||
@@ -2617,8 +2619,10 @@ bool Realm::invariant(const std::array<int64_t,kGoodIdCount>& bonded_goods)const
            std::adjacent_find(raid.supplied_defenders.begin(),raid.supplied_defenders.end())!=raid.supplied_defenders.end()||
            !std::includes(raid.defenders.begin(),raid.defenders.end(),raid.supplied_defenders.begin(),raid.supplied_defenders.end()))return false;
         if(raid.status==MilitaryRaidStatus::Pending){
-            if(++pendingRaids>1||raid.resolved_day!=-1||raid.defense_score||raid.attacker_losses||
+            if(++pendingRaids>kMilitaryRaidPendingMaximum||pendingRaidPartners[size_t(raid.partner_id)]||
+               pendingRaidTargets[size_t(raid.target_region)]||raid.resolved_day!=-1||raid.defense_score||raid.attacker_losses||
                raid.defender_casualties||raid.salt_looted||!raid.defenders.empty()||!raid.supplied_defenders.empty())return false;
+            pendingRaidPartners[size_t(raid.partner_id)]=true;pendingRaidTargets[size_t(raid.target_region)]=true;
         }else{
             if(raid.resolved_day<raid.created_day||raid.resolved_day>day_)return false;
             if(raid.status==MilitaryRaidStatus::Repelled){

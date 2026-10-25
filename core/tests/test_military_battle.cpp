@@ -28,6 +28,13 @@ struct RealmObservationTestAccess {
         const auto added=amount-stock;
         stock=amount;world.opening_[size_t(GoodId::Salt)]+=added;
     }
+    static void spend_partner_dry_food_for_fixture(Realm& world,int partner_id,int64_t amount){
+        auto& partner=world.foreign_trade_partners_.at(size_t(partner_id));
+        auto& stock=partner.goods[size_t(GoodId::DryFood)];
+        if(amount<0||stock<amount||world.consumed_[size_t(GoodId::DryFood)]>
+           std::numeric_limits<int64_t>::max()-amount)throw std::runtime_error("invalid controlled occupation-supply shortage fixture");
+        stock-=amount;world.consumed_[size_t(GoodId::DryFood)]+=amount;
+    }
 };
 }
 
@@ -39,17 +46,17 @@ Candidate offer_for(const Realm& world,uint64_t governor){
     for(int slot=realm_military_service_candidate_begin;
         slot<realm_military_service_candidate_begin+realm_military_service_candidate_count;++slot)
         if(mask[size_t(slot)]&&candidates[size_t(slot)].kind==Intent::Offer)return candidates[size_t(slot)];
-    throw std::runtime_error("Atlas region 8 has no eligible volunteer");
+    throw std::runtime_error("Atlas region has no eligible volunteer");
 }
 void act(Realm& world,uint64_t actor,Candidate candidate){
     const auto result=world.execute(RealmCommand{actor,world.person(actor).decisions+1,candidate});
     if(!result.success)throw std::runtime_error("expected setup action to succeed: "+result.reason);
     if(!world.invariant())throw std::runtime_error("Realm invariant failed during battle fixture setup");
 }
-uint64_t prepare_volunteer(Realm& world){
-    constexpr uint64_t sovereign=1,governor=10;
-    if(!world.person(governor).alive||world.person(governor).family!=Family::Governance||world.person(governor).region!=8)
-        throw std::runtime_error("seed fixture no longer places a Governance actor in Nam Cang");
+uint64_t prepare_volunteer(Realm& world,int region=8){
+    constexpr uint64_t sovereign=1;const uint64_t governor=uint64_t(region+2);
+    if(!world.person(governor).alive||world.person(governor).family!=Family::Governance||world.person(governor).region!=region)
+        throw std::runtime_error("seed fixture no longer places a Governance actor in the selected Atlas region");
     const uint64_t volunteer=uint64_t(offer_for(world,governor).target);
     act(world,governor,offer_for(world,governor));
     world.advance(10);
@@ -59,15 +66,15 @@ uint64_t prepare_volunteer(Realm& world){
     world.advance(1);
     auto consent=world.execute(MilitaryCombatConsentCommand{volunteer,world.person(volunteer).decisions+1,true});
     if(!consent.success)throw std::runtime_error("volunteer consent failed: "+consent.reason);
-    act(world,governor,Candidate{Intent::Mobilize,8,0,40,30});
+    act(world,governor,Candidate{Intent::Mobilize,region,0,40,30});
     if(!world.invariant())throw std::runtime_error("Realm invariant failed after volunteer mobilization");
     (void)sovereign;
     return volunteer;
 }
-std::vector<uint64_t> prepare_two_volunteers(Realm& world){
-    constexpr uint64_t governor=10;
-    if(!world.person(governor).alive||world.person(governor).family!=Family::Governance||world.person(governor).region!=8)
-        throw std::runtime_error("seed fixture no longer places a Governance actor in Nam Cang");
+std::vector<uint64_t> prepare_two_volunteers(Realm& world,int region=8){
+    const uint64_t governor=uint64_t(region+2);
+    if(!world.person(governor).alive||world.person(governor).family!=Family::Governance||world.person(governor).region!=region)
+        throw std::runtime_error("seed fixture no longer places a Governance actor in the selected Atlas region");
     const auto candidates=world.candidates(governor);const auto mask=world.mask(governor,candidates);
     std::vector<uint64_t> volunteers;
     std::vector<Candidate> offers;
@@ -92,7 +99,7 @@ std::vector<uint64_t> prepare_two_volunteers(Realm& world){
         const auto result=world.execute(MilitaryCombatConsentCommand{volunteer,world.person(volunteer).decisions+1,true});
         if(!result.success)throw std::runtime_error("second volunteer consent failed: "+result.reason);
     }
-    act(world,governor,Candidate{Intent::Mobilize,8,0,40,30});
+    act(world,governor,Candidate{Intent::Mobilize,region,0,40,30});
     if(!world.invariant())throw std::runtime_error("Realm invariant failed after two-volunteer mobilization");
     return volunteers;
 }
@@ -129,8 +136,8 @@ int main(){try{
     Realm schema65Resume(1,1,128);
     check(schema65Resume.deserialize(schema65Save,"coastal-raid-battle-v1",error)&&
           schema65Resume.military_raids()==world.military_raids()&&
-          schema65Resume.serialize("coastal-raid-battle-v1").rfind("POLYEC_REALM_75 ",0)==0,
-          "schema65 raid data migrates without a supply-use list and the next save writes current schema75");
+          schema65Resume.serialize("coastal-raid-battle-v1").rfind("POLYEC_REALM_76 ",0)==0,
+          "schema65 raid data migrates without a supply-use list and the next save writes current schema76");
     auto legacySave=pendingSave;test_fixtures::downgrade_save_60_to_59(legacySave);
     Realm legacy(1,1,128);
     check(legacy.deserialize(legacySave,"coastal-raid-battle-v1",error)&&legacy.military_raids().empty()&&legacy.invariant(),
@@ -336,5 +343,95 @@ int main(){try{
           armoredResume.person(armoredVolunteer).health>0&&unarmoredWorld.person(unarmoredVolunteer).health==0&&
           armoredResume.invariant()&&unarmoredWorld.invariant(),
           "durable armor remains with its owner, prevents the paired casualty, and no other person's Leather is borrowed");
+
+    Realm occupationWorld(9208,26,128);RealmObservationTestAccess::prepare_routes(occupationWorld);
+    const auto localVolunteers=prepare_two_volunteers(occupationWorld,12);
+    RealmObservationTestAccess::give_supply(occupationWorld,localVolunteers[1],1);
+    const auto occupationPartner=occupationWorld.foreign_trade_partners()[0];
+    const auto occupationRaid=occupationWorld.execute(MilitaryRaidCommand{0,
+        occupationPartner.decision_sequence+1,kMilitaryRaidUnitMaximum,12});
+    check(occupationRaid.success,"a foreign power can fund an occupation campaign against Atlas region 12");
+    const auto occupationBattle=occupationWorld.execute(MilitaryBattleCommand{sovereign,
+        occupationWorld.person(sovereign).decisions+1,occupationRaid.session,false,{localVolunteers[0]}});
+    const auto initialOccupation=occupationWorld.military_occupations()[12];
+    check(occupationBattle.success&&occupationWorld.military_raids().back().status==MilitaryRaidStatus::Successful&&
+          initialOccupation.partner_id==0&&initialOccupation.garrison_units>0&&occupationWorld.invariant(),
+          "winning the region 12 battle assigns a foreign military controller and retains only surviving attackers");
+    const auto regionalGovernor=uint64_t(14);
+    const auto taxBeforeReject=occupationWorld.fingerprint();
+    const auto occupiedTax=occupationWorld.execute(RealmCommand{regionalGovernor,
+        occupationWorld.person(regionalGovernor).decisions+1,Candidate{Intent::Tax,12,0,20}});
+    check(!occupiedTax.success&&occupationWorld.fingerprint()==taxBeforeReject,
+          "the regional Governor cannot change the tax rate while the region is under foreign military control");
+    const auto occupiedEstablishmentFingerprint=occupationWorld.fingerprint();
+    check(!occupationWorld.execute(EstablishmentCommand{regionalGovernor,
+          occupationWorld.person(regionalGovernor).decisions+1,EstablishmentOwnerKind::Public,12,12,
+          EstablishmentIndustry::ClothWorkshop,-1,100}).success&&
+          occupationWorld.fingerprint()==occupiedEstablishmentFingerprint,
+          "a regional Governor cannot use the public treasury to create a public workshop during occupation");
+    const auto occupiedMunicipalFingerprint=occupationWorld.fingerprint();
+    check(!occupationWorld.execute(MunicipalBudgetCommand{regionalGovernor,
+          occupationWorld.person(regionalGovernor).decisions+1,12,1}).success&&
+          occupationWorld.fingerprint()==occupiedMunicipalFingerprint,
+          "a regional Governor cannot transfer money from the local treasury into the municipal fund during occupation");
+    const auto occupiedRationFingerprint=occupationWorld.fingerprint();
+    check(!occupationWorld.execute(MilitaryRationPurchaseCommand{regionalGovernor,
+          occupationWorld.person(regionalGovernor).decisions+1,12,1,int(GoodId::DryFood)}).success&&
+          occupationWorld.fingerprint()==occupiedRationFingerprint,
+          "a regional Governor cannot draw from the public treasury to buy military rations during occupation");
+    const auto occupiedRoute=std::find_if(occupationWorld.national_transport_routes().begin(),
+        occupationWorld.national_transport_routes().end(),[](const NationalTransportRoute& route){return route.from==12||route.to==12;});
+    if(occupiedRoute==occupationWorld.national_transport_routes().end())throw std::runtime_error("occupation fixture has no route touching region 12");
+    const uint8_t occupiedRouteIndex=uint8_t(occupiedRoute-occupationWorld.national_transport_routes().begin());
+    const auto routeBeforeReject=occupationWorld.fingerprint();
+    check(!occupationWorld.execute(TransportRouteCommand{sovereign,occupationWorld.person(sovereign).decisions+1,
+          occupiedRouteIndex,!occupiedRoute->open}).success&&occupationWorld.fingerprint()==routeBeforeReject,
+          "the Sovereign cannot alter a national route whose endpoint is held by an external garrison");
+    const auto occupationSave=occupationWorld.serialize("military-occupation-v1");
+    check(occupationSave.rfind("POLYEC_REALM_76 ",0)==0&&occupationSave.find(" MILITARY_CONTROL_1 27 ")!=std::string::npos,
+          "save76 stores all 27 region controllers and garrison sizes");
+    Realm occupiedResume(1,1,128);
+    check(occupiedResume.deserialize(occupationSave,"military-occupation-v1",error)&&
+          occupiedResume.military_occupations()==occupationWorld.military_occupations()&&occupiedResume.invariant(),
+          "save/load preserves the occupying partner, garrison size and blocked local authority");
+    auto legacy75=occupationSave;
+    legacy75.replace(0,std::string("POLYEC_REALM_76").size(),"POLYEC_REALM_75");
+    Realm invalidLegacy(1,1,128);std::string legacyControlError;
+    check(!invalidLegacy.deserialize(legacy75,"military-occupation-v1",legacyControlError),
+          "a populated occupation section cannot be silently removed to imitate a legacy save");
+    Realm legacyEmptyWorld(9209,26,128);auto legacyEmpty=legacyEmptyWorld.serialize("military-occupation-v1");
+    test_fixtures::strip_empty_military_control_section(legacyEmpty);
+    legacyEmpty.replace(0,std::string("POLYEC_REALM_76").size(),"POLYEC_REALM_75");
+    Realm legacyEmptyResume(1,1,128);
+    const bool loadedLegacyEmpty=legacyEmptyResume.deserialize(legacyEmpty,"military-occupation-v1",error);
+    const auto legacyControllers=legacyEmptyResume.military_occupations();
+    check(loadedLegacyEmpty&&
+          std::none_of(legacyControllers.begin(),legacyControllers.end(),
+              [](const MilitaryOccupation& occupation){return occupation.occupied();})&&legacyEmptyResume.invariant(),
+          "save75 migrates with every region under the Realm's original military control");
+
+    auto postCapturePartner=occupiedResume.foreign_trade_partners()[0];
+    const int garrisonBeforeShortage=occupiedResume.military_occupations()[12].garrison_units;
+    if(garrisonBeforeShortage<=1)throw std::runtime_error("occupation test requires a multi-unit captured garrison");
+    RealmObservationTestAccess::spend_partner_dry_food_for_fixture(occupiedResume,0,
+        postCapturePartner.goods[size_t(GoodId::DryFood)]-1);
+    occupiedResume.advance(1);
+    check(occupiedResume.military_occupations()[12].garrison_units==1&&
+          occupiedResume.foreign_trade_partners()[0].goods[size_t(GoodId::DryFood)]==0&&occupiedResume.invariant(),
+          "one ration supports one of the held garrison; the missing daily food removes the other units");
+    const int counterattackScore=1+occupiedResume.capability_value(localVolunteers[1],LegacyCapability::Military)/50+
+        int(occupiedResume.person(localVolunteers[1]).inventory[size_t(GoodId::Weapon)]>0)+
+        int(occupiedResume.person(localVolunteers[1]).inventory[size_t(GoodId::Leather)]>0)+1;
+    const auto recapture=occupiedResume.execute(MilitaryCounterattackCommand{sovereign,
+        occupiedResume.person(sovereign).decisions+1,12,false,{localVolunteers[1]}});
+    check(counterattackScore>1&&recapture.success&&!occupiedResume.region_military_occupied(12)&&
+          occupiedResume.person(localVolunteers[1]).inventory[size_t(GoodId::MilitarySupply)]==0&&
+          occupiedResume.invariant(),
+          "a consented volunteer uses personal MilitarySupply to beat the one remaining garrison unit and restore local control");
+    const auto recapturedSave=occupiedResume.serialize("military-occupation-v1");
+    Realm recapturedResume(1,1,128);
+    check(recapturedResume.deserialize(recapturedSave,"military-occupation-v1",error)&&
+          !recapturedResume.region_military_occupied(12)&&recapturedResume.invariant(),
+          "the recovered region remains under Realm control after a later save/load");
     std::cout<<"Military battle checks passed: "<<checks<<"\n";return 0;
 }catch(const std::exception& error){std::cerr<<"Military battle failure after "<<checks<<": "<<error.what()<<'\n';return 1;}}

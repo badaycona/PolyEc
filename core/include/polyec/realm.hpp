@@ -26,7 +26,7 @@
 namespace polyec {
 inline constexpr size_t kOrganizationGroupsPerTerritory=4;
 inline constexpr size_t kOrganizationCount=kAtlasTerritoryCount*kOrganizationGroupsPerTerritory;
-inline constexpr const char* realm_schema="realm-v43";
+inline constexpr const char* realm_schema="realm-v44";
 inline constexpr const char* realm_reward_version="realm-v14-person-enterprise-equity-atlas-products-v1";
 inline constexpr int realm_base_state=128, realm_features=12;
 inline constexpr int realm_pre_ration_state=realm_base_state+int((kAtlasTerritoryCount-7)*kLegacyGoodCount);
@@ -259,6 +259,11 @@ struct MilitaryRaid {
     std::vector<uint64_t> supplied_defenders;
     bool operator==(const MilitaryRaid&) const = default;
 };
+struct MilitaryOccupation {
+    int partner_id=-1,garrison_units=0;
+    bool occupied()const noexcept{return partner_id>=0&&garrison_units>0;}
+    bool operator==(const MilitaryOccupation&)const=default;
+};
 // An external partner explicitly funds an abstract coastal raid; no enemy
 // Person records are invented. The actor uses its existing response sequence.
 struct MilitaryRaidCommand {int partner_id=-1;uint64_t sequence=0;int force_units=0;int target_region=kMilitaryRaidTargetRegion;};
@@ -266,6 +271,14 @@ struct MilitaryRaidCommand {int partner_id=-1;uint64_t sequence=0;int force_unit
 // against consent, readiness, health, and their current location.
 struct MilitaryBattleCommand {
     uint64_t actor=0,sequence=0,raid_id=0;
+    bool retreat=false;
+    std::vector<uint64_t> defenders;
+};
+// The Sovereign may try to recover a region held by a supplied external garrison.
+// Selected defenders are rechecked for consent, health, mobilization and presence.
+struct MilitaryCounterattackCommand {
+    uint64_t actor=0,sequence=0;
+    int region=-1;
     bool retreat=false;
     std::vector<uint64_t> defenders;
 };
@@ -579,6 +592,7 @@ public:
     RealmResult execute(const MilitaryCombatConsentCommand& command);
     RealmResult execute(const MilitaryRaidCommand& command);
     RealmResult execute(const MilitaryBattleCommand& command);
+    RealmResult execute(const MilitaryCounterattackCommand& command);
     RealmResult execute(const ScheduleCommand& command);
     RealmResult execute(const RealmClockCommand& command);
 RealmResult execute(const EstablishmentCommand& command);
@@ -616,6 +630,10 @@ std::vector<Establishment> establishments() const { return establishments_; }
     std::vector<MilitaryObligation> military_obligations() const { return military_obligations_; }
     std::vector<MilitarySupplyObligation> military_supply_obligations() const { return military_supply_obligations_; }
     std::vector<MilitaryRaid> military_raids() const { return military_raids_; }
+    std::array<MilitaryOccupation,kAtlasTerritoryCount> military_occupations() const { return military_occupations_; }
+    bool region_military_occupied(int region) const {
+        return region>=0&&region<int(kAtlasTerritoryCount)&&military_occupations_[size_t(region)].occupied();
+    }
     std::vector<UrbanCensus> urban_census() const;
     std::vector<MunicipalCouncil> municipal_councils() const { return municipal_councils_; }
     std::vector<LandHolding> land_holdings() const { return land_holdings_; }
@@ -751,6 +769,7 @@ private:
     std::vector<MilitaryObligation> military_obligations_;
     std::vector<MilitarySupplyObligation> military_supply_obligations_;
     std::vector<MilitaryRaid> military_raids_;
+    std::array<MilitaryOccupation,kAtlasTerritoryCount> military_occupations_{};
     std::array<ForeignTradePartner,kForeignTradePartnerCount> foreign_trade_partners_{};
     uint64_t next_transport_lot_id_=1;
     int64_t transport_escrow_=0;
@@ -823,6 +842,8 @@ private:
     bool military_service_eligible(const Person& person)const;
     std::vector<uint64_t> eligible_muster_members(uint64_t commander,int region,int required_until)const;
     void end_military_service(Person& person,int fact_kind);
+    bool has_local_government_authority(const Person& person) const;
+    void process_military_occupations_day();
     bool marriage_eligible(uint64_t actor)const;
     bool marriage_related(uint64_t first,uint64_t second)const;
     bool marriage_pending(uint64_t first,uint64_t second,uint64_t except=0)const;

@@ -27,6 +27,7 @@
 #include "polyec/military_obligation_section_codec.hpp"
 #include "polyec/military_supply_obligation_section_codec.hpp"
 #include "polyec/military_raid_section_codec.hpp"
+#include "polyec/military_control_section_codec.hpp"
 #include "polyec/urban_residence_section_codec.hpp"
 #include "polyec/urban_housing_section_codec.hpp"
 #include "polyec/municipal_council_section_codec.hpp"
@@ -57,7 +58,7 @@ uint64_t hash_text(const std::string& s) {
 
 // Text format uses explicit scalar fields, not compiler-dependent struct bytes.
 std::string Realm::serialize(const std::string&bundle)const{
-    std::ostringstream s;s<<"POLYEC_REALM_75 "<<std::quoted(bundle)<<' ';
+    std::ostringstream s;s<<"POLYEC_REALM_76 "<<std::quoted(bundle)<<' ';
     detail::RealmPrimaryHeader header{};
     header.day=day_;header.regions=regions_;header.seed=seed_;header.next_id=next_id_;header.next_fact=next_fact_;
     header.opening_money=opening_money_;header.carrier=carrier_;header.estate=estate_;header.endowment=endowment_;
@@ -107,12 +108,14 @@ std::string Realm::serialize(const std::string&bundle)const{
     detail::write_municipal_council_section(s,municipal_councils_);
     detail::write_private_housing_section(s,private_residences_);
     detail::write_apprenticeship_section(s,apprenticeships_);
+    detail::write_military_control_section(s,military_occupations_);
     return s.str();
 }
 bool Realm::deserialize(const std::string&data,const std::string&bundle,std::string&error,const std::array<int64_t,kGoodIdCount>& bonded_goods){try{
     if(data.size()>256*1024*1024)throw std::runtime_error("Save size limit");
     auto stagedWorld=std::make_unique<Realm>(1,1,128);Realm& w=*stagedWorld;w.land_holdings_.clear();w.land_use_rights_.clear();std::istringstream s(data);std::string magic,b;s>>magic>>std::quoted(b);
     int schema=0;
+    if(magic=="POLYEC_REALM_76")schema=76;
     if(magic=="POLYEC_REALM_75")schema=75;
     else if(magic=="POLYEC_REALM_74")schema=74;
     else if(magic=="POLYEC_REALM_73")schema=73;
@@ -240,6 +243,7 @@ bool Realm::deserialize(const std::string&data,const std::string&bundle,std::str
             tail,w.people_.size(),w.regions_,w.day_,w.next_id_,w.land_holdings_);
         else w.private_residences_.clear();
         if(schema>=75)detail::read_apprenticeship_section(tail,w.apprenticeships_);
+        if(schema>=76)detail::read_military_control_section(tail,w.military_occupations_,w.regions_);
         tail>>std::ws;if(!tail.eof())throw std::runtime_error("Save config trailing fields");
         const auto read_position=s.tellg();
         s.str(data.substr(0,config_at));s.clear();s.seekg(read_position);

@@ -71,7 +71,7 @@ RealmResult Realm::execute(const MilitaryRationPurchaseCommand& command){
     if(actor.decisions==UINT64_MAX||actor.sampling==UINT64_MAX||next_fact_==UINT64_MAX)
         return {false,"Decision or fact counter overflow"};
     if(command.sequence!=actor.decisions+1)return {false,"Stale or duplicate decision ID"};
-    if(actor.family!=Family::Governance||!actor.taxing_authority||
+    if(actor.family!=Family::Governance||!has_local_government_authority(actor)||
        command.region!=actor.region||command.region<0||command.region>regions_||
        !provinces_[size_t(command.region)].charter)
         return {false,"Military ration purchase requires local public authority"};

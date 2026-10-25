@@ -441,7 +441,7 @@ std::array<Candidate,realm_actions> Realm::candidates(uint64_t id)const{
                 c[size_t(realm_supplementary_ration_shipment_candidate_begin+destination)]={Intent::ShipMilitaryRations,
                     destination,int(GoodId::SupplementaryFood),supplementary_quantity,int(TransportServiceGoal::Fastest)};
         }
-        if(p.taxing_authority&&!p.sovereign&&day_<=365000-30){
+        if(has_local_government_authority(p)&&!p.sovereign&&day_<=365000-30){
             const Person* sovereign=nullptr;
             for(const auto& candidate:people_)if(candidate.alive&&candidate.sovereign){sovereign=&candidate;break;}
             bool has_open=false;
@@ -549,7 +549,7 @@ std::array<Candidate,realm_actions> Realm::candidates(uint64_t id)const{
             c[size_t(realm_municipal_fund_candidate_begin+i)]={Intent::FundMunicipal,p.region,percentage,
                 municipal_grant_amount(provinces_[size_t(p.region)].treasury,percentage),0};
         }
-    if(p.family==Family::Governance&&p.taxing_authority&&provinces_[size_t(p.region)].charter){
+    if(p.family==Family::Governance&&has_local_government_authority(p)&&provinces_[size_t(p.region)].charter){
         const int64_t municipal_balance=municipal_funds_[size_t(p.region)];
         if(municipal_balance>0){
             const int64_t trial_amount=std::max<int64_t>(1,municipal_balance/10);
@@ -1100,10 +1100,10 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
                 [&](const Establishment& site){return site.industry==EstablishmentIndustry::GeneralLuxuryAtelier&&site.region==12;}))||
            next_id_==UINT64_MAX||next_fact_==UINT64_MAX||establishments_.size()>=1000000)return false;
         if(c.term==-2)
-            return p.family==Family::Governance&&p.taxing_authority&&provinces_[size_t(p.region)].charter&&
+            return p.family==Family::Governance&&has_local_government_authority(p)&&provinces_[size_t(p.region)].charter&&
                    municipal_funds_[size_t(p.region)]>=c.amount;
         if(p.family==Family::Governance)
-            return p.taxing_authority&&provinces_[p.region].charter&&provinces_[p.region].treasury>=c.amount;
+            return has_local_government_authority(p)&&provinces_[p.region].charter&&provinces_[p.region].treasury>=c.amount;
         return p.cash>=c.amount;
     }
     if(c.kind==Intent::TransferEstablishmentGoods){
@@ -1170,7 +1170,7 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
         return true;
     }
     if(c.kind==Intent::BuyMilitaryRations){
-        if(p.family!=Family::Governance||!p.taxing_authority||p.region!=c.target||
+        if(p.family!=Family::Governance||!has_local_government_authority(p)||p.region!=c.target||
            (c.good!=int(GoodId::DryFood)&&c.good!=int(GoodId::SupplementaryFood))||
            c.term!=0||c.amount<=0||c.amount>kMilitaryRationPurchaseMaximum||!provinces_[p.region].charter||
            provinces_[p.region].stock[size_t(c.good)]<c.amount)return false;
@@ -1185,7 +1185,7 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
             provinces_[p.region].tax_receipts<=std::numeric_limits<int64_t>::max()-tax->amount;
     }
     if(c.kind==Intent::ShipMilitaryRations){
-        if(p.family!=Family::Governance||!p.taxing_authority||!provinces_[p.region].charter||
+        if(p.family!=Family::Governance||!has_local_government_authority(p)||!provinces_[p.region].charter||
            regions_!=int(kAtlasTerritoryCount)-1||c.target<0||c.target>regions_||c.target==p.region||
            (c.good!=int(GoodId::DryFood)&&c.good!=int(GoodId::SupplementaryFood))||c.amount<=0||c.amount>64||
            c.term!=int(TransportServiceGoal::Fastest)||next_id_==UINT64_MAX||
@@ -1204,7 +1204,7 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
     if(c.kind==Intent::Offer){
         if(c.good==2){if(!p.sovereign||!pact_||regions_<3)return false;for(auto&o:proposals_)if(o.kind==2&&!o.resolved)return false;return true;}
         if(c.good==4){
-            if(p.family!=Family::Governance||!p.taxing_authority||p.sovereign||c.target<=0||
+            if(p.family!=Family::Governance||!has_local_government_authority(p)||p.sovereign||c.target<=0||
                uint64_t(c.target)>people_.size()||c.amount<1||c.amount>4||c.term!=14||
                day_>365000-30||next_id_==UINT64_MAX||next_fact_==UINT64_MAX)return false;
             const auto& recipient=person(uint64_t(c.target));
@@ -1217,7 +1217,7 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
             return size_t(c.amount)<=eligible.size();
         }
         if(c.good==5){
-            if(p.family!=Family::Governance||!p.taxing_authority||p.sovereign||c.target<=0||
+            if(p.family!=Family::Governance||!has_local_government_authority(p)||p.sovereign||c.target<=0||
                uint64_t(c.target)>people_.size()||c.amount!=7||c.term!=7||day_>365000-8||
                next_id_==UINT64_MAX||next_fact_==UINT64_MAX)return false;
             const auto& recipient=person(uint64_t(c.target));
@@ -1233,7 +1233,7 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
             return false;
         }
         if(c.good==6){
-            if(p.family!=Family::Governance||!p.taxing_authority||p.sovereign||c.target<=0||
+            if(p.family!=Family::Governance||!has_local_government_authority(p)||p.sovereign||c.target<=0||
                uint64_t(c.target)>people_.size()||c.term!=14||day_>365000-14||
                next_id_==UINT64_MAX||next_fact_==UINT64_MAX)return false;
             const auto& recipient=person(uint64_t(c.target));
@@ -1251,7 +1251,7 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
             return false;
         }
         if(c.good==7){
-            if(p.family!=Family::Governance||!p.taxing_authority||p.sovereign||c.target<=0||
+            if(p.family!=Family::Governance||!has_local_government_authority(p)||p.sovereign||c.target<=0||
                uint64_t(c.target)>people_.size()||c.amount!=7||c.term!=7||day_>365000-8||
                next_id_==UINT64_MAX||next_fact_==UINT64_MAX)return false;
             const auto& recipient=person(uint64_t(c.target));
@@ -1329,13 +1329,15 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
     case Intent::Borrow:if(c.good==1){if(p.sovereign&&draft_.chosen==4&&credit_pool_>=c.amount&&c.term==1825&&within_loan_limit(debt(id),c.amount,royal_reference_/2))return true;break;}if(p.family!=Family::Civilian&&c.target==p.region&&local.firm>=c.amount&&within_loan_limit(debt(id),c.amount,300)&&c.term>=30&&c.term<=180)return true;break;
     case Intent::Repay:if(c.amount>0&&debt(id)>=c.amount&&funds>=c.amount)return true;break;
     case Intent::Project:{
+        if(region_military_occupied(p.region))break;
         if(c.good==4){
             const bool councilRepresentative=regions_==int(kAtlasTerritoryCount)-1&&
                 std::any_of(municipal_councils_.begin(),municipal_councils_.end(),[&](const MunicipalCouncil& council){
                     return council.site_id==uint8_t(p.region)&&council.representative==id&&day_<council.term_end_day;
                 });
             if(regions_!=int(kAtlasTerritoryCount)-1||
-               !((p.family==Family::Governance&&p.taxing_authority)||councilRepresentative)||
+               !( (p.family==Family::Governance&&has_local_government_authority(p))||councilRepresentative)||
+               region_military_occupied(p.region)||
                c.target!=p.region||!provinces_[size_t(p.region)].charter||
                c.amount!=kUrbanHousingProjectBudget||c.term!=kUrbanHousingProjectTermDays||
                day_>365000-kUrbanHousingProjectTermDays||
@@ -1356,14 +1358,15 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
         int active=ProjectManager::active_projects_count(projects_,p.region,c.good);
         if(active<(c.good==3&&draft_.chosen==10?2:1))return true;break;}
     case Intent::Hire:if(p.family==Family::Economic&&c.target==p.region&&p.cash>=c.amount&&c.amount>0)return true;break;
-    case Intent::Tax:if(p.family==Family::Governance&&p.taxing_authority&&c.target==p.region&&c.amount>=0&&c.amount<=20&&local.charter)return true;break;
+    case Intent::Tax:if(p.family==Family::Governance&&has_local_government_authority(p)&&c.target==p.region&&c.amount>=0&&c.amount<=20&&local.charter)return true;break;
     case Intent::Aid:
         if(c.good==1){
-            if(p.family==Family::Governance&&p.taxing_authority&&p.region==c.target&&
+            if(p.family==Family::Governance&&has_local_government_authority(p)&&p.region==c.target&&
                local.charter&&c.amount>0&&municipal_funds_[size_t(p.region)]>=c.amount)return true;
             break;
         }
-        if(c.good==0&&p.family==Family::Governance&&(c.target==p.region||p.sovereign)&&funds>=c.amount&&c.amount>0)return true;
+        if(c.good==0&&p.family==Family::Governance&&(c.target==p.region||p.sovereign)&&
+           !region_military_occupied(c.target)&&funds>=c.amount&&c.amount>0)return true;
         break;
     case Intent::Investigate:{
         int active=0;
@@ -1433,7 +1436,8 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
         break;
     }
     case Intent::ResolveCouncilNomination:{
-        if(!p.sovereign||regions_!=int(kAtlasTerritoryCount)-1||c.target<0||c.target>=int(kAtlasTerritoryCount)||c.good<0||c.good>1)break;
+        if(!p.sovereign||regions_!=int(kAtlasTerritoryCount)-1||c.target<0||c.target>=int(kAtlasTerritoryCount)||
+           region_military_occupied(c.target)||c.good<0||c.good>1)break;
         const auto& council=municipal_councils_[size_t(c.target)];
         if(council.nominee==0||(council.representative!=0&&day_<council.term_end_day))break;
         const auto& nominee=person(council.nominee);
@@ -1442,9 +1446,9 @@ bool Realm::legal(uint64_t id,const Candidate&c,std::string&reason)const{
         if(c.good==0)return true;
         break;
     }
-    case Intent::Mobilize:if(p.family==Family::Governance&&c.target==p.region&&funds>=c.amount&&c.term>0&&c.term<=30&&day_<=365000-c.term-1)return true;break;
+    case Intent::Mobilize:if(p.family==Family::Governance&&has_local_government_authority(p)&&c.target==p.region&&funds>=c.amount&&c.term>0&&c.term<=30&&day_<=365000-c.term-1)return true;break;
     case Intent::FundMunicipal:{
-        if(p.family!=Family::Governance||!p.taxing_authority||c.target!=p.region||c.term!=0||!local.charter||
+        if(p.family!=Family::Governance||!has_local_government_authority(p)||c.target!=p.region||c.term!=0||!local.charter||
            municipal_last_funded_period_[size_t(p.region)]==day_/30||c.amount<=0)break;
         const bool knownPercentage=std::find(kMunicipalGrantPercentages.begin(),kMunicipalGrantPercentages.end(),c.good)!=kMunicipalGrantPercentages.end();
         if(knownPercentage&&c.amount==municipal_grant_amount(local.treasury,c.good))return true;
@@ -1962,6 +1966,9 @@ int Realm::person_travel_days(const Person& actor,int destination)const{
        actor.inventory[size_t(GoodId::WarHorse)]<=0)return days;
     return std::max(1,days-1);
 }
+bool Realm::has_local_government_authority(const Person& actor)const{
+    return actor.taxing_authority&&!region_military_occupied(actor.region);
+}
 void Realm::rebuild_atlas_distance_cache()const{
     for(auto&row:atlas_distance_cache_)row.fill(-1);
     for(size_t source=0;source<kAtlasTerritoryCount;++source){
@@ -2009,6 +2016,7 @@ void RealmDayPipeline::run(Realm& realm){
         if (elapsed > 0) realm.day_phase_profile_ns_[index] += static_cast<uint64_t>(elapsed);
     };
     timed(0, [&] { realm.day_begin(); });
+    realm.process_military_occupations_day();
     realm.process_transport_day();
     timed(1, [&] { realm.day_body(); });
     timed(2, [&] { realm.day_payroll(); });
@@ -2030,6 +2038,7 @@ void RealmDayPipeline::run(Realm& realm){
     timed(13, [&] { realm.day_settlement(); });
 #else
     realm.day_begin();
+    realm.process_military_occupations_day();
     realm.process_transport_day();
     realm.day_body();
     realm.day_payroll();
@@ -2640,6 +2649,21 @@ bool Realm::invariant(const std::array<int64_t,kGoodIdCount>& bonded_goods)const
             }
         }
     }
+    bool anyMilitaryOccupation=false;
+    for(size_t region=0;region<military_occupations_.size();++region){
+        const auto& occupation=military_occupations_[region];
+        if(occupation.partner_id< -1||occupation.partner_id>=kForeignTradePartnerCount||
+           occupation.garrison_units<0||occupation.garrison_units>kMilitaryRaidUnitMaximum||
+           ((occupation.partner_id<0)!=(occupation.garrison_units==0)))return false;
+        if(!occupation.occupied())continue;
+        anyMilitaryOccupation=true;
+        if(regions_!=int(kAtlasTerritoryCount)-1||
+           std::none_of(military_raids_.begin(),military_raids_.end(),[&](const MilitaryRaid& raid){
+               return raid.target_region==int(region)&&raid.partner_id==occupation.partner_id&&
+                      raid.status==MilitaryRaidStatus::Successful&&raid.resolved_day<=day_;
+           }))return false;
+    }
+    if(regions_!=int(kAtlasTerritoryCount)-1&&anyMilitaryOccupation)return false;
     std::set<uint64_t> factIds;
     for(const auto& fact:facts_)
         if(fact.id==0||fact.id>=next_fact_||!factIds.insert(fact.id).second)return false;

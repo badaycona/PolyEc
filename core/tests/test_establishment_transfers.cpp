@@ -405,7 +405,7 @@ int main(int argc,char** argv){try{
               "a new grant becomes available after 30 days and is recalculated from the then current treasury");
 
         const std::string urbanSave=urban.serialize("urban-civic-fund-test");
-        check(urbanSave.rfind("POLYEC_REALM_75 ",0)==0&&
+        check(urbanSave.rfind("POLYEC_REALM_76 ",0)==0&&
               urbanSave.find(" MUNICIPAL_FUNDS_1 27 ")!=std::string::npos,
               "new saves store each urban fund and its most recent grant period");
         Realm resumed(1,1,128);

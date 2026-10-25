@@ -18,9 +18,9 @@ bool Realm::manages_establishment(const Person& actor,const Establishment& site)
     if(!actor.alive||actor.destination!=-1||actor.region!=site.region)return false;
     switch(site.owner_kind){
     case EstablishmentOwnerKind::Person:return site.owner_id==actor.id;
-    case EstablishmentOwnerKind::Public:return actor.family==Family::Governance&&actor.taxing_authority&&
+    case EstablishmentOwnerKind::Public:return actor.family==Family::Governance&&has_local_government_authority(actor)&&
         provinces_[site.region].charter&&site.owner_id==uint64_t(site.region);
-    case EstablishmentOwnerKind::Municipal:return actor.family==Family::Governance&&actor.taxing_authority&&
+    case EstablishmentOwnerKind::Municipal:return actor.family==Family::Governance&&has_local_government_authority(actor)&&
         provinces_[site.region].charter&&site.owner_id==uint64_t(site.region);
     case EstablishmentOwnerKind::Organization:return site.owner_id>=1&&site.owner_id<=kOrganizationCount&&
         actor.organization==int(site.owner_id)&&site.region==int((site.owner_id-1)/kOrganizationGroupsPerTerritory);
@@ -207,7 +207,7 @@ RealmResult Realm::execute(const EstablishmentCommand& cmd){
         source = &p.cash;
     } else if (cmd.owner_kind == EstablishmentOwnerKind::Public) {
         if (p.family != Family::Governance) return {false, "Public owner requires governance"};
-        if (!p.taxing_authority) return {false, "Public owner requires taxing authority"};
+        if (!has_local_government_authority(p)) return {false, "Public owner requires local authority and an unoccupied region"};
         if (p.region != cmd.region) return {false, "Public owner region mismatch"};
         if (!provinces_[cmd.region].charter) return {false, "Public owner requires charter"};
         if (ownerId == 0) ownerId = static_cast<uint64_t>(cmd.region);
@@ -220,7 +220,7 @@ RealmResult Realm::execute(const EstablishmentCommand& cmd){
         source = &organization_funds_[ownerId - 1];
     } else {
         if(p.family!=Family::Governance)return {false,"Municipal owner requires governance"};
-        if(!p.taxing_authority)return {false,"Municipal owner requires local authority"};
+        if(!has_local_government_authority(p))return {false,"Municipal owner requires local authority and an unoccupied region"};
         if(p.region!=cmd.region)return {false,"Municipal owner region mismatch"};
         if(!provinces_[cmd.region].charter)return {false,"Municipal owner requires charter"};
         if(ownerId==0)ownerId=uint64_t(cmd.region);
@@ -274,7 +274,7 @@ RealmResult Realm::execute(const MunicipalBudgetCommand& cmd){
     if(cmd.sequence!=actor.decisions+1)return {false,"Stale or duplicate decision ID"};
     if(!actor.alive)return {false,"Actor deceased"};
     if(cmd.region<0||cmd.region>regions_)return {false,"Invalid region"};
-    if(actor.family!=Family::Governance||!actor.taxing_authority)return {false,"Municipal fund requires local governance authority"};
+    if(actor.family!=Family::Governance||!has_local_government_authority(actor))return {false,"Municipal fund requires local governance authority in an unoccupied region"};
     if(actor.region!=cmd.region)return {false,"Municipal fund region mismatch"};
     if(!provinces_[size_t(cmd.region)].charter)return {false,"Municipal fund requires charter"};
     if(actor.destination!=-1||actor.busy_until>day_)return {false,"Actor is unavailable"};

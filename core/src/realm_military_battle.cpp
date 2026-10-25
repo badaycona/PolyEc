@@ -25,6 +25,8 @@ RealmResult Realm::execute(const MilitaryRaidCommand& command){
         return {false,"Coastal raids require the Atlas Realm profile"};
     if(command.target_region<0||command.target_region>=int(kAtlasTerritoryCount))
         return {false,"Raid target must be one of the 27 Atlas regions"};
+    if(region_military_occupied(command.target_region))
+        return {false,"The target is already held by an external garrison; the Sovereign must counterattack to recover it"};
     auto& partner=foreign_trade_partners_[size_t(command.partner_id)];
     if(partner.decision_sequence==std::numeric_limits<uint64_t>::max()||next_id_==std::numeric_limits<uint64_t>::max()||
        next_fact_==std::numeric_limits<uint64_t>::max())return {false,"Raid sequence or record ID overflow"};
@@ -145,7 +147,8 @@ RealmResult Realm::execute(const MilitaryBattleCommand& command){
         if(looted>std::numeric_limits<int64_t>::max()-partner.goods[size_t(GoodId::Salt)])
             return {false,"Partner Salt ledger overflow"};
     }
-    const uint64_t required_facts=1+uint64_t(defender_casualties>0)+uint64_t(looted>0);
+    const bool will_occupy=!command.retreat&&!repelled&&surviving_attackers>0;
+    const uint64_t required_facts=1+uint64_t(defender_casualties>0)+uint64_t(looted>0)+uint64_t(will_occupy);
     if(next_fact_>std::numeric_limits<uint64_t>::max()-required_facts)
         return {false,"Battle fact counter overflow"};
 
@@ -164,13 +167,124 @@ RealmResult Realm::execute(const MilitaryBattleCommand& command){
         partner.goods[size_t(GoodId::Salt)]+=looted;
         partner.salt_capacity-=looted;
     }
+    if(raid.status==MilitaryRaidStatus::Successful&&surviving_attackers>0){
+        auto& occupation=military_occupations_[size_t(raid.target_region)];
+        occupation.partner_id=raid.partner_id;
+        occupation.garrison_units=surviving_attackers;
+        event(actor.id,raid.target_region,253,surviving_attackers,raid.partner_id+1);
+    }
     actor.last_decision_day=day_;++actor.decisions;++actor.sampling;
     event(actor.id,raid.target_region,repelled?249:250,command.retreat?0:defense_score,raid.id);
     if(defender_casualties>0)event(actor.id,raid.target_region,251,defender_casualties,raid.id);
     if(looted>0)event(actor.id,raid.target_region,252,looted,raid.id);
-    return {true,repelled?"Nam Cang defenders repelled the raid":
-        (command.retreat?"The Sovereign ordered a withdrawal; the raiders looted the port":"The raiders breached the port defense"),
+    return {true,repelled?"The region's defenders repelled the raid":
+        (command.retreat?"The Sovereign ordered a withdrawal; the raiders looted the target region":
+                         (will_occupy?"The raiders breached the region's defense and occupied it":
+                                      "The raiders breached the region's defense")),
         next_fact_-1,raid.id};
+}
+
+RealmResult Realm::execute(const MilitaryCounterattackCommand& command){
+    if(command.actor==0||command.actor>people_.size())return {false,"Unknown actor"};
+    auto& actor=mutable_person(command.actor);
+    if(!actor.alive)return {false,"Actor deceased"};
+    if(actor.decisions==std::numeric_limits<uint64_t>::max()||actor.sampling==std::numeric_limits<uint64_t>::max()||
+       next_fact_==std::numeric_limits<uint64_t>::max())return {false,"Decision or fact counter overflow"};
+    if(command.sequence!=actor.decisions+1)return {false,"Stale or duplicate decision ID"};
+    if(!actor.sovereign||actor.family!=Family::Governance)return {false,"Only the Sovereign may order a counterattack"};
+    if(command.region<0||command.region>=int(kAtlasTerritoryCount)||regions_!=int(kAtlasTerritoryCount)-1)
+        return {false,"Counterattack requires an Atlas region"};
+    auto& occupation=military_occupations_[size_t(command.region)];
+    if(!occupation.occupied())return {false,"The selected region has no external garrison"};
+    if(command.retreat&&!command.defenders.empty())return {false,"Retreat cannot also commit defenders"};
+    if(!command.retreat&&(command.defenders.empty()||command.defenders.size()>16))
+        return {false,"Counterattack requires 1–16 named volunteers"};
+    std::vector<uint64_t> defenders=command.defenders;
+    std::sort(defenders.begin(),defenders.end());
+    if(std::adjacent_find(defenders.begin(),defenders.end())!=defenders.end())
+        return {false,"A volunteer may only be listed once"};
+    int defense_score=0;
+    std::vector<uint64_t> supplied_defenders;
+    const auto battle_ready=military_battle_candidates(command.region);
+    for(const uint64_t id:defenders){
+        if(id==0||id>people_.size())return {false,"Unknown defending volunteer"};
+        const auto& volunteer=person(id);
+        if(!std::binary_search(battle_ready.begin(),battle_ready.end(),id))
+            return {false,"Every defender must be alive, healthy, consenting, mobilized and present in the occupied region"};
+        const int military=capability_value(id,LegacyCapability::Military);
+        const int weapon=volunteer.inventory[size_t(GoodId::Weapon)]>0?1:0;
+        const int leather=volunteer.inventory[size_t(GoodId::Leather)]>0?1:0;
+        const bool supplied=volunteer.inventory[size_t(GoodId::MilitarySupply)]>0;
+        defense_score+=1+military/50+weapon+leather+int(supplied);
+        if(supplied)supplied_defenders.push_back(id);
+    }
+    if(consumed_[size_t(GoodId::MilitarySupply)]>
+       std::numeric_limits<int64_t>::max()-int64_t(supplied_defenders.size()))
+        return {false,"MilitarySupply consumption ledger overflow"};
+    const bool recaptured=!command.retreat&&defense_score>occupation.garrison_units;
+    const int attacker_losses=command.retreat?0:(recaptured?occupation.garrison_units:
+        std::min(occupation.garrison_units,defense_score/2));
+    const int defender_casualties=command.retreat||recaptured?0:
+        std::min<int>(int(defenders.size()),std::max(1,(occupation.garrison_units+1)/2));
+    const uint64_t required_facts=1+uint64_t(defender_casualties>0);
+    if(next_fact_>std::numeric_limits<uint64_t>::max()-required_facts)
+        return {false,"Counterattack fact counter overflow"};
+
+    for(const uint64_t id:supplied_defenders)--mutable_person(id).inventory[size_t(GoodId::MilitarySupply)];
+    consumed_[size_t(GoodId::MilitarySupply)]+=int64_t(supplied_defenders.size());
+    for(int i=0;i<defender_casualties;++i)
+        mutable_person(defenders[size_t(defenders.size()-1-size_t(i))]).health=0;
+    if(recaptured)occupation=MilitaryOccupation{};
+    else if(!command.retreat)occupation.garrison_units-=attacker_losses;
+    actor.last_decision_day=day_;++actor.decisions;++actor.sampling;
+    event(actor.id,command.region,recaptured?255:(command.retreat?256:257),
+        command.retreat?0:defense_score,occupation.garrison_units);
+    if(defender_casualties>0)event(actor.id,command.region,258,defender_casualties,occupation.garrison_units);
+    return {true,recaptured?"The region returned to the Realm's military control":
+        (command.retreat?"The Sovereign withdrew and the garrison kept the region":
+                         "The counterattack failed; surviving volunteers and garrison remain"),
+        next_fact_-1,uint64_t(command.region)};
+}
+
+void Realm::process_military_occupations_day(){
+    if(regions_!=int(kAtlasTerritoryCount)-1)return;
+    std::array<int,kForeignTradePartnerCount> required{};
+    for(const auto& occupation:military_occupations_)
+        if(occupation.occupied())required[size_t(occupation.partner_id)]+=occupation.garrison_units;
+    for(size_t partner_id=0;partner_id<required.size();++partner_id){
+        const int total=required[partner_id];if(total==0)continue;
+        auto& partner=foreign_trade_partners_[partner_id];
+        const int available=int(std::min<int64_t>(partner.goods[size_t(GoodId::DryFood)],total));
+        const int rationed_total=std::min(total,available);
+        std::array<int,kAtlasTerritoryCount> rationed_by_region{};
+        int assigned=0;
+        for(size_t region=0;region<kAtlasTerritoryCount;++region){
+            const auto& occupation=military_occupations_[region];
+            if(!occupation.occupied()||size_t(occupation.partner_id)!=partner_id)continue;
+            const int rationed=int((int64_t(rationed_total)*occupation.garrison_units)/total);
+            rationed_by_region[region]=rationed;assigned+=rationed;
+        }
+        for(size_t region=0;region<kAtlasTerritoryCount&&assigned<rationed_total;++region){
+            const auto& occupation=military_occupations_[region];
+            if(occupation.occupied()&&size_t(occupation.partner_id)==partner_id&&
+               rationed_by_region[region]<occupation.garrison_units){
+                ++rationed_by_region[region];++assigned;
+            }
+        }
+        if(consumed_[size_t(GoodId::DryFood)]>std::numeric_limits<int64_t>::max()-rationed_total)
+            throw std::overflow_error("Occupation DryFood consumption ledger overflow");
+        partner.goods[size_t(GoodId::DryFood)]-=rationed_total;
+        consumed_[size_t(GoodId::DryFood)]+=rationed_total;
+        for(size_t region=0;region<kAtlasTerritoryCount;++region){
+            auto& occupation=military_occupations_[region];
+            if(!occupation.occupied()||size_t(occupation.partner_id)!=partner_id)continue;
+            const int lost=occupation.garrison_units-rationed_by_region[region];
+            if(lost==0)continue;
+            occupation.garrison_units=rationed_by_region[region];
+            if(occupation.garrison_units==0)occupation=MilitaryOccupation{};
+            event(1,int(region),259,lost,occupation.garrison_units);
+        }
+    }
 }
 
 } // namespace polyec

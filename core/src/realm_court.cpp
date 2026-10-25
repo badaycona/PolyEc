@@ -90,7 +90,7 @@ bool Realm::legal_proposal_response(uint64_t actor,const Candidate&action)const{
         if(o.kind==5){
             if(actor==0||actor>people_.size()||o.from==0||o.from>people_.size()||
                !person(actor).alive||!person(actor).sovereign||person(actor).id!=o.to||
-               person(o.from).family!=Family::Governance||!person(o.from).taxing_authority||
+               person(o.from).family!=Family::Governance||!has_local_government_authority(person(o.from))||
                person(o.from).sovereign||person(o.from).region!=o.source_region||
                o.amount<1||o.amount>4||o.service_term!=14||o.escrow!=0||day_>365000-16)return false;
             for(const auto& obligation:military_obligations_)
@@ -105,7 +105,7 @@ bool Realm::legal_proposal_response(uint64_t actor,const Candidate&action)const{
         if(o.kind==6){
             if(actor==0||actor>people_.size()||!person(actor).alive||!person(actor).sovereign||person(actor).id!=o.to||
                o.from==0||o.from>people_.size()||person(o.from).family!=Family::Governance||
-               !person(o.from).taxing_authority||person(o.from).sovereign||o.service_term!=7||o.escrow!=0||
+               !has_local_government_authority(person(o.from))||person(o.from).sovereign||o.service_term!=7||o.escrow!=0||
                o.amount!=7||day_>365000-7)return false;
             for(const auto& obligation:military_obligations_)
                 if(obligation.id==o.cause&&obligation.obligor==o.from&&obligation.recipient==actor&&
@@ -116,7 +116,7 @@ bool Realm::legal_proposal_response(uint64_t actor,const Candidate&action)const{
         if(o.kind==7){
             if(actor==0||actor>people_.size()||!person(actor).alive||!person(actor).sovereign||person(actor).id!=o.to||
                o.from==0||o.from>people_.size()||person(o.from).family!=Family::Governance||
-               !person(o.from).taxing_authority||person(o.from).sovereign||o.service_term!=14||o.escrow!=0||
+               !has_local_government_authority(person(o.from))||person(o.from).sovereign||o.service_term!=14||o.escrow!=0||
                o.amount<1||o.amount>4||day_>365000-14)return false;
             for(const auto& source:military_obligations_)
                 if(source.id==o.cause&&source.obligor==o.from&&source.recipient==actor&&source.completed_day<0&&
@@ -130,7 +130,7 @@ bool Realm::legal_proposal_response(uint64_t actor,const Candidate&action)const{
         if(o.kind==8){
             if(actor==0||actor>people_.size()||!person(actor).alive||!person(actor).sovereign||person(actor).id!=o.to||
                o.from==0||o.from>people_.size()||person(o.from).family!=Family::Governance||
-               !person(o.from).taxing_authority||person(o.from).sovereign||o.service_term!=7||o.escrow!=0||
+               !has_local_government_authority(person(o.from))||person(o.from).sovereign||o.service_term!=7||o.escrow!=0||
                o.amount!=7||day_>365000-7)return false;
             for(const auto& supply:military_supply_obligations_)
                 if(supply.id==o.cause&&supply.obligor==o.from&&supply.recipient==actor&&supply.completed_day<0&&
@@ -147,7 +147,7 @@ bool Realm::legal_proposal_response(uint64_t actor,const Candidate&action)const{
         }
         if(o.kind==3)return marriage_eligible(actor)&&marriage_eligible(o.from)&&!marriage_related(o.from,actor)&&!marriage_pending(o.from,actor,o.id)&&
             o.escrow<=std::numeric_limits<int64_t>::max()-person(actor).cash;
-        auto&p=person(actor);return p.alive&&p.taxing_authority&&provinces_[p.region].treasury>=o.amount&&project_materials(p.region,0)&&provinces_[p.region].road<4;
+        auto&p=person(actor);return p.alive&&has_local_government_authority(p)&&provinces_[p.region].treasury>=o.amount&&project_materials(p.region,0)&&provinces_[p.region].road<4;
     }return false;
 }
 void Realm::create_proposal(uint64_t actor,const Candidate&action){

@@ -70,6 +70,8 @@ RealmResult Realm::execute(const TransportRouteCommand& command) {
         return {false, "Stale or duplicate decision ID"};
 
     auto& route = national_transport_routes_[command.route_index];
+    if(region_military_occupied(route.from)||region_military_occupied(route.to))
+        return {false,"The Sovereign cannot change a transport route while either endpoint is occupied"};
     if (route.open == command.open) return {false, "Route already has the requested open state"};
     route.open = command.open;
     atlas_distance_cache_valid_=false;
@@ -99,7 +101,7 @@ RealmResult Realm::execute(const TransportShipmentCommand& command) {
             static_cast<unsigned>(command.service_goal) > static_cast<unsigned>(TransportServiceGoal::LowestFee))
             return {false, "Invalid shipment request"};
         if(command.military_ration_depot&&
-           (actor.family!=Family::Governance||!actor.taxing_authority||!provinces_[size_t(actor.region)].charter||
+           (actor.family!=Family::Governance||!has_local_government_authority(actor)||!provinces_[size_t(actor.region)].charter||
             (command.good!=int(GoodId::DryFood)&&command.good!=int(GoodId::SupplementaryFood))||command.quantity>64))
             return {false,"Public ration shipment requires local Governance authority and at most 64 ration goods"};
         if(command.military_ration_depot&&regions_!=int(kAtlasTerritoryCount)-1)
@@ -163,7 +165,7 @@ RealmResult Realm::execute(const TransportShipmentCommand& command) {
             return {false, "Shipment does not exist"};
         const bool public_ration=shipment->owner_kind==TransportShipmentOwnerKind::MilitaryRationDepot;
         if(public_ration){
-            if(actor.family!=Family::Governance||!actor.taxing_authority||actor.region!=shipment->source_region||
+            if(actor.family!=Family::Governance||!has_local_government_authority(actor)||actor.region!=shipment->source_region||
                !provinces_[size_t(actor.region)].charter)
                 return {false,"Public ration cancellation requires Governance authority in the source region"};
         }else if(shipment->owner!=actor.id)return {false,"Shipment does not belong to this actor"};

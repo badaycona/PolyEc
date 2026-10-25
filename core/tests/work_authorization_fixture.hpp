@@ -10,6 +10,10 @@
 
 namespace polyec::test_fixtures {
 inline void normalize_schema68_fixture(std::string& source){
+    if(source.rfind("POLYEC_REALM_76 ",0)==0){
+        strip_empty_military_control_section(source);
+        source.replace(0,std::string("POLYEC_REALM_76").size(),"POLYEC_REALM_75");
+    }
     if(source.rfind("POLYEC_REALM_75 ",0)==0){
         strip_empty_apprenticeship_section(source);
         source.replace(0,std::string("POLYEC_REALM_75").size(),"POLYEC_REALM_74");

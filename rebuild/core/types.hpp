@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <tuple>
 namespace pe {
 using Id=int; using Money=std::int64_t;
 struct RuleError:std::runtime_error {using std::runtime_error::runtime_error;};

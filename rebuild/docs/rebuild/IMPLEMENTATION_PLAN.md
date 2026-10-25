@@ -103,3 +103,6 @@ A–D là các quy mô kiểm chứng, không là các game khác nhau. Không c
 
 ## Triển khai nhóm A trong session mới
 Bản trial-a2 bổ sung class/action một lãnh thổ theo [luật và catalog](../ACTIONS_A2.md), thay các hạn chế a1 được ghi rõ. Các mốc B–E không đổi.
+
+## Triển khai mốc B
+Theo yêu cầu tiếp tục workflow: GitHub main đã thay bằng rewrite; hai lãnh thổ triển khai theo [TRAVEL_B](../TRAVEL_B.md), giữ các gate và giới hạn B–E ở trên.

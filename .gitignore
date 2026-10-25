@@ -32,3 +32,5 @@
 # Only replacement CI is current
 /.github/workflows/*
 !/.github/workflows/rewrite.yml
+
+/rebuild/game/*.gd.uid

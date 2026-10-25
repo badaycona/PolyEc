@@ -8,5 +8,5 @@ struct Proposal { int id=0; ProposalKind kind=ProposalKind::Sale; Id from=0,to=0
 struct Debt { int id=0,proposal=0; Id lender=0,borrower=0; Money principal=0,interest=0,outstanding=0; int due=0,status=0; };
 struct Lease { int id=0,proposal=0; Id landlord=0,tenant=0,site=15; int start=0,end=0; Money rent=0; int status=0; };
 struct State; struct Command;
-namespace contracts {void propose(State&,const Command&);void respond(State&,const Command&);void counter(State&,const Command&);void fulfill(State&,const Command&);void repay(State&,const Command&);void end_lease(State&,const Command&);void advance(State&);void validate(const State&);Money escrow_total(const State&);Inventory reserved_total(const State&);bool residence(const State&,Id,Id);bool residence_at(const State&,Id,Id,int);}
+namespace contracts {void propose(State&,const Command&);void respond(State&,const Command&);void counter(State&,const Command&);void claim(State&,const Command&);void fulfill(State&,const Command&);void repay(State&,const Command&);void end_lease(State&,const Command&);void advance(State&);void validate(const State&);Money escrow_total(const State&);Inventory reserved_total(const State&);bool residence(const State&,Id,Id);bool residence_at(const State&,Id,Id,int);}
 }

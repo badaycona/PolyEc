@@ -10,10 +10,12 @@ Inventory& origin(State& s,const Proposal& p) {
 }
 void release(State& s,Proposal& p,ContractStatus status,const std::string& cause) {
     account(s,p.from).money+=p.escrow;p.escrow=0;
-    for(int i=0;i<goods;++i)origin(s,p).units[i]+=p.reserved.units[i];
-    p.reserved={};p.status=status;
+    bool has_goods=std::any_of(p.reserved.units.begin(),p.reserved.units.end(),[](int n){return n!=0;});bool return_goods=!has_goods||p.source_site!=0||person(s,p.from).location==p.site;
+    if(return_goods&&p.source_site==0&&person(s,p.from).journey.route){Person proposed=person(s,p.from);for(int i=0;i<goods;++i)proposed.account.inventory.units[i]+=p.reserved.units[i];return_goods=transport::carried_weight(proposed)<=route(s,proposed.journey.route).capacity;}
+    if(return_goods){for(int i=0;i<goods;++i)origin(s,p).units[i]+=p.reserved.units[i];p.reserved={};}
+    p.status=status;
     std::vector<Id> who{p.from};if(p.to)who.push_back(p.to);
-    emit(s,"Proposal#"+std::to_string(p.id)+" "+cause,who);
+    emit(s,"Proposal#"+std::to_string(p.id)+" "+cause+(return_goods?"":"; goods remain at site"+std::to_string(p.site)+" for owner collection"),who);
 }
 void money_from_escrow(State& s,Proposal& p,Id recipient) {
     account(s,recipient).money+=p.escrow;p.escrow=0;
@@ -26,6 +28,7 @@ Money escrow_total(const State& s){Money n=0;for(auto& p:s.proposals)n+=p.escrow
 Inventory reserved_total(const State& s){Inventory n;for(auto& p:s.proposals)for(int i=0;i<goods;++i)n.units[i]+=p.reserved.units[i];return n;}
 bool residence_at(const State& s,Id actor,Id site,int tick){
     const auto& l=location(s,site);
+    if((l.kind==SiteKind::Camp||l.kind==SiteKind::Road)&&person(s,actor).journey.route&&person(s,actor).journey.paused&&person(s,actor).location==site)return true;
     if(std::find(l.residents.begin(),l.residents.end(),actor)!=l.residents.end())return true;
     return std::any_of(s.leases.begin(),s.leases.end(),[&](const Lease& lease){return lease.tenant==actor&&lease.site==site&&lease.start<=tick&&tick<lease.end;});
 }
@@ -34,13 +37,14 @@ void propose(State& s,const Command& c){
     auto& actor=person(s,c.actor);idle(actor);
     require(c.option>=0&&c.option<=4,"Unknown proposal kind");
     require(s.proposals.size()<2000,"Proposal capacity reached");
+    require(location(s,actor.location).kind!=SiteKind::Road,"No fixed trading site on the open road");
     Proposal p;p.id=s.next_contract++;p.kind=ProposalKind(c.option);p.from=p.author=actor.id;p.to=p.awaiting=c.target;p.site=actor.location;
     p.amount=c.amount;p.price=c.param("price",p.kind==ProposalKind::Loan||p.kind==ProposalKind::Appointment?0:1);
     p.duration=c.param("duration",12);p.deadline=s.tick+p.duration;
     require(p.duration>=1&&p.duration<=1440&&p.price>=0&&p.price<=100,"Price/duration outside trial limits");
     int g=c.param("good",0);require(g>=0&&g<goods,"Unknown good");p.good=Good(g);
     require(p.from!=p.to,"Cannot contract with yourself");
-    if(p.to){auto& other=person(s,p.to);require(other.body.health>0,"Counterparty cannot consent");if(p.kind!=ProposalKind::Appointment)require(other.location==actor.location,"Counterparty must be present to negotiate");}
+    if(p.to){auto& other=person(s,p.to);require(other.body.health>0,"Counterparty cannot consent");if(p.kind!=ProposalKind::Appointment)require(co_located(s,actor.id,other.id),"Counterparty must be present to negotiate");}
     else require(p.kind==ProposalKind::Sale||p.kind==ProposalKind::Lease,"This proposal requires a named recipient");
     if(p.kind==ProposalKind::Sale){
         require(p.amount<=20&&p.price>=1,"Sale requires quantity1..20 and price1..100");
@@ -50,8 +54,8 @@ void propose(State& s,const Command& c){
     }else if(p.kind==ProposalKind::Loan){
         require(actor.account.money>=p.amount,"Insufficient loan principal");actor.account.money-=p.amount;p.escrow=p.amount;
     }else if(p.kind==ProposalKind::Lease){
-        p.site=c.param("site",15);auto& home=location(s,p.site);
-        require(home.id==15&&home.owner==p.from&&actor.location==home.id,"Only home owner at homes may offer lease");
+        p.site=c.param("site",actor.location);auto& home=location(s,p.site);
+        require(home.lodging_capacity>0&&home.owner==p.from&&actor.location==home.id,"Only home owner at homes may offer lease");
         require(p.amount==1&&p.price>=1,"Lease is one prepaid residence right");
     }else if(p.kind==ProposalKind::Delivery){
         require(p.amount<=20&&p.price>=1,"Delivery requires quantity1..20 and reward1..100");
@@ -61,6 +65,13 @@ void propose(State& s,const Command& c){
     }
     s.proposals.push_back(p);std::vector<Id> who{p.from};if(p.to)who.push_back(p.to);
     emit(s,actor.name+" proposed#"+std::to_string(p.id)+" kind"+std::to_string(c.option)+"; awaiting explicit consent",who,p.kind==ProposalKind::Appointment);
+}
+void claim(State& s,const Command& c){
+    auto& actor=person(s,c.actor);idle(actor);auto& p=find(s,c.target);
+    require(p.from==actor.id&&p.kind==ProposalKind::Sale&&p.source_site==0,"Only seller may collect personal reserved sale goods");
+    require(p.status==ContractStatus::Expired||p.status==ContractStatus::Cancelled||p.status==ContractStatus::Rejected,"No cancelled/expired sale to collect");
+    require(actor.location==p.site,"Owner must return to physical escrow site");require(p.reserved[p.good]==p.amount,"No unclaimed goods remain");
+    Transaction{}.goods(p.reserved,actor.account.inventory,p.good,p.amount).commit(s);emit(s,actor.name+" collected real escrow goods at site"+std::to_string(p.site),{actor.id});
 }
 void counter(State& s,const Command& c){
     auto& actor=person(s,c.actor);idle(actor);auto& p=find(s,c.target);
@@ -86,14 +97,14 @@ void respond(State& s,const Command& c){
     require(other.body.health>0,"Recipient cannot consent");
     if(p.kind!=ProposalKind::Appointment)require(other.location==p.site,"Recipient must visit proposal site");
     if(p.kind==ProposalKind::Sale){
-        Transaction{}.money(recipient,p.from,Money(p.price)*p.amount).money(recipient,100,p.amount).goods(p.reserved,other.account.inventory,p.good,p.amount).commit(s);
+        Transaction{}.money(recipient,p.from,Money(p.price)*p.amount).money(recipient,treasury_for_location(s,p.site),p.amount).goods(p.reserved,other.account.inventory,p.good,p.amount).commit(s);
         emit(s,"PUBLIC tax receipt: "+std::to_string(p.amount)+" from proposal#"+std::to_string(p.id),{recipient},true);
         p.status=ContractStatus::Fulfilled;
     }else if(p.kind==ProposalKind::Loan){
         require(s.debts.size()<2000,"Debt capacity reached");
         money_from_escrow(s,p,recipient);s.debts.push_back({s.next_debt++,p.id,p.from,recipient,p.amount,p.price,Money(p.amount)+p.price,s.tick+p.duration,0});p.status=ContractStatus::Fulfilled;
     }else if(p.kind==ProposalKind::Lease){
-        require(!residence(s,recipient,p.site),"Recipient already has residence right");require(live_slots(s,p.site)<2,"No lease slot available");
+        require(!residence(s,recipient,p.site),"Recipient already has residence right");require(live_slots(s,p.site)<location(s,p.site).lodging_capacity,"No lease slot available");
         require(s.leases.size()<2000,"Lease capacity reached");
         Transaction{}.money(recipient,p.from,p.price).commit(s);
         s.leases.push_back({s.next_lease++,p.id,p.from,recipient,p.site,s.tick,s.tick+p.duration,p.price,0});p.status=ContractStatus::Fulfilled;
@@ -110,7 +121,7 @@ void fulfill(State& s,const Command& c){
     auto& actor=person(s,c.actor);idle(actor);auto& p=find(s,c.target);
     require(p.kind==ProposalKind::Delivery&&p.status==ContractStatus::Active,"No accepted delivery obligation");
     require(c.actor==p.to,"Only obligated recipient may deliver");require(s.tick<p.deadline,"Delivery deadline passed");
-    auto& requester=person(s,p.from);require(actor.location==requester.location,"Delivery requires meeting requester");
+    auto& requester=person(s,p.from);require(co_located(s,actor.id,requester.id),"Delivery requires meeting requester");
     Transaction{}.goods(actor.account.inventory,requester.account.inventory,p.good,p.amount).commit(s);money_from_escrow(s,p,actor.id);p.status=ContractStatus::Fulfilled;
     emit(s,actor.name+" fulfilled delivery#"+std::to_string(p.id)+"; goods and reward transferred",{p.from,p.to});
 }
@@ -154,10 +165,11 @@ void validate(const State& s){
         if(active)require(p.kind==ProposalKind::Delivery&&p.to&&p.deadline>s.tick,"Invalid active obligation");
         Money expected=(pending&&p.kind==ProposalKind::Loan)?p.amount:((pending||active)&&p.kind==ProposalKind::Delivery?p.price:0);
         require(p.escrow==expected,"Invalid contract money escrow");Inventory expected_stock;
-        if(pending&&p.kind==ProposalKind::Sale)expected_stock[p.good]=p.amount;
+        bool retained=p.kind==ProposalKind::Sale&&p.source_site==0&&(p.status==ContractStatus::Expired||p.status==ContractStatus::Cancelled||p.status==ContractStatus::Rejected)&&p.reserved[p.good]!=0;
+        if((pending||retained)&&p.kind==ProposalKind::Sale)expected_stock[p.good]=p.amount;
         require(p.reserved.units==expected_stock.units,"Invalid reserved contract goods");
         if(p.kind==ProposalKind::Sale||p.kind==ProposalKind::Delivery)require(p.amount<=20&&p.price>=1,"Invalid goods contract terms");
-        if(p.kind==ProposalKind::Lease)require(p.amount==1&&p.site==15&&location(s,p.site).owner==p.from&&p.price>=1,"Invalid lease owner/terms");
+        if(p.kind==ProposalKind::Lease)require(p.amount==1&&location(s,p.site).lodging_capacity>0&&location(s,p.site).owner==p.from&&p.price>=1,"Invalid lease owner/terms");
         if(p.kind==ProposalKind::Appointment)require(p.from==1&&p.to&&p.amount==1&&p.price==0,"Invalid appointment authority");
     }
     previous=0;std::vector<int> debt_proposals,lease_proposals;
@@ -175,6 +187,7 @@ void validate(const State& s){
         require(std::find(lease_proposals.begin(),lease_proposals.end(),l.proposal)==lease_proposals.end(),"Duplicate lease right");lease_proposals.push_back(l.proposal);
     }
     for(auto& p:s.proposals)if(p.kind==ProposalKind::Lease&&p.status==ContractStatus::Fulfilled)require(std::find(lease_proposals.begin(),lease_proposals.end(),p.id)!=lease_proposals.end(),"Accepted lease lacks right");
-    require(live_slots(s,15)<=2,"Lease capacity exceeded");
+    for(auto l:locations(s))require(live_slots(s,l->id)<=l->lodging_capacity,"Lease capacity exceeded");
 }
 }
+

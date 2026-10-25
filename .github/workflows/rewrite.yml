@@ -10,6 +10,6 @@ jobs:
       - name: Configure rewrite only
         run: cmake -S . -B build -A x64
       - name: Build core consumers
-        run: cmake --build build --config Release --target core_tests action_tests polyec_core
+        run: cmake --build build --config Release --target core_tests action_tests journey_tests polyec_core
       - name: Test simulation rules
         run: ctest --test-dir build -C Release --output-on-failure

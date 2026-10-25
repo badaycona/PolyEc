@@ -22,7 +22,7 @@ if not args.publish:
     paths=[]
     for file in files:
         if not file.is_file() or file.suffix in ['.pyc','.exe','.obj'] or '__pycache__' in file.parts: continue
-        path=file.relative_to(ROOT).as_posix();data=file.read_bytes()
+        path=file.relative_to(ROOT).as_posix();data=file.read_bytes().replace(b"\r\n",b"\n")
         assert len(data)<2_000_000 and not path.endswith('.env'),path
         blob=git('hash-object','-w','--stdin',input=data)
         git('update-index','--add','--cacheinfo','100644',blob,path,env=env);paths.append(path)

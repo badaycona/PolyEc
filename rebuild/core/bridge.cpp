@@ -18,7 +18,7 @@ void write(const std::string&path,const std::string&text){auto tmp=path+".tmp";a
 #endif
 }
 int run(int argc,char**argv){try{require(argc>=5,"Usage: core state operation viewer debug [args]");std::string path=argv[1],op=argv[2];Id viewer=std::stoi(argv[3]);bool debug=std::string(argv[4])=="1";World w;Result r{true,"Ready"};
- if(op!="reset"){r=w.load(read(path));require(r.ok,r.message);}else if(argc>5)w=World(std::stoul(argv[5]));
+ if(op!="reset"){r=w.load(read(path));require(r.ok,r.message);}else w=World(argc>5?std::stoul(argv[5]):251025,argc>6?std::string(argv[6])=="2":true);
  person(w.state(),viewer);
  if(op=="step"){require(argc>5,"Step count missing");r=w.advance(std::stoi(argv[5]));}
  else if(op=="command"){require(argc>=12,"Command arguments missing");Command c;c.actor=std::stoi(argv[5]);require(debug||c.actor==viewer,"Player cannot control another NPC; debug required");c.verb=argv[6];c.target=std::stoi(argv[7]);c.amount=std::stoi(argv[8]);c.option=std::stoi(argv[9]);c.revision=std::stoull(argv[10]);c.text=std::string(argv[11])=="__EMPTY__"?"":argv[11];for(int j=12;j<argc;++j){std::string token=argv[j];auto eq=token.find('=');require(eq!=std::string::npos&&eq>0,"Expected named parameter key=value");std::string name=token.substr(0,eq),number=token.substr(eq+1);size_t used=0;int value=std::stoi(number,&used);require(used==number.size(),"Invalid numeric parameter");require(c.params.emplace(name,value).second,"Duplicate named parameter");}r=w.submit(c);}
@@ -34,3 +34,4 @@ int wmain(int argc,wchar_t**args){std::vector<std::string> storage;std::vector<c
 #else
 int main(int argc,char**argv){return run(argc,argv);}
 #endif
+

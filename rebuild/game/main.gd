@@ -4,8 +4,8 @@ const GOLD = Color("dfbf7a")
 const TEAL = Color("67c6b2")
 var VERBS = ["move","work","buy","meal","drink","rest","offer","talk","accept","study","grant","goal","cancel"]
 var VERB_LABELS = ["Đi tới địa điểm","Nhận việc đã đăng","Mua hàng tại site","Chuẩn bị bữa ăn","Uống tại giếng","Nghỉ tại nhà","Chủ đăng việc","Mời trò chuyện","Nhận lời mời","Đọc công báo","Chi công cho người","Đổi mục tiêu","Hủy hoạt động"]
-const SITE_NAMES = {10:"Cung điện",11:"Ruộng · food4 + thuế1",12:"Xưởng · tool8 + thuế1",13:"Chợ",14:"Giếng công",15:"Nhà ở"}
-const PEOPLE_NAMES = {1:"Vua",2:"Điền · chủ ruộng",3:"Mộc · chủ xưởng",4:"An · người lao động",5:"Bình · người lao động"}
+var SITE_NAMES = {10:"Cung điện",11:"Ruộng · food4 + thuế1",12:"Xưởng · tool8 + thuế1",13:"Chợ",14:"Giếng công",15:"Nhà ở"}
+var PEOPLE_NAMES = {1:"Vua",2:"Điền · chủ ruộng",3:"Mộc · chủ xưởng",4:"An · người lao động",5:"Bình · người lao động"}
 var world: Dictionary = {}
 var actor := 1
 var debug_mode := false
@@ -14,6 +14,9 @@ var elapsed := 0.0
 var session_path: String
 var save_path: String
 var bridge_path: String
+var selected_route := 0
+var baseline_demo_actions: Array=[]
+var metadata_signature := ""
 var selected_site := 10
 var selected_person := 1
 var selection_kind := "person"
@@ -50,7 +53,7 @@ var command_button: Button
 var action_test_records: Array=[]
 var contract_label: RichTextLabel
 var configured_verb := ""
-const NEW_LABELS = {"revoke_job":"Thu hồi việc chưa nhận","produce":"Chủ tự sản xuất","manage":"Lấy / gửi kho của mình","transfer":"Chuyển tiền / tặng hàng","equip":"Thay công cụ đã lắp","propose":"Đề nghị có điều khoản","counter":"Trả giá đề nghị","respond":"Trả lời đề nghị","fulfill":"Hoàn thành giao hàng","repay":"Trả nợ","end_lease":"Kết thúc thuê của mình","collect":"Lấy nước vào túi","care":"Chăm sóc hồi phục","invitation":"Từ chối / thu hồi lời mời","inspect":"Quan sát tại chỗ","dismiss":"Bãi nhiệm chức ngân quỹ","announce":"Đăng công báo"}
+const NEW_LABELS = {"revoke_job":"Thu hồi việc chưa nhận","produce":"Chủ tự sản xuất","manage":"Lấy / gửi kho của mình","transfer":"Chuyển tiền / tặng hàng","equip":"Thay công cụ đã lắp","propose":"Đề nghị có điều khoản","counter":"Trả giá đề nghị","respond":"Trả lời đề nghị","fulfill":"Hoàn thành giao hàng","repay":"Trả nợ","end_lease":"Kết thúc thuê của mình","collect":"Lấy nước vào túi","care":"Chăm sóc hồi phục","invitation":"Từ chối / thu hồi lời mời","inspect":"Quan sát tại chỗ","dismiss":"Bãi nhiệm chức ngân quỹ","announce":"Đăng công báo","travel":"Khởi hành liên vùng","pause_journey":"Dừng trên tuyến","resume_journey":"Tiếp tục hành trình","turnback":"Quay về nơi xuất phát","route":"Mở / đóng tuyến","claim":"Nhận lại hàng ký gửi"}
 const PROPOSAL_NAMES = ["Bán hàng","Cho vay","Cho thuê chỗ ở","Nhờ giao hàng","Bổ nhiệm ngân quỹ"]
 var demo_actions := [
 	[4,"move",11,1,0,"An đến ruộng để xem cơ hội"],
@@ -99,13 +102,14 @@ func rich(height: int) -> RichTextLabel:
 	r.add_theme_font_size_override("normal_font_size",15)
 	return r
 func _ready() -> void:
+	baseline_demo_actions=demo_actions.duplicate(true)
 	DisplayServer.window_set_min_size(Vector2i(1200,840))
 	bridge_path=ProjectSettings.globalize_path("res://polyec_core.exe")
-	session_path=ProjectSettings.globalize_path("user://live-a2.pe")
-	save_path=ProjectSettings.globalize_path("user://checkpoint-a2.pe")
-	if "--ui-test" in OS.get_cmdline_user_args() or "--action-test" in OS.get_cmdline_user_args():
-		session_path=ProjectSettings.globalize_path("user://ui-test-live-a2.pe")
-		save_path=ProjectSettings.globalize_path("user://ui-test-checkpoint-a2.pe")
+	session_path=ProjectSettings.globalize_path("user://live-b1.pe")
+	save_path=ProjectSettings.globalize_path("user://checkpoint-b1.pe")
+	if "--ui-test" in OS.get_cmdline_user_args() or "--action-test" in OS.get_cmdline_user_args() or "--journey-test" in OS.get_cmdline_user_args():
+		session_path=ProjectSettings.globalize_path("user://ui-test-live-b1.pe")
+		save_path=ProjectSettings.globalize_path("user://ui-test-checkpoint-b1.pe")
 	build_ui()
 	if FileAccess.file_exists(session_path):
 		invoke("view")
@@ -115,6 +119,8 @@ func _ready() -> void:
 		call_deferred("ui_smoke")
 	elif "--action-test" in OS.get_cmdline_user_args():
 		call_deferred("ui_action_smoke")
+	elif "--journey-test" in OS.get_cmdline_user_args():
+		call_deferred("ui_journey_smoke")
 func build_ui() -> void:
 	var theme_new := Theme.new()
 	theme_new.default_font_size=15
@@ -185,7 +191,8 @@ func build_ui() -> void:
 	left.add_child(site_label)
 	var demo_row := HBoxContainer.new()
 	left.add_child(demo_row)
-	button("Bắt đầu vòng thử",start_demo,demo_row)
+	button("Vòng cơ bản",start_demo,demo_row)
+	button("Hai lãnh thổ",start_trade_demo,demo_row)
 	demo_button=button("Bước kịch bản →",next_demo,demo_row)
 	demo_button.disabled=true
 	demo_label=label("Kịch bản kiểm luật có điều khiển; chưa có AI học.",13,TEAL)
@@ -201,7 +208,7 @@ func build_ui() -> void:
 	side.add_theme_constant_override("separation",8)
 	side_scroll.add_child(side)
 	side.add_child(label("CÁ NHÂN & HÀNH ĐỘNG",17,GOLD))
-	person_label=rich(210)
+	person_label=rich(280)
 	side.add_child(person_label)
 	verb_box=OptionButton.new()
 	for i in range(VERBS.size()):
@@ -224,13 +231,13 @@ func build_ui() -> void:
 	meal_box=CheckBox.new()
 	meal_box.text="Bữa ngon (2 food / 30 phút)"
 	side.add_child(meal_box)
-	for name in ["good","price","duration","source_site","site","wage"]:
+	for name in ["good","price","duration","source_site","site","wage","organization"]:
 		var row:=HBoxContainer.new()
 		side.add_child(row)
 		named_rows[name]=row
-		var labels={"good":"Loại hàng","price":"Giá / lãi / tiền công","duration":"Hạn (bước10 phút)","source_site":"Nguồn kho của mình","site":"Nơi cho thuê","wage":"Lương mỗi mẻ"}
+		var labels={"good":"Loại hàng","price":"Giá / lãi / tiền công","duration":"Hạn (bước10 phút)","source_site":"Nguồn kho của mình","site":"Nơi cho thuê","wage":"Lương mỗi mẻ","organization":"Nguồn công quỹ"}
 		row.add_child(label(labels[name],14))
-		if name in ["good","source_site","site"]:
+		if name in ["good","source_site","site","organization"]:
 			var choice:=OptionButton.new()
 			choice.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 			if name=="good":
@@ -240,8 +247,10 @@ func build_ui() -> void:
 				choice.add_item("Túi cá nhân",0)
 				for site_id in SITE_NAMES:
 					choice.add_item(SITE_NAMES[site_id],site_id)
-			else:
+			elif name=="site":
 				choice.add_item("Nhà ở #15",15)
+			else:
+				choice.add_item("Ngân quỹ #100",100)
 			row.add_child(choice)
 			named_controls[name]=choice
 		else:
@@ -344,6 +353,8 @@ func on_map_selection(kind: String,id: int) -> void:
 	selection_kind=kind
 	if kind=="person":
 		selected_person=id
+	elif kind=="route":
+		selected_route=id
 	else:
 		selected_site=id
 		if VERBS[verb_box.selected] in ["move","work","buy","offer"]:
@@ -352,6 +363,39 @@ func on_map_selection(kind: String,id: int) -> void:
 					target_box.select(i)
 	refresh()
 func sync_catalog() -> void:
+	var signature: String=JSON.stringify(world.get("citizens",[]))+str(world.locations.size())
+	if signature!=metadata_signature:
+		metadata_signature=signature
+		PEOPLE_NAMES.clear()
+		actor_box.clear()
+		for citizen in world.get("citizens",[]):
+			var id: int=int(citizen.id)
+			PEOPLE_NAMES[id]=str(citizen.name)
+			actor_box.add_item("%d · %s" % [id,citizen.name],id)
+			if id==actor:
+				actor_box.select(actor_box.item_count-1)
+		SITE_NAMES.clear()
+		for l in world.locations:
+			SITE_NAMES[int(l.id)]=str(l.name)
+		for name in ["source_site","site","organization"]:
+			var input: OptionButton=named_controls[name]
+			var previous: int=input.get_selected_id()
+			input.clear()
+			if name=="source_site":
+				input.add_item("Túi cá nhân",0)
+				for l in world.locations:
+					if int(l.region)>0:
+						input.add_item(str(l.name),int(l.id))
+			elif name=="site":
+				for l in world.locations:
+					if int(l.lodging_capacity)>0:
+						input.add_item(str(l.name),int(l.id))
+			else:
+				for treasury in world.get("treasuries",[]):
+					input.add_item("Ngân quỹ #%d" % treasury.id,int(treasury.id))
+			for i in range(input.item_count):
+				if input.get_item_id(i)==previous:
+					input.select(i)
 	for definition in world.get("actions",[]):
 		action_catalog[definition.verb]=definition
 		if not definition.verb in VERBS:
@@ -368,7 +412,7 @@ func populate_targets() -> void:
 	if configured_verb!=verb:
 		configured_verb=verb
 		mode_box.clear()
-		var modes: Dictionary={"propose":PROPOSAL_NAMES,"respond":["Chấp nhận","Từ chối","Thu hồi / hủy cam kết"],"manage":["Lấy từ kho","Gửi vào kho"],"transfer":["Tặng tiền","Tặng hàng"],"drink":["Uống tại giếng","Dùng nước trong túi"],"invitation":["Người nhận từ chối","Người mời thu hồi"]}
+		var modes: Dictionary={"propose":PROPOSAL_NAMES,"respond":["Chấp nhận","Từ chối","Thu hồi / hủy cam kết"],"manage":["Lấy từ kho","Gửi vào kho"],"transfer":["Tặng tiền","Tặng hàng"],"drink":["Uống tại giếng","Dùng nước trong túi"],"invitation":["Người nhận từ chối","Người mời thu hồi"],"route":["Đóng tuyến","Mở tuyến"]}
 		for title in modes.get(verb,[]):
 			mode_box.add_item(title,mode_box.item_count)
 		mode_box.visible=mode_box.item_count>0
@@ -391,9 +435,9 @@ func populate_targets() -> void:
 		for r in world.get("requests",[]):
 			if int(r.status)==0 and (int(r.to)==actor or (verb=="invitation" and int(r.from)==actor)):
 				target_box.add_item("Lời mời #%d: %d → %d" % [r.id,r.from,r.to],int(r.id))
-	elif verb in ["respond","counter","fulfill"]:
+	elif verb in ["respond","counter","fulfill","claim"]:
 		for p in world.get("proposals",[]):
-			if int(p.status)==0 or (verb in ["respond","fulfill"] and int(p.status)==1):
+			if int(p.status)==0 or (verb in ["respond","fulfill"] and int(p.status)==1) or (verb=="claim" and int(p.status) in [3,4,5] and p.get("reserved",[]).any(func(n):return int(n)>0)):
 				target_box.add_item("#%d · %s · %d → %d · chờ%d" % [p.id,PROPOSAL_NAMES[int(p.kind)],p.from,p.to,p.awaiting],int(p.id))
 	elif verb=="repay":
 		for debt in world.get("debts",[]):
@@ -403,8 +447,13 @@ func populate_targets() -> void:
 		for lease in world.get("leases",[]):
 			if int(lease.tenant)==actor and int(lease.status)==0:
 				target_box.add_item("Thuê #%d · nơi%d · hết t%d" % [lease.id,lease.site,lease.end],int(lease.id))
+	elif verb in ["travel","pause_journey","resume_journey","turnback","route"]:
+		for r in world.get("routes",[]):
+			target_box.add_item("#%d · %s · %d phút · phí%d · tải%d" % [r.id,r.name,int(r.length)*10,r.toll,r.capacity],int(r.id))
 	elif verb in ["move","work","buy","offer","revoke_job","produce","manage","equip"]:
 		for id in SITE_NAMES:
+			if id in [16,17]:
+				continue
 			target_box.add_item(SITE_NAMES[id],id)
 			if id==selected_site:
 				target_box.select(target_box.item_count-1)
@@ -416,7 +465,7 @@ func populate_targets() -> void:
 		if target_box.get_item_id(i)==previous:
 			target_box.select(i)
 	if is_instance_valid(action_hint):
-		var hints={"propose":"Giữ tài sản bên đưa đề nghị; chỉ chốt khi bên kia chấp nhận. Giá: mỗi đơn vị hàng / lãi cả khoản vay / tiền thuê cả kỳ / thưởng giao hàng. Hạn là bước10 phút.","respond":"Phải đúng bên đang chờ phản hồi. Nhận lời giao hàng chỉ tạo cam kết; còn phải đem hàng thật tới nơi và Hoàn thành.","counter":"Chỉ trả giá sale/lease đang chờ. Sau trả giá, phía kia phải đồng ý; tiền chưa bị trừ.","repay":"Chỉ người vay tự trả từ ví riêng. Quá hạn không tự trừ tiền hoặc sinh tiền phạt.","end_lease":"Người thuê kết thúc quyền; tiền thuê trả trước không tự hoàn. Người tại chỗ không bị xóa/teleport.","care":"Ở nhà có quyền; dùng food1 + nước1 và60 phút. Nhu cầu quá thiếu sẽ cản hồi phục.","equip":"Chỉ chủ ở site, không có mẻ đang làm; dùng1 tool thật, thay thiết bị cũ và khôi phục12 lượt dùng.","produce":"Chủ tự dùng công sức và nguyên liệu của mình; không giả trả lương cho chính mình.","dismiss":"Vua bãi nhiệm quyền ngân quỹ; tài sản công vẫn thuộc tổ chức.","grant":"Chỉ người đang giữ chức ngân quỹ được chi, tối đa50/lệnh.","meal":"Bữa đơn giản food1/10 phút/vui+2; bữa ngon food2/30 phút/vui+10. Cùng giảm đói35."}
+		var hints={"propose":"Giữ tài sản bên đưa đề nghị; chỉ chốt khi bên kia chấp nhận. Giá: mỗi đơn vị hàng / lãi cả khoản vay / tiền thuê cả kỳ / thưởng giao hàng. Hạn là bước10 phút.","respond":"Phải đúng bên đang chờ phản hồi. Nhận lời giao hàng chỉ tạo cam kết; còn phải đem hàng thật tới nơi và Hoàn thành.","counter":"Chỉ trả giá sale/lease đang chờ. Sau trả giá, phía kia phải đồng ý; tiền chưa bị trừ.","repay":"Chỉ người vay tự trả từ ví riêng. Quá hạn không tự trừ tiền hoặc sinh tiền phạt.","end_lease":"Người thuê kết thúc quyền; tiền thuê trả trước không tự hoàn. Người tại chỗ không bị xóa/teleport.","care":"Ở nhà có quyền; dùng food1 + nước1 và60 phút. Nhu cầu quá thiếu sẽ cản hồi phục.","equip":"Chỉ chủ ở site, không có mẻ đang làm; dùng1 tool thật, thay thiết bị cũ và khôi phục12 lượt dùng.","produce":"Chủ tự dùng công sức và nguyên liệu của mình; không giả trả lương cho chính mình.","dismiss":"Vua bãi nhiệm quyền ngân quỹ; tài sản công vẫn thuộc tổ chức.","grant":"Chỉ người đang giữ chức ngân quỹ được chi, tối đa50/lệnh.","travel":"Tới chợ đầu tuyến để khởi hành. Phí2 trả quỹ100, tải tối đa12; đi120 phút. Chuẩn bị food/nước do bạn chọn.","pause_journey":"Dừng đúng vị trí, giữ hàng và mục tiêu. Ở mốc6 là camp; dọc đường có thể tự ăn/uống/nghỉ.","resume_journey":"Tự chọn tiếp tục phần đường còn lại; không phí lần hai. Tuyến đóng chỉ có thể rút về origin.","turnback":"Đổi hướng về nơi xuất phát, vẫn phải đi đủ quãng ngược; không teleport hoặc hoàn phí.","route":"Chỉ controller của tuyến được mở/đóng. Đóng giữa chuyến sẽ ngắt trước bước đi tiếp.","claim":"Hàng sale hết hạn/hủy ở lại site ký gửi nếu chủ đi xa; phải quay về lấy, không tự chuyển vào hành lý.","meal":"Bữa đơn giản food1/10 phút/vui+2; bữa ngon food2/30 phút/vui+10. Cùng giảm đói35."}
 		action_hint.text=hints.get(verb,action_catalog.get(verb,{}).get("description",""))
 func send_selected() -> void:
 	var verb: String=VERBS[verb_box.selected]
@@ -444,10 +493,14 @@ func refresh() -> void:
 	clock_label.text="Ngày %d   %02d:%02d" % [t/1440+1,(t/60)%24,t%60]
 	mode_label.text=("DEBUG TOÀN TRI · lệnh NPC để kiểm luật · chưa có learned policy" if debug_mode else "NGƯỜI CHƠI: VUA · chỉ thấy thông tin đã biết, bản đồ công khai")
 	play_button.text="Ⅱ Tạm dừng" if playing else "▶ Chạy"
-	status_label.text="Công quỹ %d đồng  ·  seed %d  ·  rev %d  ·  10 phút/bước" % [world.treasury,world.seed,world.revision]
+	var budgets: Array=[]
+	for treasury in world.get("treasuries",[]):
+		budgets.append("Quỹ%d: %d" % [treasury.id,treasury.money])
+	status_label.text=" · ".join(budgets)+" · rev%d · 10 phút/bước" % int(world.revision)
 	map_view.world=world
 	map_view.selected_site=selected_site
 	map_view.selected_person=selected_person
+	map_view.selected_route=selected_route if selection_kind=="route" else 0
 	map_view.queue_redraw()
 	for l in world.locations:
 		if int(l.id)==selected_site:
@@ -456,6 +509,11 @@ func refresh() -> void:
 				site_label.text+="Kho: "+inv_text(l.stock)+("   • job lương%d đang mở" % int(l.wage) if l.job else "   • không có job mở")+" · tool còn%d mẻ" % int(l.tool_uses)
 			else:
 				site_label.text+="Kho/việc chưa quan sát ở hiện tại. Đến nơi để biết; tin cũ nằm trong hồ sơ."
+	if selection_kind=="route":
+		for r in world.get("routes",[]):
+			if int(r.id)==selected_route:
+				var status: String=("Mở" if r.open else "Đóng") if r.has("open") else "Chưa quan sát trạng thái hiện tại"
+				site_label.text="[color=#dfbf7a]%s[/color] · %s\n%d phút · phí%d vào quỹ%d · sức tải%d · camp ở mốc6" % [r.name,status,int(r.length)*10,r.toll,r.collector,r.capacity]
 	var selected: Dictionary={}
 	for p in world.people:
 		if int(p.id)==selected_person:
@@ -472,6 +530,9 @@ func refresh() -> void:
 		person_label.text+="[color=#67c6b2]%s %.1f / %.1f[/color]  · escrow %d\n" % [p.activity,p.progress,p.required,p.escrow]
 		person_label.text+="Mục tiêu: %s\nXP ruộng %.0f / xưởng %.0f / giao tiếp %.0f\n" % [p.goal,p.skills[0],p.skills[1],p.skills[2]]
 		person_label.text+="Xu hướng an toàn / hưởng thụ / dịch chuyển: %d / %d / %d" % [p.tendencies[0],p.tendencies[1],p.tendencies[2]]
+		person_label.text+="\nTải mang theo: %d" % int(p.carried_weight)
+		if int(p.journey.route)!=0:
+			person_label.text+=" / 12 · Tuyến%d · mốc%d → #%d\n%s · phí đã trả%d" % [p.journey.route,p.journey.coordinate,p.journey.destination,"Đã dừng" if p.journey.paused else "Đang đi",p.journey.toll_paid]
 	log_label.text=""
 	var events: Array=world.get("events",[])
 	for i in range(max(0,events.size()-6),events.size()):
@@ -479,7 +540,7 @@ func refresh() -> void:
 		log_label.text+="[color=#67c6b2]t%d[/color]  %s\n" % [e.tick,e.text]
 	contract_label.text=""
 	for p in world.get("proposals",[]):
-		if int(p.status) in [0,1]:
+		if int(p.status) in [0,1] or p.get("reserved",[]).any(func(n):return int(n)>0):
 			contract_label.text+="#%d %s · %d → %d · giá%d · chờ%d · hạn t%d\n" % [p.id,PROPOSAL_NAMES[int(p.kind)],p.from,p.to,p.price,p.awaiting,p.deadline]
 	for debt in world.get("debts",[]):
 		contract_label.text+="Nợ#%d: %d → %d · còn%d · hạn t%d\n" % [debt.id,debt.borrower,debt.lender,debt.outstanding,debt.due]
@@ -492,12 +553,12 @@ func refresh() -> void:
 		var f: Dictionary=facts[i]
 		fact_label.text+="#%d · nguồn%d · xảy ra t%d / nhận t%d: %s\n" % [f.event,f.source,f.happened,f.received,f.text]
 func start_demo() -> void:
+	demo_actions=baseline_demo_actions.duplicate(true)
 	playing=false
 	debug_check.set_pressed_no_signal(true)
 	debug_mode=true
 	actor_box.disabled=false
 	actor=4
-	actor_box.select(3)
 	selected_person=4
 	invoke("reset",["251025"])
 	demo_index=0
@@ -515,7 +576,8 @@ func next_demo() -> void:
 		actor=int(a[0])
 		actor_box.select(actor-1)
 		selected_person=actor
-		r=command(actor,str(a[1]),int(a[2]),int(a[3]),int(a[4]))
+		var params: Dictionary=a[5] if a.size()>6 else {}
+		r=command(actor,str(a[1]),int(a[2]),int(a[3]),int(a[4]),"",params)
 	if not r.get("ok",false):
 		demo_label.text="SCRIPT DỪNG · "+str(r.get("message","lỗi"))
 		return
@@ -658,7 +720,133 @@ func ui_action_smoke() -> void:
 	for record in action_test_records:
 		if not record.get("ok",false):
 			passed=false
-	var f:=FileAccess.open("user://ui-actions-a2.json",FileAccess.WRITE)
+	var f:=FileAccess.open("user://ui-actions-b1.json",FileAccess.WRITE)
 	f.store_string(JSON.stringify(action_test_records,"  "))
 	print("UI_ACTIONS ",JSON.stringify(action_test_records))
 	get_tree().quit(0 if passed else 1)
+
+func start_trade_demo() -> void:
+	playing=false
+	debug_check.set_pressed_no_signal(true)
+	debug_mode=true
+	actor_box.disabled=false
+	actor=6
+	selected_person=6
+	selection_kind="person"
+	invoke("reset",["251025","2"])
+	demo_actions=[
+		[6,"move",11,1,0,"Người buôn tự đến ruộng mua hàng"],
+		["step",1,"Đến ruộng sau10 phút"],
+		[6,"buy",11,3,0,"Mua3 food:15 đồng gồm thuế3"],
+		[6,"move",13,1,0,"Mang hàng tới đầu tuyến"],
+		["step",1,"Tới chợ Thanh Điền"],
+		[6,"travel",1,1,0,"Chọn chuyến120 phút, phí2 vào quỹ100"],
+		["step",6,"Mang hàng thật đi6/12 mốc"],
+		[6,"pause_journey",1,1,0,"Tự dừng ở camp giữa đường"],
+		[6,"meal",0,1,0,"Chọn chuẩn bị bữa bằng food của mình"],
+		["step",1,"Ăn xong mới giảm đói"],
+		[6,"drink",0,1,1,"Uống nước đã mang theo, không tự cấp nước"],
+		["step",1,"Nước túi giảm1, khát giảm theo luật"],
+		[6,"rest",0,1,0,"Tự nghỉ dọc tuyến30 phút"],
+		["step",3,"Nghỉ camp giảm mệt4 mỗi bước"],
+		["save",0,"Lưu khi Journey đang dừng giữa đường"],
+		[6,"resume_journey",1,1,0,"Tiếp tục, không thu phí lần hai"],
+		["step",6,"Đến Tùng Lâm, hàng vẫn thuộc người buôn"],
+		[7,"move",23,1,0,"Người mua7 chọn tới chợ"],
+		["step",1,"Người mua tới nơi"],
+		[6,"propose",0,3,0,{"good":0,"price":9,"duration":24},"Chào3 food giá9 ở Tùng Lâm"],
+		[7,"respond",1,1,0,"Người mua tự accept:27 cho chủ,3 vào quỹ200"],
+		[6,"move",25,1,0,"Tự tìm nơi trọ"],
+		["step",1,"Tới trọ của Lan"],
+		[8,"propose",6,1,2,{"site":25,"price":3,"duration":24},"Chủ trọ chào rent3 cho một kỳ"],
+		[6,"respond",2,1,0,"Người buôn tự nhận và trả rent3"],
+		[6,"rest",0,1,0,"Nghỉ hợp lệ tại vùng đến"],
+		["step",3,"Nghỉ xong, không xóa mục tiêu"],
+		[6,"end_lease",1,1,0,"Tự kết thúc quyền thuê, không giả refund"],
+		[6,"move",21,1,0,"Đi mua gỗ nguồn hữu hạn của vùng2"],
+		["step",1,"Tới bãi gỗ"],
+		[6,"buy",21,3,0,"Mua3 Wood,12 đồng gồm thuế3 vào200"],
+		[6,"move",23,1,0,"Mang gỗ về đầu tuyến"],
+		["step",1,"Tới đầu tuyến phía Tùng Lâm"],
+		[6,"travel",1,1,0,"Tự chọn chuyến về, trả phí2 cho chuyến mới"],
+		["step",4,"Đi được4 bước về, đang ở tọa độ8"],
+		[1,"route",1,1,0,"Vua chọn đóng tuyến"],
+		["step",1,"Engine dừng trước bước tiếp theo, không teleport"],
+		["save",0,"Lưu cùng hàng, goal, fee và điểm dừng"],
+		[1,"route",1,1,1,"Vua mở lại tuyến"],
+		[6,"resume_journey",1,1,0,"Người buôn tự chọn đi tiếp"],
+		["step",8,"Về đến Thanh Điền sau đủ phần đường còn lại"],
+		[6,"move",12,1,0,"Tới người mua gỗ"],
+		["step",1,"Gặp chủ xưởng tại chỗ"],
+		[6,"propose",3,3,0,{"good":2,"price":7,"duration":24},"Chào3 Wood giá7"],
+		[3,"respond",3,1,0,"Chủ xưởng tự nhận hàng và trả21+thuế3"],
+		["save",0,"Khứ hồi xong: tiền người buôn50 →64, phí/rent/thuế có đối ứng"]
+	]
+	demo_index=0
+	demo_button.disabled=false
+	demo_label.text="SCRIPT HAI VÙNG · Bấm từng bước, không phải learned AI."
+func find_person(id: int) -> Dictionary:
+	for p in world.get("people",[]):
+		if int(p.id)==id:
+			return p
+	return {}
+func ui_journey_smoke() -> void:
+	var records: Array=[]
+	start_trade_demo()
+	var captured:=false
+	for i in range(demo_actions.size()):
+		demo_button.pressed.emit()
+		var p:=find_person(6)
+		records.append({"step":i,"ok":last_reply.get("ok",false),"tick":world.tick,"money":p.get("money",-1),"location":p.get("location",-1),"journey":p.get("journey",{})})
+		if not last_reply.get("ok",false):
+			break
+		if not captured and "--capture" in OS.get_cmdline_user_args() and int(p.journey.route)!=0 and p.journey.paused and int(p.journey.coordinate)==6 and str(demo_actions[i][0])=="save":
+			captured=true
+			await get_tree().process_frame
+			await RenderingServer.frame_post_draw
+			var args:=OS.get_cmdline_user_args()
+			get_viewport().get_texture().get_image().save_png(args[args.find("--capture")+1])
+	var merchant:=find_person(6)
+	var budget_b:=0
+	for budget in world.treasuries:
+		if int(budget.id)==200:
+			budget_b=int(budget.money)
+	records.append({"round_trip_cash":merchant.get("money",-1),"treasury100":world.treasury,"treasury200":budget_b,"ok":int(merchant.get("money",-1))==64 and int(world.treasury)==110 and budget_b==66})
+	var completed=world.duplicate(true)
+	save_button.pressed.emit()
+	step_button.pressed.emit()
+	load_button.pressed.emit()
+	records.append({"save_load_exact":world==completed,"ok":world==completed})
+	# Exercise the same form controls that a human uses for the new verbs.
+	action_test_records=[]
+	invoke("reset",["251025","2"])
+	ui_action(6,"travel",1)
+	action_tick(4)
+	ui_action(1,"route",1,1,0)
+	action_tick(1)
+	var before:=FileAccess.get_file_as_bytes(session_path)
+	ui_action(6,"resume_journey",1)
+	action_test_records.back()["ok"]=not last_reply.get("ok",true) and "closed" in str(last_reply.get("message","")) and before==FileAccess.get_file_as_bytes(session_path)
+	action_test_records.back()["expected_reject"]=true
+	ui_action(6,"turnback",1)
+	action_tick(4)
+	records.append({"retreat_to_origin":int(find_person(6).location)==13,"ok":int(find_person(6).location)==13 and int(find_person(6).money)==48})
+	invoke("reset",["251025","2"])
+	ui_action(6,"propose",0,1,0,{"good":0,"price":2,"duration":2,"source_site":0})
+	ui_action(6,"travel",1)
+	action_tick(2)
+	ui_action(6,"pause_journey",1)
+	ui_action(6,"turnback",1)
+	action_tick(2)
+	ui_action(6,"claim",1)
+	records.append({"escrow_collected_at_origin":find_person(6).inventory[0]==2,"ok":find_person(6).inventory[0]==2})
+	records.append_array(action_test_records)
+	var total: bool=demo_index==demo_actions.size()
+	for record in records:
+		if not record.get("ok",false):
+			total=false
+	var f:=FileAccess.open("user://ui-journey-b1.json",FileAccess.WRITE)
+	f.store_string(JSON.stringify(records,"  "))
+	print("UI_JOURNEY ",JSON.stringify({"passed":total,"records":records.size(),"scenario_steps":demo_actions.size(),"round_trip_money":merchant.get("money",-1),"treasury100":completed.treasury,"treasury200":budget_b}))
+	get_tree().quit(0 if total else 1)
+

@@ -20,4 +20,4 @@ Template này dành cho repository mới. Khi dùng làm AGENTS.md tại root, g
 
 
 ## Nơi làm việc hiện hành
-Đây là source canonical C:\prc\PolyEc\rebuild, thuộc Git checkout C:\prc\PolyEc với origin cũ. Quyền tiếp tục source tại đây đến từ yêu cầu mới của người dùng; không force-push/xóa lịch sử. Luật hiện tại trial-a2, save2; xem ACTIONS_A2.md và CLASS_ACTION_MAP.md. Snapshot Documents không ghi source nữa.
+Đây là source canonical C:\prc\PolyEc\rebuild, thuộc Git checkout C:\prc\PolyEc với origin cũ. Quyền tiếp tục source tại đây đến từ yêu cầu mới của người dùng; không force-push/xóa lịch sử. Luật hiện tại trial-b1, save3; xem TRAVEL_B.md và CLASS_ACTION_MAP.md. Người dùng đã cho phép commit/push theo workflow hiện hành. Snapshot Documents không ghi source nữa.

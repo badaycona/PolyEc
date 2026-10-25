@@ -6,8 +6,13 @@ const std::map<std::string,RegisteredAction>& action_registry(){
         auto add=[&](const char*verb,const char*params,const char*description,ActionHandler handler){std::vector<std::string> names;std::string v=verb;
         if(v=="propose")names={"good","price","duration","source_site","site"};
         else if(v=="manage")names={"good"};else if(v=="transfer")names={"good","source_site"};
-        else if(v=="equip")names={"source_site"};else if(v=="offer")names={"wage"};else if(v=="counter")names={"price"};
+        else if(v=="equip")names={"source_site"};else if(v=="grant")names={"organization"};else if(v=="offer")names={"wage"};else if(v=="counter")names={"price"};
         require(r.emplace(verb,RegisteredAction{{verb,params,description},handler,names}).second,"Duplicate action definition");};
+        add("travel","target:route","Depart with real cargo; route time/load/toll",transport::travel);
+        add("pause_journey","target:route","Stop at current coordinate; preserve cargo/goal/toll",transport::pause);
+        add("resume_journey","target:route","Continue remaining distance without charging again",transport::resume);
+        add("turnback","target:route","Retreat to origin over real elapsed movement",transport::turnback);
+        add("route","target:route option:close0/open1","Controller changes route access",transport::control);
         add("move","target:site","Travel10 minutes",life::move);
         add("offer","target:site wage:1..100","Owner posts one funded job",production::offer);
         add("revoke_job","target:site","Owner withdraws unaccepted job",production::revoke);
@@ -18,6 +23,7 @@ const std::map<std::string,RegisteredAction>& action_registry(){
         add("transfer","target:person option:money0/goods1 good source_site amount","Voluntary transfer from own assets",resources::transfer);
         add("equip","target:site source_site","Replace installed tool from real owned inventory",resources::equip);
         add("propose","target:person|public0 option:sale0/loan1/lease2/delivery3/appointment4 good price duration source_site site amount","Create terms and reserve own offered assets",contracts::propose);
+        add("claim","target:proposal","Return to escrow site to collect cancelled/expired sale goods",contracts::claim);
         add("counter","target:proposal price","Change pending sale/lease price; other party must consent",contracts::counter);
         add("respond","target:proposal option:accept0/reject1/withdraw2","Resolve pending terms with explicit consent",contracts::respond);
         add("fulfill","target:proposal","Deliver own goods to requester and receive escrow reward",contracts::fulfill);
@@ -33,7 +39,7 @@ const std::map<std::string,RegisteredAction>& action_registry(){
         add("invitation","target:invitation option:decline0/withdraw1","Explicitly decline/withdraw invitation",civic::invitation);
         add("study","","Read public records at court20 minutes",civic::study);
         add("inspect","","Record direct local observation",civic::inspect);
-        add("grant","target:person amount:1..50","Authorized office holder spends treasury",civic::grant);
+        add("grant","target:person amount:1..50 organization","Authorized office holder spends treasury",civic::grant);
         add("dismiss","","King removes office authority; public assets stay public",civic::dismiss);
         add("announce","text","King/office holder publishes at court",civic::announce);
         add("goal","text","Change remembered objective",civic::goal);

@@ -1691,7 +1691,7 @@ int main(){try{
     const auto ration_mask=depot_world.mask(depot_governor,ration_candidates);
     const auto ration_action=ration_candidates[size_t(realm_military_ration_purchase_candidate_begin+1)];
     const auto ration_observation=depot_world.observation(depot_governor);
-    check(realm_actions==400&&realm_state==382&&realm_obs==5182&&realm_schema==std::string("realm-v42")&&
+    check(realm_actions==400&&realm_state==382&&realm_obs==5182&&realm_schema==std::string("realm-v43")&&
           ration_action.kind==Intent::BuyMilitaryRations&&ration_action.target==depot_region&&
           ration_action.good==int(GoodId::DryFood)&&ration_action.amount==4&&ration_mask[size_t(realm_military_ration_purchase_candidate_begin+1)]==1.f&&
           std::abs(ration_observation[size_t(realm_ration_depot_observation_begin+depot_region)])<1e-7f&&
@@ -1989,7 +1989,7 @@ int main(){try{
           observed[14]==kInactiveCapabilityNeutralValue/100.f,
           "observation preserves slot meaning and fills omitted dimensions with neutral values");
     const auto defaultContract=Realm(1,1,128).model_contract();
-    check(defaultContract=="realm-household-fund-goods30-config-v53"&&
+    check(defaultContract=="realm-household-fund-goods30-config-v54"&&
           custom.model_contract()==defaultContract+"-caps-41",
           "custom schema gets a distinct model contract while default remains compatible");
     const auto saved=custom.serialize("capability-schema");
@@ -2251,12 +2251,12 @@ test_canonical_market_transactions();
               "each policy observation reads the requested actor's own body values");
         check(bodyObservation.fingerprint()==beforeRead&&bodyObservation.invariant(),
               "reading body observation does not mutate the Realm");
-        check(std::string(bodyObservation.model_contract())=="realm-household-fund-goods30-config-v53",
+        check(std::string(bodyObservation.model_contract())=="realm-household-fund-goods30-config-v54",
               "non-timeline body observation has a new model contract");
         const auto timelineResult=bodyObservation.execute(ScheduleCommand{1,
             bodyObservation.person(1).decisions+1,ScheduleCommand::Operation::Submit,0,0,1,0,1000});
         check(timelineResult.success&&bodyObservation.model_contract()==
-              std::string("realm-worksite-payroll-goods30-config-v53"),
+              std::string("realm-worksite-payroll-goods30-config-v54"),
               "timeline body observation has a separately versioned model contract");
         Realm historicalBody(37,2,128,false,GameplayConfig::historical());
         check(std::string(historicalBody.model_contract())=="realm-household-fund-goods30-v49",
@@ -4319,9 +4319,9 @@ test_canonical_market_transactions();
         }
         check(legacyDailyOutput>0,"timeline-off people phase retains legacy daily product source");
         check(timelineDailyOutput==0,"timeline people phase does not create products from region or job labels");
-        check(std::string(legacyPeople.model_contract())=="realm-household-fund-goods30-config-v53",
+        check(std::string(legacyPeople.model_contract())=="realm-household-fund-goods30-config-v54",
               "timeline-off model contract remains compatible");
-        check(std::string(timelinePeople.model_contract())=="realm-worksite-payroll-goods30-config-v53",
+        check(std::string(timelinePeople.model_contract())=="realm-worksite-payroll-goods30-config-v54",
               "timeline model contract versions changed production sources");
     }
     {

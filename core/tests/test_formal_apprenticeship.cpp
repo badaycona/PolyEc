@@ -23,6 +23,11 @@ struct RealmApprenticeshipTestAccess {
         auto& person=world.mutable_person(id);world.opening_money_+=value-person.cash;person.cash=value;
     }
     static void set_skill(Realm& world,uint64_t id,int value){world.mutable_person(id).skill=value;}
+    static void set_proposal_tuition(Realm& world,uint64_t id,int64_t tuition){
+        const auto proposal=std::find_if(world.proposals_.begin(),world.proposals_.end(),[&](const auto&value){return value.id==id;});
+        if(proposal==world.proposals_.end())throw std::runtime_error("apprenticeship proposal missing in fixture");
+        proposal->amount=tuition;
+    }
 };
 }
 
@@ -68,8 +73,8 @@ int main(){try{
     const auto sites=world.establishments();
     check(sites.size()==1,"the apprenticeship fixture has one identifiable workshop");
     const uint64_t site=sites.front().id;
-    check(realm_schema==std::string_view("realm-v42")&&
-          world.model_contract()=="realm-household-fund-goods30-config-v53"&&
+    check(realm_schema==std::string_view("realm-v43")&&
+          world.model_contract()=="realm-household-fund-goods30-config-v54"&&
           realm_state==382&&realm_actions==400&&realm_obs==5182,
           "the new action meaning receives a new contract while tensor dimensions stay the same");
     const auto mentorCandidates=world.candidates(mentor);
@@ -100,6 +105,47 @@ int main(){try{
     check(world.execute(WorkAuthorizationCommand{mentor,world.person(mentor).decisions+1,site,learner,
           WorkAuthorizationOperation::Revoke,0,0}).success==false,
           "the workshop owner cannot independently revoke a learner's contract work permission");
+
+    Realm exactTuition=Realm::scenario(20261100,mentor,35,45);
+    RealmApprenticeshipTestAccess::prepare(exactTuition,mentor,learner,exactTuition.person(mentor).region);
+    const int exactRegion=exactTuition.person(mentor).region;
+    check(exactTuition.execute(EstablishmentCommand{mentor,exactTuition.person(mentor).decisions+1,
+          EstablishmentOwnerKind::Person,mentor,exactRegion,EstablishmentIndustry::ClothWorkshop,1,25}).success,
+          "exact-tuition fixture owns a real workshop");
+    RealmApprenticeshipTestAccess::set_cash(exactTuition,learner,kApprenticeshipTrialTuition);
+    const auto exactOffer=find_action(exactTuition,mentor,Intent::OfferApprenticeship,learner);
+    check(exactOffer.kind==Intent::OfferApprenticeship&&exactOffer.amount==10&&
+          exactTuition.execute({mentor,exactTuition.person(mentor).decisions+1,exactOffer}).success,
+          "the trial-ten offer can be sent to a learner with exactly ten available funds");
+    const int64_t exactLearnerCash=exactTuition.person(learner).cash;
+    const auto exactAccept=exactTuition.candidates(learner)[28];
+    check(exactAccept.kind==Intent::Accept&&exactTuition.mask(learner)[28]&&
+          exactTuition.execute({learner,exactTuition.person(learner).decisions+1,exactAccept}).success&&
+          exactTuition.person(learner).cash==exactLearnerCash-kApprenticeshipTrialTuition&&
+          exactTuition.apprenticeships().front().tuition==10&&exactTuition.invariant(),
+          "exactly ten available funds permits acceptance and records one ten-unit transfer");
+
+    Realm legacyV1=Realm::scenario(20261101,mentor,35,45);
+    RealmApprenticeshipTestAccess::prepare(legacyV1,mentor,learner,legacyV1.person(mentor).region);
+    const int legacyRegion=legacyV1.person(mentor).region;
+    check(legacyV1.execute(EstablishmentCommand{mentor,legacyV1.person(mentor).decisions+1,
+          EstablishmentOwnerKind::Person,mentor,legacyRegion,EstablishmentIndustry::ClothWorkshop,1,25}).success,
+          "v1 compatibility fixture owns a real workshop");
+    const auto legacyOffer=find_action(legacyV1,mentor,Intent::OfferApprenticeship,learner);
+    check(legacyV1.execute({mentor,legacyV1.person(mentor).decisions+1,legacyOffer}).success,
+          "current action creates an offer before the fixture restores its v1 price");
+    const uint64_t legacyOfferId=uint64_t(legacyV1.candidates(learner)[28].target);
+    RealmApprenticeshipTestAccess::set_proposal_tuition(legacyV1,legacyOfferId,kApprenticeshipTrialV1Tuition);
+    const auto legacyAccept=legacyV1.candidates(learner)[28];
+    check(legacyV1.invariant()&&legacyV1.mask(learner)[28]&&
+          legacyV1.execute({learner,legacyV1.person(learner).decisions+1,legacyAccept}).success&&
+          legacyV1.apprenticeships().front().tuition==kApprenticeshipTrialV1Tuition,
+          "an outstanding v1 offer keeps its original twenty-unit tuition after the v2 update");
+    const auto legacyCourseSave=legacyV1.serialize("formal-apprenticeship-v1-migration");
+    Realm legacyCourseRestored(1,1,128);std::string legacyCourseError;
+    check(legacyCourseRestored.deserialize(legacyCourseSave,"formal-apprenticeship-v1-migration",legacyCourseError)&&
+          legacyCourseRestored.invariant()&&legacyCourseRestored.apprenticeships().front().tuition==kApprenticeshipTrialV1Tuition,
+          "a saved active v1 course remains readable with its original paid amount: "+legacyCourseError);
 
     for(int day=0;day<4;++day)practice_day(world,mentor,learner,site);
     check(world.apprenticeships().front().practice_days==4&&world.person(learner).skill==20,
@@ -151,7 +197,7 @@ int main(){try{
     const Candidate insufficientOffer=find_action(insufficient,mentor,Intent::OfferApprenticeship,learner);
     check(insufficient.execute({mentor,insufficient.person(mentor).decisions+1,insufficientOffer}).success,
           "the second learner receives a separate offer");
-    RealmApprenticeshipTestAccess::set_cash(insufficient,learner,0);
+    RealmApprenticeshipTestAccess::set_cash(insufficient,learner,kApprenticeshipTrialTuition-1);
     const auto beforeReject=insufficient.fingerprint();
     const auto invalidAccept=insufficient.candidates(learner)[28];
     check(!insufficient.mask(learner)[28]&&

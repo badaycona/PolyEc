@@ -64,8 +64,8 @@ int main(){try{
     const uint64_t buyer=civilian_at(world,region,porcelainWorker);
     check(authority<=uint64_t(world.count())&&world.person(authority).taxing_authority&&potteryWorker&&porcelainWorker&&buyer,
           "Atlas region15 has the public authority and three local adult civilians");
-    check(realm_schema==std::string_view("realm-v42")&&world.model_contract()==
-          "realm-household-fund-goods30-config-v53"&&realm_actions==400&&realm_obs==5182,
+    check(realm_schema==std::string_view("realm-v43")&&world.model_contract()==
+          "realm-household-fund-goods30-config-v54"&&realm_actions==400&&realm_obs==5182,
           "FinePorcelain advances the model/config versions without changing tensor dimensions");
 
     const auto potteryCandidate=world.candidates(authority)[size_t(realm_specialty_product_candidate_begin+3)];

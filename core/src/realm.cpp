@@ -2962,7 +2962,7 @@ bool Realm::invariant(const std::array<int64_t,kGoodIdCount>& bonded_goods)const
             const auto site=std::lower_bound(establishments_.begin(),establishments_.end(),o.cause,
                 [](const Establishment& value,uint64_t target){return value.id<target;});
             const bool invalidCore=o.from==0||o.from>people_.size()||o.to==0||o.to>people_.size()||
-               o.from==o.to||o.amount!=kApprenticeshipTrialTuition||o.service_term!=kApprenticeshipTrialTermDays||
+               o.from==o.to||!apprenticeship_tuition_is_supported(o.amount)||o.service_term!=kApprenticeshipTrialTermDays||
                o.escrow!=0||o.public_source||o.mediation||o.cause==0||o.cause>=next_id_||
                o.source_region<0||o.source_region>regions_||o.ready<0||o.ready>day_||
                o.due!=o.ready+7||o.due>365000||!o.roster_members.empty()||
@@ -3061,7 +3061,7 @@ bool Realm::invariant(const std::array<int64_t,kGoodIdCount>& bonded_goods)const
            course.due_tick!=course.started_tick+int64_t(kApprenticeshipTrialTermDays)*kSubdayUnitsPerDay||
            course.due_tick>365000LL*kSubdayUnitsPerDay||
            course.mentor_ticks_observed<0||course.apprentice_ticks_observed<0||
-           course.tuition!=kApprenticeshipTrialTuition||status>unsigned(ApprenticeshipStatus::Interrupted))return false;
+           !apprenticeship_tuition_is_supported(course.tuition)||status>unsigned(ApprenticeshipStatus::Interrupted))return false;
         const auto offer=std::find_if(proposals_.begin(),proposals_.end(),[&](const auto& proposal){
             return proposal.id==course.id&&proposal.kind==9&&proposal.from==course.mentor&&
                 proposal.to==course.apprentice&&proposal.cause==course.establishment_id&&

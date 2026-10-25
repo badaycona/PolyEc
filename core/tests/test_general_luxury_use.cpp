@@ -67,8 +67,8 @@ int main(){try{
     const uint64_t buyer=adult_civilian(world,region,worker);
     check(world.person(authority).taxing_authority&&worker&&buyer,
           "Atlas region12 provides its public authority and two adult civilians");
-    check(realm_schema==std::string_view("realm-v42")&&
-          world.model_contract()=="realm-household-fund-goods30-config-v53"&&realm_actions==400&&realm_obs==5182,
+    check(realm_schema==std::string_view("realm-v43")&&
+          world.model_contract()=="realm-household-fund-goods30-config-v54"&&realm_actions==400&&realm_obs==5182,
           "adding the luxury product versions the save/model contracts without changing model tensor sizes");
     check(world.candidates(worker)[realm_general_luxury_social_candidate].kind==Intent::Hold,
           "the private luxury event is absent until the Civilian owns the product and can pay");

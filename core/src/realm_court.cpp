@@ -64,7 +64,7 @@ bool Realm::legal_proposal_response(uint64_t actor,const Candidate&action)const{
         if(action.kind==Intent::Reject||o.kind==0)return true;
         if(o.kind==9){
             if(action.kind!=Intent::Accept||actor==0||actor>people_.size()||o.from==0||o.from>people_.size()||
-               o.amount!=kApprenticeshipTrialTuition||o.service_term!=kApprenticeshipTrialTermDays||
+               !apprenticeship_tuition_is_supported(o.amount)||o.service_term!=kApprenticeshipTrialTermDays||
                o.escrow!=0||o.cause==0||o.cause>uint64_t(INT32_MAX)||o.source_region<0||o.source_region>regions_||
                day_>365000-kApprenticeshipTrialTermDays||
                schedule_book_.cursor>365000LL*kSubdayUnitsPerDay-int64_t(kApprenticeshipTrialTermDays)*kSubdayUnitsPerDay||

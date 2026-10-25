@@ -210,12 +210,12 @@ func _ready() -> void:
     if OS.get_cmdline_user_args().has("--atlas-manual-test"):
         start_atlas_manual_test()
         return
-    if not session.has_method("realm_schema") or session.realm_schema()!="realm-v42":
-        status.text="Lõi mô phỏng không khớp dữ liệu realm-v42; cần build đúng phiên bản"
+    if not session.has_method("realm_schema") or session.realm_schema()!="realm-v43":
+        status.text="Lõi mô phỏng không khớp dữ liệu realm-v43; cần build đúng phiên bản"
         return
     var paths=[]
     var hashes=[]
-    var model_root="res://models/realm-v42"
+    var model_root="res://models/realm-v43"
     for arg in OS.get_cmdline_user_args():
         if arg.begins_with("--model-root="):
             model_root=arg.trim_prefix("--model-root=")
@@ -228,7 +228,7 @@ func _ready() -> void:
             status.text="Chưa có bundle "+family
             return
         var manifest=JSON.parse_string(f.get_as_text())
-        if not manifest is Dictionary or manifest.get("schema","")!="realm-v42":
+        if not manifest is Dictionary or manifest.get("schema","")!="realm-v43":
             status.text="Sai schema policy "+family
             return
         if manifest.get("model_contract","")!=session.realm_model_contract():
@@ -452,7 +452,7 @@ func refresh() -> void:
         status.text="DỪNG: "+str(v.get("error",""))
         return
     run_button.text="Ⅱ  Tạm dừng" if running else "▶  Chạy thế giới"
-    status.text="KIỂM THỬ ATLAS THỦ CÔNG · NPC không tự ra quyết định; đây chưa phải bản game hoàn chỉnh" if v.get("atlas_manual_test",false) else "Policy realm-v42 · quyết định tự chủ chỉ bật sau khi có đủ 3 bộ tương thích đã huấn luyện và kiểm tra"
+    status.text="KIỂM THỬ ATLAS THỦ CÔNG · NPC không tự ra quyết định; đây chưa phải bản game hoàn chỉnh" if v.get("atlas_manual_test",false) else "Policy realm-v43 · quyết định tự chủ chỉ bật sau khi có đủ 3 bộ tương thích đã huấn luyện và kiểm tra"
     summary.text="Ngày %d  ·  %d cá thể / %d còn sống / %d trẻ em  ·  %d quyết định  ·  %d nợ / %d dự án" % [v.day,v.persons,v.alive,v.children,v.decisions,v.loans,v.projects]
     var atlas_names={}
     for site in v.get("urban_census",[]):

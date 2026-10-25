@@ -26,7 +26,7 @@
 namespace polyec {
 inline constexpr size_t kOrganizationGroupsPerTerritory=4;
 inline constexpr size_t kOrganizationCount=kAtlasTerritoryCount*kOrganizationGroupsPerTerritory;
-inline constexpr const char* realm_schema="realm-v42";
+inline constexpr const char* realm_schema="realm-v43";
 inline constexpr const char* realm_reward_version="realm-v14-person-enterprise-equity-atlas-products-v1";
 inline constexpr int realm_base_state=128, realm_features=12;
 inline constexpr int realm_pre_ration_state=realm_base_state+int((kAtlasTerritoryCount-7)*kLegacyGoodCount);
@@ -90,7 +90,11 @@ inline constexpr int realm_foreign_trade_candidate_begin=32, realm_foreign_trade
 inline constexpr int realm_foreign_trade_partner_candidate_begin=220, realm_foreign_trade_partner_candidate_count=12;
 inline constexpr int realm_apprenticeship_civilian_candidate_begin=32, realm_apprenticeship_civilian_candidate_count=39;
 inline constexpr int realm_apprenticeship_economic_candidate_begin=44, realm_apprenticeship_economic_candidate_count=27;
-inline constexpr int64_t kApprenticeshipTrialTuition=20;
+inline constexpr int64_t kApprenticeshipTrialV1Tuition=20;
+inline constexpr int64_t kApprenticeshipTrialTuition=10;
+constexpr bool apprenticeship_tuition_is_supported(int64_t tuition) noexcept {
+    return tuition==kApprenticeshipTrialTuition||tuition==kApprenticeshipTrialV1Tuition;
+}
 inline constexpr int kApprenticeshipTrialTermDays=30;
 inline constexpr int kApprenticeshipTrialPracticeDays=10;
 inline constexpr int kApprenticeshipTrialSkillGain=10;
@@ -666,8 +670,8 @@ std::vector<Establishment> establishments() const { return establishments_; }
     std::string model_contract() const {
         std::string result;
         if (schedule_book_.timeline_contract)
-            result=config_.historical_defaults() ? "realm-worksite-payroll-goods30-v53" : "realm-worksite-payroll-goods30-config-v53";
-        else result=config_.historical_defaults() ? "realm-household-fund-goods30-v53" : "realm-household-fund-goods30-config-v53";
+            result=config_.historical_defaults() ? "realm-worksite-payroll-goods30-v54" : "realm-worksite-payroll-goods30-config-v54";
+        else result=config_.historical_defaults() ? "realm-household-fund-goods30-v54" : "realm-household-fund-goods30-config-v54";
         if(capability_mask_!=kDefaultCapabilityMask)result+="-caps-"+std::to_string(capability_mask_);
         return result;
     }
